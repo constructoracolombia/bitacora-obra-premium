@@ -95,12 +95,12 @@ export function MaterialAutocomplete({
         autoComplete="off"
       />
       {open && filtered.length > 0 && (
-        <ul className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-auto rounded-lg border border-[var(--gold)]/30 bg-card py-1 shadow-lg">
+        <ul className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
           {filtered.map((m) => (
             <li key={m}>
               <button
                 type="button"
-                className="w-full px-3 py-2 text-left text-sm hover:bg-white/10"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
                 onClick={() => {
                   onChange(m);
                   setOpen(false);

@@ -95,12 +95,12 @@ export function BitacoraDayCard({
 
   return (
     <div className="relative flex gap-4">
-      {/* Línea vertical dorada */}
-      <div className="absolute left-[11px] top-8 bottom-0 w-0.5 bg-[var(--gold)]/40" />
+      {/* Línea vertical */}
+      <div className="absolute left-[11px] top-8 bottom-0 w-0.5 bg-blue-200" />
 
       {/* Punto del timeline */}
-      <div className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[var(--gold)] bg-background">
-        <div className="h-2 w-2 rounded-full bg-[var(--gold)]" />
+      <div className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-blue-500 bg-background">
+        <div className="h-2 w-2 rounded-full bg-blue-500" />
       </div>
 
       {/* Card expandible */}
@@ -108,11 +108,11 @@ export function BitacoraDayCard({
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="glass-card w-full rounded-xl border border-[var(--gold)]/30 p-4 text-left shadow-lg transition-all hover:border-[var(--gold)]/50"
+          className="w-full rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition-all hover:shadow-md hover:border-gray-300"
         >
           <div className="flex items-center justify-between gap-2">
             <div>
-              <h3 className="font-semibold text-[var(--gold)]">
+              <h3 className="font-semibold text-[#2D3748]">
                 {format(new Date(fecha), "EEEE d 'de' MMMM, yyyy", {
                   locale: es,
                 })}
@@ -124,15 +124,15 @@ export function BitacoraDayCard({
               )}
             </div>
             {expanded ? (
-              <ChevronUp className="size-5 shrink-0 text-[var(--gold)]" />
+              <ChevronUp className="size-5 shrink-0 text-blue-600" />
             ) : (
-              <ChevronDown className="size-5 shrink-0 text-[var(--gold)]" />
+              <ChevronDown className="size-5 shrink-0 text-blue-600" />
             )}
           </div>
         </button>
 
         {expanded && (
-          <div className="glass-card mt-2 rounded-xl border border-[var(--gold)]/20 p-4 shadow-md">
+          <div className="mt-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Novedades del Día</Label>
@@ -142,7 +142,7 @@ export function BitacoraDayCard({
                     setForm((f) => ({ ...f, novedades: e.target.value }))
                   }
                   placeholder="Describe las novedades del día..."
-                  className="min-h-[100px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/20"
+                  className="min-h-[100px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   rows={4}
                 />
               </div>
@@ -154,7 +154,7 @@ export function BitacoraDayCard({
                   onChange={(e) =>
                     setForm((f) => ({ ...f, novedad_tipo: e.target.value }))
                   }
-                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm focus:border-[var(--gold)] focus:outline-none"
+                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm focus:border-blue-500 focus:outline-none"
                 >
                   {NOVEDAD_TIPOS.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -177,7 +177,7 @@ export function BitacoraDayCard({
                         oficiales: Math.max(0, parseInt(e.target.value) || 0),
                       }))
                     }
-                    className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm focus:border-[var(--gold)] focus:outline-none"
+                    className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div className="space-y-2">
@@ -195,7 +195,7 @@ export function BitacoraDayCard({
                         ),
                       }))
                     }
-                    className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm focus:border-[var(--gold)] focus:outline-none"
+                    className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm focus:border-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -203,7 +203,7 @@ export function BitacoraDayCard({
               {/* Galería Mañana */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <span className="text-[var(--gold)]">Mañana</span>
+                  <span className="text-blue-600">Mañana</span>
                   <span className="text-xs text-muted-foreground">
                     (antes 12pm)
                   </span>
@@ -232,7 +232,7 @@ export function BitacoraDayCard({
               {/* Galería Tarde */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <span className="text-[var(--gold)]">Tarde</span>
+                  <span className="text-blue-600">Tarde</span>
                   <span className="text-xs text-muted-foreground">
                     (después 12pm)
                   </span>
@@ -259,7 +259,7 @@ export function BitacoraDayCard({
               </div>
 
               <Button
-                className="w-full gradient-gold text-black"
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
                 onClick={handleSave}
                 disabled={saving}
               >
@@ -341,7 +341,7 @@ function FotoGrid({
       {fotos.map((url, idx) => (
         <div
           key={url}
-          className="group relative aspect-square overflow-hidden rounded-lg border border-[var(--gold)]/20 bg-black/50 shadow-md"
+          className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-100 shadow-sm"
         >
           <button
             type="button"
@@ -357,13 +357,13 @@ function FotoGrid({
           <button
             type="button"
             onClick={() => onRemove(idx)}
-            className="absolute right-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-xs text-destructive hover:bg-black/90"
+            className="absolute right-1 top-1 rounded bg-gray-800/80 px-1.5 py-0.5 text-xs text-destructive hover:bg-gray-900"
           >
             ×
           </button>
         </div>
       ))}
-      <label className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-[var(--gold)]/40 bg-black/20 transition-colors hover:border-[var(--gold)]/60">
+      <label className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:border-blue-400 hover:bg-blue-50">
         <input
           ref={inputRef}
           type="file"
@@ -373,9 +373,9 @@ function FotoGrid({
           disabled={uploading}
         />
         {uploading ? (
-          <Loader2 className="size-8 animate-spin text-[var(--gold)]" />
+          <Loader2 className="size-8 animate-spin text-blue-600" />
         ) : (
-          <Plus className="size-8 text-[var(--gold)]/60" />
+          <Plus className="size-8 text-blue-600" />
         )}
       </label>
     </div>

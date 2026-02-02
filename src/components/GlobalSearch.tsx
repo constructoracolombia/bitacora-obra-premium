@@ -119,15 +119,15 @@ export function GlobalSearch() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm"
       onClick={() => setOpen(false)}
     >
       <div
-        className="glass-card mx-auto mt-[15vh] max-w-xl rounded-xl border border-[var(--gold)]/30 p-2 shadow-2xl"
+        className="mx-auto mt-[15vh] max-w-xl rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 rounded-lg border border-[var(--gold)]/30 bg-black/30 px-3 py-2">
-          <Search className="size-5 text-[var(--gold)]" />
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <Search className="size-5 text-blue-600" />
           <input
             type="text"
             value={query}
@@ -143,7 +143,7 @@ export function GlobalSearch() {
         <div className="mt-2 max-h-[60vh] overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="size-8 animate-spin text-[var(--gold)]" />
+              <Loader2 className="size-8 animate-spin text-blue-600" />
             </div>
           ) : results.length > 0 ? (
             <div className="space-y-1 py-2">
@@ -152,12 +152,12 @@ export function GlobalSearch() {
                   key={`${r.type}-${r.id}`}
                   type="button"
                   onClick={() => handleSelect(r.href)}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-white/10"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-gray-100"
                 >
                   {r.type === "proyecto" ? (
-                    <ClipboardList className="size-5 shrink-0 text-[var(--gold)]" />
+                    <ClipboardList className="size-5 shrink-0 text-blue-600" />
                   ) : (
-                    <Package className="size-5 shrink-0 text-[var(--gold)]" />
+                    <Package className="size-5 shrink-0 text-blue-600" />
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{r.title}</p>

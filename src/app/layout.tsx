@@ -48,7 +48,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0C0C0C",
+  themeColor: "#3B82F6",
 };
 
 export default function RootLayout({
@@ -59,15 +59,8 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Script
-          id="theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})();`,
-          }}
-        />
         <Providers>
-          <div className="flex min-h-screen bg-background">
+          <div className="flex min-h-screen bg-[#F8F9FA]">
             <Sidebar />
             <main className="flex-1 overflow-auto transition-smooth">
               {children}

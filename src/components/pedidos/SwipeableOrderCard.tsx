@@ -77,7 +77,7 @@ export function SwipeableOrderCard({
 
   return (
     <div
-      className="relative overflow-hidden rounded-xl border border-[var(--gold)]/20 bg-card"
+      className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -137,7 +137,7 @@ export function SwipeableOrderCard({
           {format(new Date(pedido.created_at), "d MMM yyyy, HH:mm", { locale: es })}
         </p>
         {showActions && (
-          <p className="mt-2 text-xs text-[var(--gold)]">
+          <p className="mt-2 text-xs text-blue-600">
             Desliza para aprobar/rechazar
           </p>
         )}
@@ -145,7 +145,7 @@ export function SwipeableOrderCard({
           <Button
             size="sm"
             variant="outline"
-            className="mt-3 w-full border-[var(--gold)]/40 text-[var(--gold)] hover:bg-[var(--gold)]/10"
+            className="mt-3 w-full border-blue-300 text-blue-600 hover:bg-blue-50"
             asChild
           >
             <Link href={`/pedidos/${pedido.id}/actualizar-estado`}>

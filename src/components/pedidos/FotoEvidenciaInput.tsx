@@ -85,7 +85,7 @@ export function FotoEvidenciaInput({
         {fotos.map((url, idx) => (
           <div
             key={url}
-            className="relative aspect-square w-16 overflow-hidden rounded-lg border border-[var(--gold)]/30 bg-black/50"
+            className="relative aspect-square w-16 overflow-hidden rounded-lg border border-gray-200 bg-gray-100"
           >
             <img
               src={url}
@@ -106,14 +106,14 @@ export function FotoEvidenciaInput({
           onClick={() => inputRef.current?.click()}
           disabled={uploading || !proyectoId}
           className={cn(
-            "flex aspect-square w-16 items-center justify-center rounded-lg border-2 border-dashed border-[var(--gold)]/40 bg-black/30 transition-colors hover:border-[var(--gold)]/60",
+            "flex aspect-square w-16 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:border-blue-400 hover:bg-blue-50",
             (uploading || !proyectoId) && "opacity-50"
           )}
         >
           {uploading ? (
-            <Loader2 className="size-6 animate-spin text-[var(--gold)]" />
+            <Loader2 className="size-6 animate-spin text-blue-600" />
           ) : (
-            <Camera className="size-6 text-[var(--gold)]" />
+            <Camera className="size-6 text-blue-600" />
           )}
         </button>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { MapPin, User, Calendar } from "lucide-react";
+import { MapPin, User, Calendar, DollarSign } from "lucide-react";
 import { differenceInDays, format, isPast } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -11,6 +11,7 @@ export interface ProjectCardData {
   id: string;
   cliente_nombre: string | null;
   direccion?: string | null;
+  presupuesto_total?: number | null;
   porcentaje_avance: number;
   estado: ProjectStatus;
   residente_asignado?: string | null;
@@ -33,7 +34,7 @@ function CircularProgress({ value }: { value: number }) {
     <div className="relative inline-flex items-center justify-center">
       <svg width={size} height={size} className="-rotate-90">
         <circle
-          className="text-muted/30"
+          className="text-gray-200"
           strokeWidth={strokeWidth}
           stroke="currentColor"
           fill="transparent"
@@ -42,7 +43,7 @@ function CircularProgress({ value }: { value: number }) {
           cy={size / 2}
         />
         <circle
-          className="text-[var(--gold)] transition-all duration-500"
+          className="text-blue-600 transition-all duration-500"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -54,7 +55,7 @@ function CircularProgress({ value }: { value: number }) {
           cy={size / 2}
         />
       </svg>
-      <span className="absolute text-sm font-bold text-foreground">{Math.round(value)}%</span>
+      <span className="absolute text-sm font-bold text-[#2D3748]">{Math.round(value)}%</span>
     </div>
   );
 }
@@ -66,9 +67,9 @@ const statusLabels: Record<ProjectStatus, string> = {
 };
 
 const statusColors: Record<ProjectStatus, string> = {
-  ACTIVO: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  EN_PAUSA: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  TERMINADO: "bg-muted text-muted-foreground border-muted",
+  ACTIVO: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  EN_PAUSA: "bg-amber-100 text-amber-700 border-amber-200",
+  TERMINADO: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 export function ProjectCard({ project, className }: ProjectCardProps) {
@@ -85,9 +86,8 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
   return (
     <article
       className={cn(
-        "glass-card rounded-xl p-5 transition-all duration-200",
-        "hover:translate-y-[-4px] hover:shadow-[0_12px_40px_rgba(255,184,0,0.15)]",
-        "cursor-pointer border border-white/10",
+        "rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md",
+        "cursor-pointer",
         className
       )}
     >
@@ -96,13 +96,25 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
           <CircularProgress value={project.porcentaje_avance} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold text-foreground">
+          <h3 className="truncate font-semibold text-[#2D3748]">
             {project.cliente_nombre || "Proyecto sin nombre"}
           </h3>
-          <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <div className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
             <MapPin className="size-3.5 shrink-0" />
             <span className="truncate">{direccion}</span>
           </div>
+          {project.presupuesto_total != null && project.presupuesto_total > 0 && (
+            <div className="mt-1 flex items-center gap-1.5 text-sm text-blue-600">
+              <DollarSign className="size-3.5 shrink-0" />
+              <span>
+                {project.presupuesto_total.toLocaleString("es-CO", {
+                  style: "currency",
+                  currency: "COP",
+                  maximumFractionDigits: 0,
+                })}
+              </span>
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span
               className={cn(
@@ -112,7 +124,7 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
             >
               {statusLabels[project.estado]}
             </span>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
               <User className="size-3.5" />
               <span>{residente}</span>
             </div>
@@ -123,7 +135,7 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
               <span
                 className={cn(
                   "text-xs font-medium",
-                  estaRetrasado ? "text-destructive" : "text-muted-foreground"
+                  estaRetrasado ? "text-red-600" : "text-gray-500"
                 )}
               >
                 {estaRetrasado

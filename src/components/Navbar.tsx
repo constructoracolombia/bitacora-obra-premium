@@ -34,7 +34,7 @@ export function Navbar({
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard"
-          className="text-lg font-bold text-[var(--gold)] transition-colors hover:text-[var(--gold)]/90"
+          className="text-lg font-bold text-blue-600 transition-colors hover:text-blue-700"
         >
           Bitácora Obra
         </Link>
@@ -82,11 +82,11 @@ export function Navbar({
             <img
               src={userAvatar}
               alt={userName ?? "Usuario"}
-              className="size-8 rounded-full object-cover ring-2 ring-[var(--gold)]/30"
+              className="size-8 rounded-full object-cover ring-2 ring-blue-500/30"
             />
           ) : (
-            <div className="flex size-8 items-center justify-center rounded-full bg-[var(--gold)]/20 ring-2 ring-[var(--gold)]/30">
-              <User className="size-4 text-[var(--gold)]" />
+            <div className="flex size-8 items-center justify-center rounded-full bg-blue-100 ring-2 ring-blue-500/30">
+              <User className="size-4 text-blue-600" />
             </div>
           )}
           {userName && (

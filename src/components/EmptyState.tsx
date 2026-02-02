@@ -59,12 +59,12 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-[var(--gold)]/20 bg-card/50 px-8 py-16 text-center",
+        "flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white px-8 py-16 text-center shadow-sm",
         className
       )}
     >
-      <div className="mb-4 flex size-24 items-center justify-center rounded-full border border-[var(--gold)]/30 bg-[var(--gold)]/5">
-        <Icon className="size-12 text-[var(--gold)]" strokeWidth={1.5} />
+      <div className="mb-4 flex size-24 items-center justify-center rounded-full border border-gray-200 bg-blue-50">
+        <Icon className="size-12 text-blue-600" strokeWidth={1.5} />
       </div>
       <h3 className="text-lg font-semibold text-foreground">{displayTitle}</h3>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
@@ -72,7 +72,7 @@ export function EmptyState({
       </p>
       {actionLabel && onAction && (
         <Button
-          className="mt-6 gradient-gold text-black hover:opacity-90"
+          className="mt-6 bg-blue-600 text-white hover:bg-blue-700"
           onClick={onAction}
         >
           {actionLabel}

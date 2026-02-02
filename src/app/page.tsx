@@ -22,7 +22,7 @@ export default function Home() {
 
         {/* Cards con tema personalizado */}
         <section className="mb-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="glass-card border-white/10">
+          <Card className="border-gray-200 bg-white shadow-sm">
             <CardHeader className="flex flex-row items-center gap-2">
               <Calendar className="size-5 text-primary" />
               <CardTitle>Fecha actual</CardTitle>
@@ -34,7 +34,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="glass-card border-white/10">
+          <Card className="border-gray-200 bg-white shadow-sm">
             <CardHeader className="flex flex-row items-center gap-2">
               <ClipboardList className="size-5 text-primary" />
               <CardTitle>Progreso general</CardTitle>
@@ -45,7 +45,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="glass-card border-white/10">
+          <Card className="border-gray-200 bg-white shadow-sm">
             <CardHeader className="flex flex-row items-center gap-2">
               <TrendingUp className="size-5 text-primary" />
               <CardTitle>Avance semanal</CardTitle>
@@ -61,7 +61,7 @@ export default function Home() {
           <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
             Acción principal
           </Button>
-          <Button variant="outline" className="border-white/20 hover:bg-white/5">
+          <Button variant="outline" className="border-gray-200 hover:bg-gray-50">
             Secundaria
           </Button>
           <Button variant="ghost">Ghost</Button>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -65,7 +66,9 @@ interface PedidoRow {
   proyecto?: { cliente_nombre: string | null };
 }
 
-export default function PedidosNuevoPage() {
+function PedidosNuevoContent() {
+  const searchParams = useSearchParams();
+  const proyectoFromUrl = searchParams.get("proyecto") ?? "";
   const [step, setStep] = useState(1);
   const [proyectos, setProyectos] = useState<ProyectoOption[]>([]);
   const [pedidos, setPedidos] = useState<PedidoRow[]>([]);
@@ -78,7 +81,7 @@ export default function PedidosNuevoPage() {
   });
 
   const [form, setForm] = useState({
-    proyecto_id: "",
+    proyecto_id: proyectoFromUrl,
     item: "",
     cantidad: "",
     unidad: "und",
@@ -114,7 +117,11 @@ export default function PedidosNuevoPage() {
         ]);
 
         if (proyectosRes.data) {
-          setProyectos(proyectosRes.data as ProyectoOption[]);
+          const projList = proyectosRes.data as ProyectoOption[];
+          setProyectos(projList);
+          if (proyectoFromUrl && projList.some((p) => p.id === proyectoFromUrl)) {
+            setForm((f) => ({ ...f, proyecto_id: proyectoFromUrl }));
+          }
         }
         if (pedidosRes.data) {
           const projMap = new Map(
@@ -136,7 +143,7 @@ export default function PedidosNuevoPage() {
       }
     }
     fetchData();
-  }, []);
+  }, [proyectoFromUrl]);
 
   async function refetchPedidos() {
     const supabase = getSupabase();
@@ -235,7 +242,7 @@ export default function PedidosNuevoPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-[var(--gold)]" />
+        <Loader2 className="size-12 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -243,7 +250,7 @@ export default function PedidosNuevoPage() {
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[var(--gold)]/20 bg-background/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 border-b border-blue-500/20 bg-white">
         <div className="flex items-center justify-between gap-4 px-4 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
@@ -256,7 +263,7 @@ export default function PedidosNuevoPage() {
           <Button
             variant="outline"
             size="sm"
-            className="border-[var(--gold)]/40"
+            className="border-blue-500/40"
             onClick={() =>
               exportPedidosExcel(
                 pedidos.map((p) => ({
@@ -280,14 +287,14 @@ export default function PedidosNuevoPage() {
 
       <main className="space-y-8 px-4 py-6">
         {/* Wizard */}
-        <section className="rounded-xl border border-[var(--gold)]/30 bg-card p-4 shadow-lg sm:p-6">
+        <section className="rounded-xl border border-blue-500/30 bg-white p-4 shadow-lg sm:p-6">
           <div className="mb-6 flex gap-2">
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
                 className={cn(
                   "h-1.5 flex-1 rounded-full transition-colors",
-                  step >= s ? "bg-[var(--gold)]" : "bg-muted"
+                  step >= s ? "bg-blue-600" : "bg-muted"
                 )}
               />
             ))}
@@ -296,7 +303,7 @@ export default function PedidosNuevoPage() {
           {/* PASO 1 */}
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-[var(--gold)]">
+              <h2 className="text-lg font-semibold text-blue-600">
                 Paso 1: Seleccionar Material
               </h2>
               <div className="space-y-2">
@@ -307,7 +314,7 @@ export default function PedidosNuevoPage() {
                     setForm((f) => ({ ...f, proyecto_id: v }))
                   }
                 >
-                  <SelectTrigger className="h-12 w-full border-[var(--gold)]/30">
+                  <SelectTrigger className="h-12 w-full border-blue-500/30">
                     <SelectValue placeholder="Selecciona un proyecto" />
                   </SelectTrigger>
                   <SelectContent>
@@ -327,7 +334,7 @@ export default function PedidosNuevoPage() {
                 />
               </div>
               <Button
-                className="mt-4 w-full gradient-gold text-black"
+                className="mt-4 w-full bg-blue-600 text-white"
                 disabled={!canNextStep1}
                 onClick={() => setStep(2)}
               >
@@ -340,7 +347,7 @@ export default function PedidosNuevoPage() {
           {/* PASO 2 */}
           {step === 2 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-[var(--gold)]">
+              <h2 className="text-lg font-semibold text-blue-600">
                 Paso 2: Cantidad y Unidad
               </h2>
               <div className="space-y-2">
@@ -365,7 +372,7 @@ export default function PedidosNuevoPage() {
                     setForm((f) => ({ ...f, unidad: v }))
                   }
                 >
-                  <SelectTrigger className="h-12 w-full border-[var(--gold)]/30">
+                  <SelectTrigger className="h-12 w-full border-blue-500/30">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -411,13 +418,13 @@ export default function PedidosNuevoPage() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="border-[var(--gold)]/40"
+                  className="border-blue-500/40"
                   onClick={() => setStep(1)}
                 >
                   Atrás
                 </Button>
                 <Button
-                  className="flex-1 gradient-gold text-black"
+                  className="flex-1 bg-blue-600 text-white"
                   disabled={!canNextStep2}
                   onClick={() => setStep(3)}
                 >
@@ -431,12 +438,12 @@ export default function PedidosNuevoPage() {
           {/* PASO 3 */}
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-[var(--gold)]">
+              <h2 className="text-lg font-semibold text-blue-600">
                 Paso 3: Validación
               </h2>
 
               {/* Resumen */}
-              <div className="rounded-lg border border-[var(--gold)]/20 bg-black/30 p-4">
+              <div className="rounded-lg border border-blue-500/20 bg-gray-50 p-4">
                 <p className="text-sm text-muted-foreground">
                   Presupuesto original: $
                   {presupuestoOriginal.toLocaleString("es-CO")}
@@ -465,7 +472,7 @@ export default function PedidosNuevoPage() {
                       setForm((f) => ({ ...f, justificacion: e.target.value }))
                     }
                     placeholder="Explica por qué se excede el presupuesto..."
-                    className="min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/20"
+                    className="min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     rows={3}
                   />
                 </div>
@@ -484,13 +491,13 @@ export default function PedidosNuevoPage() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="border-[var(--gold)]/40"
+                  className="border-blue-500/40"
                   onClick={() => setStep(2)}
                 >
                   Atrás
                 </Button>
                 <Button
-                  className="flex-1 gradient-gold text-black disabled:opacity-50"
+                  className="flex-1 bg-blue-600 text-white disabled:opacity-50"
                   disabled={!canSubmit || submitting}
                   onClick={handleSubmit}
                 >
@@ -510,7 +517,7 @@ export default function PedidosNuevoPage() {
 
         {/* Lista de Pedidos Pendientes */}
         <section>
-          <h2 className="mb-4 text-lg font-semibold text-[var(--gold)]">
+          <h2 className="mb-4 text-lg font-semibold text-blue-600">
             Pedidos
           </h2>
 
@@ -529,8 +536,8 @@ export default function PedidosNuevoPage() {
                 className={cn(
                   "shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
                   estadoFilter === f.value
-                    ? "border-[var(--gold)] bg-[var(--gold)]/20 text-[var(--gold)]"
-                    : "border-white/20 text-muted-foreground hover:border-[var(--gold)]/40"
+                    ? "border-blue-500 bg-blue-600/20 text-blue-600"
+                    : "border-white/20 text-muted-foreground hover:border-blue-500/40"
                 )}
               >
                 {f.label}
@@ -568,5 +575,13 @@ export default function PedidosNuevoPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function PedidosNuevoPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="size-12 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" /></div>}>
+      <PedidosNuevoContent />
+    </Suspense>
   );
 }

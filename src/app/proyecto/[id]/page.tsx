@@ -10,6 +10,9 @@ import {
   Upload,
   Image as ImageIcon,
   Plus,
+  Pencil,
+  FileText,
+  FileCheck,
 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -18,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { UploadEvidenciaModal } from "@/components/proyecto/UploadEvidenciaModal";
 import { UploadReferenciaModal } from "@/components/proyecto/UploadReferenciaModal";
 import { ImageLightbox } from "@/components/proyecto/ImageLightbox";
+import { EditarProyectoModal } from "@/components/proyecto/EditarProyectoModal";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -48,6 +52,13 @@ interface ItemCalidad {
 interface ProyectoData {
   id: string;
   cliente_nombre: string | null;
+  direccion: string | null;
+  presupuesto_total: number | null;
+  fecha_inicio: string | null;
+  fecha_entrega_estimada: string | null;
+  margen_objetivo: number | null;
+  residente_asignado: string | null;
+  estado: string | null;
   lista_actividades: ActividadAlcance[];
   planos_url: string[];
   renders_url: string[];
@@ -95,6 +106,7 @@ export default function ProyectoDetallePage() {
     src: "",
   });
   const [referenciaModal, setReferenciaModal] = useState(false);
+  const [editarModal, setEditarModal] = useState(false);
 
   useEffect(() => {
     async function fetchProject() {
@@ -115,6 +127,13 @@ export default function ProyectoDetallePage() {
         setProject({
           id: row.id as string,
           cliente_nombre: (row.cliente_nombre as string) ?? null,
+          direccion: (row.direccion as string) ?? null,
+          presupuesto_total: (row.presupuesto_total as number) ?? null,
+          fecha_inicio: (row.fecha_inicio as string) ?? null,
+          fecha_entrega_estimada: (row.fecha_entrega_estimada as string) ?? null,
+          margen_objetivo: (row.margen_objetivo as number) ?? null,
+          residente_asignado: (row.residente_asignado as string) ?? null,
+          estado: (row.estado as string) ?? null,
           lista_actividades: parseActividades(row.lista_actividades),
           planos_url: Array.isArray(row.planos_url) ? (row.planos_url as string[]) : [],
           renders_url: Array.isArray(row.renders_url) ? (row.renders_url as string[]) : [],
@@ -255,7 +274,7 @@ export default function ProyectoDetallePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-[var(--gold)]" />
+        <Loader2 className="size-12 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -279,7 +298,7 @@ export default function ProyectoDetallePage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[var(--gold)]/20 bg-background/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 border-b border-blue-500/20 bg-white">
         <div className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
@@ -291,14 +310,33 @@ export default function ProyectoDetallePage() {
               {project.cliente_nombre || "Proyecto"}
             </h1>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="border-[var(--gold)]/40" asChild>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-xs font-medium",
+                project.estado === "ACTIVO" && "bg-emerald-100 text-emerald-700 border-emerald-200",
+                project.estado === "EN_PAUSA" && "bg-amber-100 text-amber-700 border-amber-200",
+                project.estado === "TERMINADO" && "bg-gray-100 text-gray-600 border-gray-200"
+              )}
+            >
+              {project.estado === "ACTIVO" ? "Activo" : project.estado === "EN_PAUSA" ? "Pausado" : "Finalizado"}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-blue-500/40"
+              onClick={() => setEditarModal(true)}
+            >
+              <Pencil className="size-4" />
+              Editar
+            </Button>
+            <Button variant="outline" size="sm" className="border-blue-500/40" asChild>
               <Link href={`/bitacora/${project.id}`}>
                 <Calendar className="size-4" />
                 Bitácora
               </Link>
             </Button>
-            <Button variant="outline" size="sm" className="border-[var(--gold)]/40" asChild>
+            <Button variant="outline" size="sm" className="border-blue-500/40" asChild>
               <Link href={`/programacion/${project.id}`}>
                 Gantt
               </Link>
@@ -308,30 +346,57 @@ export default function ProyectoDetallePage() {
       </header>
 
       <main className="p-6">
-        <Tabs defaultValue="alcance" className="space-y-6">
-          <TabsList className="border border-[var(--gold)]/30 bg-card p-1">
-            <TabsTrigger value="alcance" className="data-[state=active]:bg-[var(--gold)]/20 data-[state=active]:text-[var(--gold)]">
-              Alcance Cerrado
+        <Tabs defaultValue="informacion" className="space-y-6">
+          <TabsList variant="line" className="h-auto w-full justify-start gap-1 border-b border-gray-200 bg-transparent p-0">
+            <TabsTrigger
+              value="informacion"
+              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
+            >
+              Información
             </TabsTrigger>
-            <TabsTrigger value="referencias" className="data-[state=active]:bg-[var(--gold)]/20 data-[state=active]:text-[var(--gold)]">
-              Referencias Visuales
+            <TabsTrigger
+              value="contrato"
+              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
+            >
+              Contrato
             </TabsTrigger>
-            <TabsTrigger value="calidad" className="data-[state=active]:bg-[var(--gold)]/20 data-[state=active]:text-[var(--gold)]">
-              Control de Calidad
+            <TabsTrigger
+              value="bitacora"
+              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
+            >
+              Bitácora
+            </TabsTrigger>
+            <TabsTrigger
+              value="pedidos"
+              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
+            >
+              Pedidos
+            </TabsTrigger>
+            <TabsTrigger
+              value="programacion"
+              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
+            >
+              Programación
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: Alcance Cerrado */}
-          <TabsContent value="alcance" className="mt-6">
-            <div className="rounded-xl border border-[var(--gold)]/30 bg-card p-6 shadow-lg">
+          {/* TAB 1: Información (Alcance, Referencias, Calidad) */}
+          <TabsContent value="informacion" className="mt-6">
+            <div className="rounded-xl border border-blue-500/30 bg-card p-6 shadow-lg">
+              {project.lista_actividades.length === 0 ? (
+                <p className="py-8 text-center text-muted-foreground">
+                  Actividades pendientes por definir
+                </p>
+              ) : (
+                <>
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[var(--gold)]">
+                <h2 className="text-lg font-semibold text-blue-600">
                   Actividades contratadas
                 </h2>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-[var(--gold)]/40 text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                  className="border-blue-500/40 text-blue-600 hover:bg-blue-600/10"
                   onClick={addActividadAlcance}
                 >
                   <Plus className="size-4" />
@@ -362,7 +427,7 @@ export default function ProyectoDetallePage() {
                               toggleActividadCompletado(act.id, checked === true)
                             }
                             disabled={!act.evidencia_url}
-                            className="border-[var(--gold)]/50 data-[state=checked]:bg-[var(--gold)]"
+                            className="border-blue-500/50 data-[state=checked]:bg-blue-600"
                           />
                         </td>
                         <td className="py-3 pr-4 font-medium">{act.descripcion}</td>
@@ -374,7 +439,7 @@ export default function ProyectoDetallePage() {
                               href={act.evidencia_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[var(--gold)] hover:underline"
+                              className="text-blue-600 hover:underline"
                             >
                               Ver foto
                             </a>
@@ -382,7 +447,7 @@ export default function ProyectoDetallePage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-[var(--gold)]/40 text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                              className="border-blue-500/40 text-blue-600 hover:bg-blue-600/10"
                               onClick={() =>
                                 setUploadModal({
                                   open: true,
@@ -401,19 +466,14 @@ export default function ProyectoDetallePage() {
                   </tbody>
                 </table>
               </div>
-              {project.lista_actividades.length === 0 && (
-                <p className="py-8 text-center text-muted-foreground">
-                  No hay actividades. Añade una para comenzar.
-                </p>
+                </>
               )}
             </div>
-          </TabsContent>
 
-          {/* TAB 2: Referencias Visuales */}
-          <TabsContent value="referencias" className="mt-6">
-            <div className="rounded-xl border border-[var(--gold)]/30 bg-card p-6 shadow-lg">
-              <h2 className="mb-4 text-lg font-semibold text-[var(--gold)]">
-                Galería de planos y renders
+            {/* Referencias Visuales */}
+            <div className="rounded-xl border border-blue-500/30 bg-card p-6 shadow-lg">
+              <h2 className="mb-4 text-lg font-semibold text-blue-600">
+                Referencias Visuales
               </h2>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                 {todasImagenes.map(({ url, tipo }) => (
@@ -421,14 +481,14 @@ export default function ProyectoDetallePage() {
                     key={url}
                     type="button"
                     onClick={() => setLightbox({ open: true, src: url })}
-                    className="group relative aspect-square overflow-hidden rounded-lg border border-[var(--gold)]/20 bg-black/50 shadow-md transition-all hover:shadow-[0_0_20px_rgba(255,184,0,0.2)]"
+                    className="group relative aspect-square overflow-hidden rounded-lg border border-blue-500/20 bg-gray-100 shadow-md transition-all hover:shadow-md"
                   >
                     <img
                       src={url}
                       alt={tipo}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
-                    <span className="absolute bottom-0 left-0 right-0 bg-black/70 px-2 py-1 text-xs text-[var(--gold)]">
+                    <span className="absolute bottom-0 left-0 right-0 bg-gray-800/80 px-2 py-1 text-xs text-blue-600">
                       {tipo}
                     </span>
                   </button>
@@ -436,9 +496,9 @@ export default function ProyectoDetallePage() {
                 <button
                   type="button"
                   onClick={() => setReferenciaModal(true)}
-                  className="flex aspect-square items-center justify-center rounded-lg border-2 border-dashed border-[var(--gold)]/40 bg-black/20 transition-colors hover:border-[var(--gold)]/60 hover:bg-black/30"
+                  className="flex aspect-square items-center justify-center rounded-lg border-2 border-dashed border-blue-500/40 bg-gray-50 transition-colors hover:border-blue-500/60 hover:bg-gray-50"
                 >
-                  <ImageIcon className="size-10 text-[var(--gold)]/60" />
+                  <ImageIcon className="size-10 text-blue-600/60" />
                   <span className="sr-only">Subir imagen</span>
                 </button>
               </div>
@@ -448,19 +508,17 @@ export default function ProyectoDetallePage() {
                 </p>
               )}
             </div>
-          </TabsContent>
 
-          {/* TAB 3: Control de Calidad */}
-          <TabsContent value="calidad" className="mt-6">
-            <div className="rounded-xl border border-[var(--gold)]/30 bg-card p-6 shadow-lg">
+            {/* Control de Calidad */}
+            <div className="rounded-xl border border-blue-500/30 bg-card p-6 shadow-lg">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[var(--gold)]">
+                <h2 className="text-lg font-semibold text-blue-600">
                   Checklist de calidad
                 </h2>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-[var(--gold)]/40 text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                  className="border-blue-500/40 text-blue-600 hover:bg-blue-600/10"
                   onClick={addItemCalidad}
                 >
                   <Plus className="size-4" />
@@ -471,7 +529,7 @@ export default function ProyectoDetallePage() {
                 {project.checklist_calidad.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-lg border border-[var(--gold)]/20 bg-black/30 p-4"
+                    className="rounded-lg border border-blue-500/20 bg-gray-50 p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -481,7 +539,7 @@ export default function ProyectoDetallePage() {
                             toggleCalidadTerminado(item.id, checked === true)
                           }
                           disabled={item.evidencias.length === 0}
-                          className="border-[var(--gold)]/50 data-[state=checked]:bg-[var(--gold)]"
+                          className="border-blue-500/50 data-[state=checked]:bg-blue-600"
                         />
                         <span
                           className={cn(
@@ -495,7 +553,7 @@ export default function ProyectoDetallePage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="shrink-0 border-[var(--gold)]/40 text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                        className="shrink-0 border-blue-500/40 text-blue-600 hover:bg-blue-600/10"
                         onClick={() =>
                           setUploadModal({
                             open: true,
@@ -522,7 +580,7 @@ export default function ProyectoDetallePage() {
                               href={ev.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[var(--gold)] hover:underline"
+                              className="text-blue-600 hover:underline"
                             >
                               Evidencia {idx + 1}
                             </a>
@@ -543,6 +601,77 @@ export default function ProyectoDetallePage() {
                   No hay ítems en el checklist. Añade uno para comenzar.
                 </p>
               )}
+            </div>
+          </TabsContent>
+
+          {/* TAB 2: Contrato */}
+          <TabsContent value="contrato" className="mt-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#2D3748]">
+                <FileCheck className="size-5 text-blue-600" />
+                Analizar Contrato con IA
+              </h2>
+              <p className="mb-4 text-muted-foreground">
+                Sube un PDF o DOCX del contrato para extraer automáticamente cliente, presupuesto, fechas y alcance.
+              </p>
+              <Button className="bg-blue-600 text-white hover:bg-blue-700" asChild>
+                <Link href={`/proyecto/${project.id}/contrato`}>
+                  <FileText className="size-4" />
+                  Ir a Analizar Contrato
+                </Link>
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* TAB 3: Bitácora */}
+          <TabsContent value="bitacora" className="mt-6">
+            <div className="rounded-xl border border-blue-500/30 bg-card p-6 shadow-lg">
+              <h2 className="mb-4 text-lg font-semibold text-blue-600">
+                Bitácora Diaria
+              </h2>
+              <p className="mb-4 text-muted-foreground">
+                Registra las novedades del día, personal y fotos de avance.
+              </p>
+              <Button className="bg-blue-600 text-white text-black hover:opacity-90" asChild>
+                <Link href={`/bitacora/${project.id}`}>
+                  <Calendar className="size-4" />
+                  Ir a Bitácora
+                </Link>
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* TAB 4: Pedidos */}
+          <TabsContent value="pedidos" className="mt-6">
+            <div className="rounded-xl border border-blue-500/30 bg-card p-6 shadow-lg">
+              <h2 className="mb-4 text-lg font-semibold text-blue-600">
+                Pedidos de Material
+              </h2>
+              <p className="mb-4 text-muted-foreground">
+                Solicita materiales para este proyecto.
+              </p>
+              <Button className="bg-blue-600 text-white text-black hover:opacity-90" asChild>
+                <Link href={`/pedidos/nuevo?proyecto=${project.id}`}>
+                  Nuevo Pedido
+                </Link>
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* TAB 5: Programación */}
+          <TabsContent value="programacion" className="mt-6">
+            <div className="rounded-xl border border-blue-500/30 bg-card p-6 shadow-lg">
+              <h2 className="mb-4 text-lg font-semibold text-blue-600">
+                Gantt de Programación
+              </h2>
+              <p className="mb-4 text-muted-foreground">
+                Visualiza el cronograma y avance de actividades.
+              </p>
+              <Button className="bg-blue-600 text-white text-black hover:opacity-90" asChild>
+                <Link href={`/programacion/${project.id}`}>
+                  Ver Gantt
+                </Link>
+              </Button>
             </div>
           </TabsContent>
         </Tabs>
@@ -577,6 +706,50 @@ export default function ProyectoDetallePage() {
         onOpenChange={setReferenciaModal}
         proyectoId={id}
         onUploadComplete={handleReferenciaUpload}
+      />
+
+      <EditarProyectoModal
+        open={editarModal}
+        onOpenChange={setEditarModal}
+        proyectoId={id}
+        datosIniciales={{
+          cliente_nombre: project.cliente_nombre,
+          direccion: project.direccion,
+          presupuesto_total: project.presupuesto_total,
+          fecha_inicio: project.fecha_inicio,
+          fecha_entrega_estimada: project.fecha_entrega_estimada,
+          margen_objetivo: project.margen_objetivo,
+          residente_asignado: project.residente_asignado,
+          estado: project.estado,
+        }}
+        onSuccess={async () => {
+          if (id) {
+            const supabase = getSupabase();
+            const { data } = await supabase
+              .from("hoja_vida_proyecto")
+              .select("*")
+              .eq("id", id)
+              .single();
+            if (data) {
+              const row = data as Record<string, unknown>;
+              setProject((p) =>
+                p
+                  ? {
+                      ...p,
+                      cliente_nombre: (row.cliente_nombre as string) ?? null,
+                      direccion: (row.direccion as string) ?? null,
+                      presupuesto_total: (row.presupuesto_total as number) ?? null,
+                      fecha_inicio: (row.fecha_inicio as string) ?? null,
+                      fecha_entrega_estimada: (row.fecha_entrega_estimada as string) ?? null,
+                      margen_objetivo: (row.margen_objetivo as number) ?? null,
+                      residente_asignado: (row.residente_asignado as string) ?? null,
+                      estado: (row.estado as string) ?? null,
+                    }
+                  : null
+              );
+            }
+          }
+        }}
       />
     </div>
   );

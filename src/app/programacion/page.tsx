@@ -36,14 +36,14 @@ export default function ProgramacionIndexPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-[var(--gold)]" />
+        <Loader2 className="size-12 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
-      <h1 className="text-2xl font-bold text-[var(--gold)]">
+      <h1 className="text-2xl font-bold text-[#2D3748]">
         Selecciona un proyecto
       </h1>
       <div className="grid w-full max-w-md gap-2">
@@ -51,7 +51,7 @@ export default function ProgramacionIndexPage() {
           <Link key={p.id} href={`/programacion/${p.id}`}>
             <Button
               variant="outline"
-              className="w-full justify-start border-[var(--gold)]/30 hover:bg-[var(--gold)]/10"
+              className="w-full justify-start border-gray-200 hover:bg-blue-50"
             >
               <Calendar className="size-4" />
               {p.cliente_nombre || "Sin nombre"}

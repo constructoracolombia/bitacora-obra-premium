@@ -12,43 +12,39 @@ import {
   ClipboardList,
   Package,
   Calendar,
-  DollarSign,
-  Sun,
-  Moon,
+  FileBarChart,
   Search,
 } from "lucide-react";
-import { useTheme } from "@/components/ThemeProvider";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/proyectos", icon: ClipboardList, label: "Proyectos" },
+  { href: "/dashboard", icon: ClipboardList, label: "Proyectos" },
   { href: "/pedidos/nuevo", icon: Package, label: "Pedidos" },
   { href: "/programacion", icon: Calendar, label: "Programación" },
-  { href: "https://finanzas.bitacora-obra.com", icon: DollarSign, label: "Finanzas", external: true },
+  { href: "/dashboard", icon: FileBarChart, label: "Reportes" },
 ];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
 
   return (
     <aside
       className={cn(
-        "flex flex-col border-r border-white/10 bg-card transition-all duration-200 ease-in-out",
+        "flex flex-col border-r border-slate-700/50 bg-[#1A1D29] transition-all duration-200 ease-in-out",
         collapsed ? "w-[72px]" : "w-64"
       )}
     >
-      {/* Header - Logo constructora */}
+      {/* Header - Logo */}
       <div
         className={cn(
-          "flex h-16 items-center border-b border-white/10",
+          "flex h-16 items-center border-b border-slate-700/50",
           collapsed ? "justify-center px-0" : "justify-between px-4"
         )}
       >
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center gap-2 transition-smooth">
-            <span className="text-lg font-bold text-[var(--gold)]">
+            <span className="text-lg font-bold text-white">
               Bitácora Obra
             </span>
           </Link>
@@ -57,7 +53,7 @@ export function Sidebar() {
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="shrink-0 text-muted-foreground hover:text-foreground"
+          className="shrink-0 text-slate-400 hover:bg-slate-700/50 hover:text-white"
         >
           {collapsed ? (
             <ChevronRight className="size-5" />
@@ -67,13 +63,13 @@ export function Sidebar() {
         </Button>
       </div>
 
-      {/* Búsqueda y tema */}
+      {/* Búsqueda */}
       {!collapsed && (
-        <div className="flex items-center gap-1 border-b border-white/10 p-2">
+        <div className="flex items-center gap-1 border-b border-slate-700/50 p-2">
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-[var(--gold)]"
+            className="text-slate-400 hover:bg-blue-500/10 hover:text-blue-400"
             onClick={() => {
               if (typeof window !== "undefined") {
                 window.dispatchEvent(new CustomEvent("open-global-search"));
@@ -83,19 +79,6 @@ export function Sidebar() {
           >
             <Search className="size-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-[var(--gold)]"
-            onClick={toggleTheme}
-            title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
-          >
-            {theme === "dark" ? (
-              <Sun className="size-4" />
-            ) : (
-              <Moon className="size-4" />
-            )}
-          </Button>
         </div>
       )}
 
@@ -103,26 +86,24 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 overflow-y-auto p-2 scrollbar-card">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = !item.external && pathname === item.href;
+          const isActive = pathname === item.href || 
+            (item.href === "/dashboard" && pathname?.startsWith("/proyecto"));
           const linkContent = (
-            <Button
-              variant="ghost"
+            <div
               className={cn(
-                "w-full justify-start gap-3 transition-smooth hover:bg-white/5 hover:text-[var(--gold)]",
-                collapsed ? "justify-center px-0" : "px-3",
-                isActive && "bg-white/5 text-[var(--gold)]"
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-smooth",
+                collapsed ? "justify-center px-0" : "",
+                isActive
+                  ? "border-l-4 border-blue-500 bg-blue-500/10 text-white"
+                  : "border-l-4 border-transparent text-slate-400 hover:bg-slate-700/50 hover:text-white"
               )}
             >
               <Icon className="size-5 shrink-0" />
               {!collapsed && <span>{item.label}</span>}
-            </Button>
+            </div>
           );
-          return item.external ? (
-            <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer">
-              {linkContent}
-            </a>
-          ) : (
-            <Link key={item.href} href={item.href}>
+          return (
+            <Link key={item.href + item.label} href={item.href}>
               {linkContent}
             </Link>
           );

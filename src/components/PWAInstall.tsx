@@ -1,73 +1,67 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 export function PWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [showBanner, setShowBanner] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("pwa-install-dismissed");
+    if (stored === "true") setDismissed(true);
 
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      const dismissed = localStorage.getItem("pwa-install-dismissed");
-      if (!dismissed && !window.matchMedia("(display-mode: standalone)").matches) {
-        setShowBanner(true);
-      }
+      setDeferredPrompt(e);
+      if (!dismissed) setShowBanner(true);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsInstalled(true);
-    }
-
     return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+  }, [dismissed]);
 
   async function handleInstall() {
     if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    const ev = deferredPrompt as { prompt: () => void; userChoice: Promise<{ outcome: string }> };
+    ev.prompt();
+    const { outcome } = await ev.userChoice;
     if (outcome === "accepted") {
       setShowBanner(false);
-      setIsInstalled(true);
+      setDeferredPrompt(null);
     }
-    setDeferredPrompt(null);
   }
 
   function handleDismiss() {
     setShowBanner(false);
+    setDismissed(true);
     localStorage.setItem("pwa-install-dismissed", "true");
   }
 
-  if (!showBanner || isInstalled) return null;
+  if (!showBanner || !deferredPrompt) return null;
 
   return (
-    <div className="glass-card fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md rounded-xl border border-[var(--gold)]/30 p-4 shadow-lg sm:left-auto sm:right-4">
-      <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--gold)]/20">
-          <Download className="size-5 text-[var(--gold)]" />
+    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:left-auto sm:right-4">
+      <div className="flex gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+          <Download className="size-5 text-blue-600" />
         </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-foreground">Instalar app</h3>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Instala Bitácora Obra en tu dispositivo para usarla offline.
+        <div className="flex-1">
+          <p className="font-medium text-[#2D3748]">Instalar Bitácora Obra</p>
+          <p className="text-sm text-gray-600">
+            Instala la app para acceso rápido desde tu pantalla de inicio.
           </p>
           <div className="mt-3 flex gap-2">
             <Button
               size="sm"
-              className="gradient-gold text-black"
+              className="bg-blue-600 text-white hover:bg-blue-700"
               onClick={handleInstall}
             >
               Instalar
             </Button>
-            <Button size="sm" variant="ghost" onClick={handleDismiss}>
+            <Button size="sm" variant="outline" onClick={handleDismiss}>
               Ahora no
             </Button>
           </div>
@@ -83,14 +77,4 @@ export function PWAInstall() {
       </div>
     </div>
   );
-}
-
-declare global {
-  interface BeforeInstallPromptEvent extends Event {
-    prompt(): Promise<void>;
-    userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-  }
-  interface WindowEventMap {
-    beforeinstallprompt: BeforeInstallPromptEvent;
-  }
 }

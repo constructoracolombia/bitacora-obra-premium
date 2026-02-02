@@ -219,7 +219,7 @@ export default function BitacoraPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-[var(--gold)]" />
+        <Loader2 className="size-12 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -238,7 +238,7 @@ export default function BitacoraPage() {
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[var(--gold)]/20 bg-background/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
         <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
@@ -251,7 +251,7 @@ export default function BitacoraPage() {
             </h1>
           </div>
           <Button
-            className="gradient-gold text-black"
+            className="bg-blue-600 text-white hover:bg-blue-700"
             size="sm"
             onClick={handleExportPDF}
           >
@@ -263,20 +263,20 @@ export default function BitacoraPage() {
         {/* Filtros */}
         <div className="flex flex-wrap gap-3 px-4 pb-4">
           <div className="flex items-center gap-2">
-            <Calendar className="size-4 text-[var(--gold)]" />
+            <Calendar className="size-4 text-blue-600" />
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus:border-[var(--gold)] focus:outline-none"
+              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus:border-blue-500 focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="size-4 text-[var(--gold)]" />
+            <Filter className="size-4 text-blue-600" />
             <select
               value={tipoFilter}
               onChange={(e) => setTipoFilter(e.target.value)}
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus:border-[var(--gold)] focus:outline-none"
+              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus:border-blue-500 focus:outline-none"
             >
               {NOVEDAD_TIPOS.map((t) => (
                 <option key={t.value} value={t.value}>

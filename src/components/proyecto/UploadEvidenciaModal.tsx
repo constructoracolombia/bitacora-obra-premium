@@ -68,9 +68,9 @@ export function UploadEvidenciaModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[var(--gold)]/30 bg-card sm:max-w-md">
+      <DialogContent className="border-gray-200 bg-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[var(--gold)]">
+          <DialogTitle className="text-[#2D3748]">
             Subir evidencia fotográfica
           </DialogTitle>
         </DialogHeader>
@@ -86,14 +86,14 @@ export function UploadEvidenciaModal({
           <div
             onClick={() => inputRef.current?.click()}
             className={cn(
-              "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--gold)]/40 bg-black/30 py-12 transition-colors hover:border-[var(--gold)]/60 hover:bg-black/50",
+              "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-12 transition-colors hover:border-blue-400 hover:bg-blue-50",
               uploading && "pointer-events-none opacity-60"
             )}
           >
             {uploading ? (
-              <Loader2 className="size-12 animate-spin text-[var(--gold)]" />
+              <Loader2 className="size-12 animate-spin text-blue-600" />
             ) : (
-              <Upload className="size-12 text-[var(--gold)]" />
+              <Upload className="size-12 text-blue-600" />
             )}
             <span className="text-sm text-muted-foreground">
               {uploading ? "Subiendo..." : "Haz clic o arrastra una imagen"}

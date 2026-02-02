@@ -43,7 +43,7 @@ const ESTADO_LABELS: Record<string, string> = {
 
 const ESTADO_COLORS: Record<string, string> = {
   PENDING: "bg-muted text-muted-foreground",
-  IN_PROGRESS: "bg-[var(--gold)]/20 text-[var(--gold)]",
+  IN_PROGRESS: "bg-blue-100 text-blue-600",
   COMPLETED: "bg-emerald-500/20 text-emerald-400",
   DELAYED: "bg-destructive/20 text-destructive",
 };
@@ -74,8 +74,8 @@ export function ActivitySidePanel({
   }
 
   return (
-    <div className="glass-card flex w-72 shrink-0 flex-col rounded-xl border border-[var(--gold)]/20 p-4">
-      <h3 className="mb-4 font-semibold text-[var(--gold)]">
+    <div className="flex w-72 shrink-0 flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <h3 className="mb-4 font-semibold text-[#2D3748]">
         Actividades ({activities.length})
       </h3>
       <div className="flex-1 space-y-2 overflow-y-auto">
@@ -91,8 +91,8 @@ export function ActivitySidePanel({
               className={cn(
                 "cursor-pointer rounded-lg border p-3 transition-colors",
                 isSelected
-                  ? "border-[var(--gold)] bg-[var(--gold)]/10"
-                  : "border-white/10 hover:border-[var(--gold)]/30 hover:bg-white/5"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -100,7 +100,7 @@ export function ActivitySidePanel({
                   {act.actividad}
                 </span>
                 {act.hito_critico && (
-                  <Diamond className="size-4 shrink-0 text-[var(--gold)]" />
+                  <Diamond className="size-4 shrink-0 text-blue-600" />
                 )}
               </div>
               <div className="mt-2 flex items-center gap-2">
@@ -135,7 +135,7 @@ export function ActivitySidePanel({
               <Button
                 size="sm"
                 variant="outline"
-                className="mt-2 w-full border-[var(--gold)]/40 text-xs"
+                className="mt-2 w-full border-gray-200 text-xs hover:bg-blue-50"
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditModal({
@@ -159,9 +159,9 @@ export function ActivitySidePanel({
           setEditModal((prev) => ({ ...prev, open }))
         }
       >
-        <DialogContent className="border-[var(--gold)]/30 bg-card">
+        <DialogContent className="border-gray-200 bg-white">
           <DialogHeader>
-            <DialogTitle className="text-[var(--gold)]">
+            <DialogTitle className="text-[#2D3748]">
               Actualizar progreso
             </DialogTitle>
           </DialogHeader>
@@ -196,7 +196,7 @@ export function ActivitySidePanel({
               Cancelar
             </Button>
             <Button
-              className="gradient-gold text-black"
+              className="bg-blue-600 text-white hover:bg-blue-700"
               onClick={handleSaveProgress}
               disabled={saving}
             >

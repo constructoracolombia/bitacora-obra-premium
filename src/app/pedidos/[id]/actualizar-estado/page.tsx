@@ -192,7 +192,7 @@ export default function ActualizarEstadoPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-[var(--gold)]" />
+        <Loader2 className="size-12 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -217,7 +217,7 @@ export default function ActualizarEstadoPage() {
               <ArrowLeft className="size-5" />
             </Link>
           </Button>
-          <div className="glass-card mt-4 rounded-xl border border-[var(--gold)]/30 p-6">
+          <div className="mt-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-2 text-emerald-400">
               <CheckCircle2 className="size-6" />
               <h2 className="text-lg font-semibold">Pedido ya consumido</h2>
@@ -260,8 +260,8 @@ export default function ActualizarEstadoPage() {
           </Link>
         </Button>
 
-        <div className="glass-card mt-4 rounded-xl border border-[var(--gold)]/30 p-6 shadow-lg">
-          <h1 className="text-xl font-bold text-[var(--gold)]">
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h1 className="text-xl font-bold text-[#2D3748]">
             Marcar como Consumido
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -301,8 +301,8 @@ export default function ActualizarEstadoPage() {
           ) : (
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
               {/* Datos de solo lectura */}
-              <div className="space-y-3 rounded-lg border border-[var(--gold)]/20 bg-black/30 p-4">
-                <h3 className="text-sm font-medium text-[var(--gold)]">
+              <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="text-sm font-medium text-[#2D3748]">
                   Datos del pedido
                 </h3>
                 <div className="grid gap-2 text-sm">
@@ -338,7 +338,7 @@ export default function ActualizarEstadoPage() {
                       setForm((f) => ({ ...f, cantidad_real: e.target.value }))
                     }
                     placeholder={String(pedido.cantidad)}
-                    className="h-12 border-[var(--gold)]/30 focus:border-[var(--gold)] focus:ring-[var(--gold)]/30"
+                    className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     required
                   />
                 </div>
@@ -357,7 +357,7 @@ export default function ActualizarEstadoPage() {
                       setForm((f) => ({ ...f, costo_real: v }));
                     }}
                     placeholder="0"
-                    className="h-12 border-[var(--gold)]/30 focus:border-[var(--gold)] focus:ring-[var(--gold)]/30"
+                    className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     required
                   />
                   <p className="text-xs text-muted-foreground">
@@ -372,7 +372,7 @@ export default function ActualizarEstadoPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, fecha_recepcion: e.target.value }))
                     }
-                    className="h-12 border-[var(--gold)]/30 focus:border-[var(--gold)] focus:ring-[var(--gold)]/30"
+                    className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     required
                   />
                 </div>
@@ -384,7 +384,7 @@ export default function ActualizarEstadoPage() {
                       setForm((f) => ({ ...f, notas: e.target.value }))
                     }
                     placeholder="Observaciones sobre la recepción..."
-                    className="min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]/20"
+                    className="min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     rows={3}
                   />
                 </div>
@@ -400,9 +400,9 @@ export default function ActualizarEstadoPage() {
                   <button
                     type="button"
                     onClick={() => inputFacturaRef.current?.click()}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--gold)]/40 bg-black/20 py-4 transition-colors hover:border-[var(--gold)]/60 hover:bg-black/30"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-4 transition-colors hover:border-blue-400 hover:bg-blue-50"
                   >
-                    <Upload className="size-5 text-[var(--gold)]" />
+                    <Upload className="size-5 text-blue-600" />
                     <span className="text-sm text-muted-foreground">
                       {facturaFile ? facturaFile.name : "PDF o imagen"}
                     </span>
@@ -427,7 +427,7 @@ export default function ActualizarEstadoPage() {
 
               <Button
                 type="submit"
-                className="w-full gradient-gold text-black hover:opacity-90"
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
                 disabled={submitting}
               >
                 {submitting ? (

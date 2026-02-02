@@ -39,7 +39,7 @@ function getBarColor(activity: GanttActivity, today: Date): string {
   if (daysLeft <= 7 && daysLeft >= 0) {
     return "bg-orange-500"; // Naranja: Próximo a vencerse
   }
-  return "bg-[var(--gold)]"; // Dorado: En tiempo
+  return "bg-blue-600"; // Azul: En tiempo
 }
 
 export function GanttChart({
@@ -99,14 +99,14 @@ export function GanttChart({
   );
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--gold)]/30 bg-card">
+    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
       <div
         className="min-w-max"
         style={{ width: chartWidth + 200 }}
       >
         {/* Header: fechas */}
-        <div className="flex border-b border-[var(--gold)]/20">
-          <div className="flex w-[200px] shrink-0 items-center border-r border-[var(--gold)]/20 px-3 py-2 font-semibold text-[var(--gold)]">
+        <div className="flex border-b border-gray-200">
+          <div className="flex w-[200px] shrink-0 items-center border-r border-gray-200 px-3 py-2 font-semibold text-[#2D3748]">
             Actividad
           </div>
           <div
@@ -120,7 +120,7 @@ export function GanttChart({
                   "shrink-0 border-r border-white/5 py-1 text-center text-xs",
                   h.isWeekend && "bg-white/5",
                   format(h.date, "yyyy-MM-dd") === format(today, "yyyy-MM-dd") &&
-                    "bg-[var(--gold)]/20"
+                    "bg-blue-100"
                 )}
                 style={{ width: DAY_WIDTH }}
               >
@@ -146,13 +146,13 @@ export function GanttChart({
               key={activity.id}
               className="group flex border-b border-white/5 hover:bg-white/5"
             >
-              <div className="flex w-[200px] shrink-0 items-center gap-2 border-r border-[var(--gold)]/20 px-3 py-2">
+              <div className="flex w-[200px] shrink-0 items-center gap-2 border-r border-gray-200 px-3 py-2">
                 <span className="truncate text-sm font-medium">
                   {activity.actividad}
                 </span>
                 {activity.hito_critico && (
                   <span title="Hito crítico">
-                    <Diamond className="size-4 shrink-0 text-[var(--gold)]" />
+                    <Diamond className="size-4 shrink-0 text-blue-600" />
                   </span>
                 )}
                 <span className="text-xs text-muted-foreground">
@@ -192,7 +192,7 @@ export function GanttChart({
                     style={{ left: leftPx + widthPx - DAY_WIDTH / 2 }}
                     title={`Hito crítico: ${format(end, "d MMM yyyy", { locale: es })}`}
                   >
-                    <Diamond className="size-5 text-[var(--gold)] drop-shadow-lg" />
+                    <Diamond className="size-5 text-blue-600 drop-shadow-lg" />
                   </div>
                 )}
               </div>

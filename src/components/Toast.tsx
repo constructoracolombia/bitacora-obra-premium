@@ -95,7 +95,7 @@ function ToastItem({
   return (
     <div
       className={cn(
-        "pointer-events-auto glass-card flex items-center gap-3 rounded-xl border px-4 py-3 shadow-lg",
+        "pointer-events-auto flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg",
         COLORS[toast.type]
       )}
       role="alert"
@@ -105,7 +105,7 @@ function ToastItem({
       <button
         type="button"
         onClick={() => onRemove(toast.id)}
-        className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+        className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground"
         aria-label="Cerrar"
       >
         <X className="size-4" />

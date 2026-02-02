@@ -229,7 +229,7 @@ export default function ProgramacionPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-[var(--gold)]" />
+        <Loader2 className="size-12 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -248,7 +248,7 @@ export default function ProgramacionPage() {
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[var(--gold)]/20 bg-background/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
         <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
@@ -266,7 +266,7 @@ export default function ProgramacionPage() {
               value={proyectoId}
               onValueChange={handleProjectChange}
             >
-              <SelectTrigger className="w-[200px] border-[var(--gold)]/30">
+              <SelectTrigger className="w-[200px] border-gray-200">
                 <SelectValue placeholder="Proyecto" />
               </SelectTrigger>
               <SelectContent>
@@ -278,13 +278,13 @@ export default function ProgramacionPage() {
               </SelectContent>
             </Select>
 
-            <div className="flex rounded-lg border border-[var(--gold)]/30 p-1">
+            <div className="flex rounded-lg border border-gray-200 p-1">
               <button
                 onClick={() => setView("mensual")}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   view === "mensual"
-                    ? "bg-[var(--gold)]/20 text-[var(--gold)]"
+                    ? "bg-blue-100 text-blue-600"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -295,7 +295,7 @@ export default function ProgramacionPage() {
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   view === "semanal"
-                    ? "bg-[var(--gold)]/20 text-[var(--gold)]"
+                    ? "bg-blue-100 text-blue-600"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -330,14 +330,14 @@ export default function ProgramacionPage() {
         {/* Gráfico Gantt */}
         <div className="min-w-0 flex-1" ref={ganttRef}>
           <div className="mb-4 flex items-center justify-between gap-2">
-            <h2 className="font-semibold text-[var(--gold)]">
+            <h2 className="font-semibold text-[#2D3748]">
               Cronograma
             </h2>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="border-[var(--gold)]/40"
+                className="border-gray-200"
                 onClick={() => exportGanttAsImage(ganttRef.current)}
               >
                 <Image className="size-4" />
@@ -346,7 +346,7 @@ export default function ProgramacionPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-[var(--gold)]/40"
+                className="border-gray-200"
                 onClick={syncProgressFromBitacora}
               >
                 <RefreshCw className="size-4" />
@@ -356,12 +356,12 @@ export default function ProgramacionPage() {
           </div>
 
           {activities.length === 0 ? (
-            <div className="glass-card flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-xl border border-[var(--gold)]/30 p-12">
-              <Calendar className="size-16 text-[var(--gold)]/40" />
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-xl border border-gray-200 bg-white p-12 shadow-sm">
+              <Calendar className="size-16 text-gray-300" />
               <p className="text-center text-muted-foreground">
                 No hay actividades en el cronograma.
               </p>
-              <Button variant="outline" className="border-[var(--gold)]/40" asChild>
+              <Button variant="outline" className="border-gray-200" asChild>
                 <Link href={`/proyecto/${proyectoId}`}>
                   Ir al proyecto para añadir actividades
                 </Link>

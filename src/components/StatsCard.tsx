@@ -27,14 +27,14 @@ export function StatsCard({
   return (
     <div
       className={cn(
-        "glass-card flex flex-col gap-4 rounded-xl border border-[var(--gold)]/20 p-5 transition-all hover:border-[var(--gold)]/40",
+        "flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md",
         className
       )}
     >
       <div className="flex items-start justify-between">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <div className="flex size-10 items-center justify-center rounded-lg bg-[var(--gold)]/10">
-          <Icon className="size-5 text-[var(--gold)]" />
+        <div className="flex size-10 items-center justify-center rounded-lg bg-blue-100">
+          <Icon className="size-5 text-blue-600" />
         </div>
       </div>
       <div className="flex items-end justify-between gap-2">
