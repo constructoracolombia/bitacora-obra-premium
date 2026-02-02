@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bitácora Obra Premium
 
-## Getting Started
+Aplicación de gestión de bitácora de obra construida con Next.js 16, App Router y un tema oscuro premium con acentos dorados.
 
-First, run the development server:
+## Stack Tecnológico
+
+- **Framework:** Next.js 16 (App Router)
+- **Lenguaje:** TypeScript
+- **Estilos:** Tailwind CSS v4
+- **Componentes:** shadcn/ui
+- **Iconos:** lucide-react
+- **Base de datos:** Supabase (@supabase/supabase-js)
+- **Fechas:** date-fns
+- **Gráficos:** recharts
+
+## Tema Personalizado
+
+- **Color primario:** #FFB800 (dorado)
+- **Fondo oscuro:** #0C0C0C
+- **Cards:** #1A1A1A
+- **Efectos:** Glassmorphism con backdrop-blur
+
+### Clases de utilidad glassmorphism
+
+- `.glass` - Fondo translúcido con blur
+- `.glass-card` - Cards con efecto glass
+- `.glass-primary` - Acento dorado translúcido
+
+## Configuración
+
+1. **Variables de entorno:** Copia `.env.example` a `.env.local` y configura tus credenciales de Supabase:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Supabase:** Obtén las credenciales en [supabase.com/dashboard](https://supabase.com/dashboard)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Desarrollo
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-To learn more about Next.js, take a look at the following resources:
+## Build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estructura del Proyecto
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/              # App Router (páginas, layout)
+├── components/       # Componentes React
+│   ├── charts/       # Gráficos (recharts)
+│   └── ui/           # Componentes shadcn/ui
+└── lib/              # Utilidades y configuración
+    ├── supabase/     # Cliente Supabase
+    └── utils.ts      # Utilidades (cn, etc.)
+```

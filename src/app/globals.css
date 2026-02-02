@@ -1,26 +1,310 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
+/* ============================================
+   Tema Premium Black & Gold
+   Bitácora Obra Premium
+   ============================================ */
+
+:root,
+[data-theme="dark"] {
+  /* Variables principales del tema (oscuro) */
+  --gold: #FFB800;
+  --black: #0C0C0C;
+  --card: #1A1A1A;
+
+  /* Variables extendidas (compatibilidad shadcn) */
+  --radius: 0.75rem;
+  --primary: var(--gold);
+  --primary-foreground: var(--black);
+  --background: var(--black);
+  --foreground: #fafafa;
+  --card-foreground: #fafafa;
+  --popover: var(--card);
+  --popover-foreground: #fafafa;
+  --secondary: #262626;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --accent: #262626;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #262626;
+  --input: #262626;
+  --ring: var(--gold);
+  --chart-1: var(--gold);
+  --chart-2: #f59e0b;
+  --chart-3: #eab308;
+  --chart-4: #ca8a04;
+  --chart-5: #a16207;
+  --sidebar: var(--card);
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: var(--gold);
+  --sidebar-primary-foreground: var(--black);
+  --sidebar-accent: #262626;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #262626;
+  --sidebar-ring: var(--gold);
+
+  /* Transiciones globales */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* Tema claro */
+[data-theme="light"] {
+  --black: #fafafa;
+  --card: #ffffff;
+  --background: #f5f5f5;
   --foreground: #171717;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --secondary: #e5e5e5;
+  --secondary-foreground: #171717;
+  --muted: #e5e5e5;
+  --muted-foreground: #737373;
+  --accent: #e5e5e5;
+  --accent-foreground: #171717;
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #171717;
+  --sidebar-accent: #e5e5e5;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border: #e5e5e5;
 }
 
 @theme inline {
+  --color-gold: var(--gold);
+  --color-black: var(--black);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ============================================
+   Base
+   ============================================ */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+/* ============================================
+   Glassmorphism
+   ============================================ */
+
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-card {
+    background: rgba(26, 26, 26, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-primary {
+    background: rgba(255, 184, 0, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 184, 0, 0.3);
+  }
+
+  .glass-gold {
+    background: linear-gradient(135deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 184, 0, 0.02) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 184, 0, 0.2);
+  }
+}
+
+/* ============================================
+   Gradientes Dorados
+   ============================================ */
+
+@layer utilities {
+  .gradient-gold {
+    background: linear-gradient(135deg, #FFB800 0%, #f59e0b 50%, #ca8a04 100%);
+  }
+
+  .gradient-gold-subtle {
+    background: linear-gradient(135deg, rgba(255, 184, 0, 0.2) 0%, rgba(255, 184, 0, 0.05) 100%);
+  }
+
+  .gradient-gold-text {
+    background: linear-gradient(135deg, #FFB800 0%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-gold-border {
+    border-image: linear-gradient(135deg, #FFB800, #ca8a04) 1;
+  }
+
+  .gradient-gold-shine {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 184, 0, 0.1) 50%,
+      transparent 100%
+    );
+  }
+}
+
+/* ============================================
+   Animaciones y Transiciones
+   ============================================ */
+
+@layer utilities {
+  .transition-smooth {
+    transition: all var(--transition-base);
+  }
+
+  .transition-smooth-fast {
+    transition: all var(--transition-fast);
+  }
+
+  .transition-smooth-slow {
+    transition: all var(--transition-slow);
+  }
+
+  .hover-lift {
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .hover-gold-glow:hover {
+    box-shadow: 0 0 20px rgba(255, 184, 0, 0.3);
+    transition: box-shadow var(--transition-base);
+  }
+
+  .animate-fade-in {
+    animation: fadeIn var(--transition-slow) ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight var(--transition-slow) ease-out;
+  }
+
+  .animate-spin-smooth {
+    animation: spinSmooth 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes spinSmooth {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   Scrollbars Personalizados (Dorado sobre Negro)
+   ============================================ */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) var(--black);
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gold) 0%, #ca8a04 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ffc933 0%, var(--gold) 100%);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--black);
+}
+
+/* Scrollbar para contenedores con fondo card */
+.scrollbar-card::-webkit-scrollbar-track {
+  background: var(--card);
+}
+
+.scrollbar-card {
+  scrollbar-color: var(--gold) var(--card);
 }
