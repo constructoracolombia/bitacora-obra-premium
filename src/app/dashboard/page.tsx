@@ -2,16 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Loader2 } from "lucide-react";
+import { Loader2, Building2, Info } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
 import { ProjectCard, type ProjectCardData, type ProjectStatus } from "@/components/dashboard/ProjectCard";
-import { NuevoProyectoModal } from "@/components/dashboard/NuevoProyectoModal";
 import { cn } from "@/lib/utils";
 
-type FilterStatus = "ACTIVO" | "EN_PAUSA" | "TERMINADO" | "TODOS";
+type FilterStatus = "ACTIVO" | "PAUSADO" | "FINALIZADO" | "TODOS";
 
-interface HojaVidaRow {
+interface ProyectoMaestroRow {
   id: string;
   cliente_nombre: string | null;
   direccion?: string | null;
@@ -24,14 +22,17 @@ interface HojaVidaRow {
   created_at: string;
 }
 
+/** Mapea el valor de estado de la BD a los estados normalizados de la UI */
 function mapEstado(estado: string | null): ProjectStatus {
   if (!estado) return "ACTIVO";
   const u = estado.toUpperCase();
-  if (u === "ACTIVO" || u === "EN_PAUSA" || u === "TERMINADO") return u as ProjectStatus;
+  if (u === "ACTIVO") return "ACTIVO";
+  if (u === "PAUSADO" || u === "EN_PAUSA") return "PAUSADO";
+  if (u === "FINALIZADO" || u === "TERMINADO") return "FINALIZADO";
   return "ACTIVO";
 }
 
-function toProjectCard(row: HojaVidaRow): ProjectCardData {
+function toProjectCard(row: ProyectoMaestroRow): ProjectCardData {
   return {
     id: row.id,
     cliente_nombre: row.cliente_nombre,
@@ -48,13 +49,12 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<ProjectCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterStatus>("ACTIVO");
-  const [modalOpen, setModalOpen] = useState(false);
 
   async function fetchProjects() {
     try {
       const supabase = getSupabase();
       const { data, error } = await supabase
-        .from("hoja_vida_proyecto")
+        .from("proyectos_maestro")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -75,7 +75,7 @@ export default function DashboardPage() {
         porcentaje_avance: Number(r.porcentaje_avance) ?? 0,
         estado: (r.estado as string | null) ?? null,
         created_at: (r.created_at as string) ?? "",
-      })) as HojaVidaRow[];
+      })) as ProyectoMaestroRow[];
       setProjects(rows.map(toProjectCard));
     } catch (err) {
       console.error("Error:", err);
@@ -97,8 +97,8 @@ export default function DashboardPage() {
   const filters: { value: FilterStatus; label: string }[] = [
     { value: "TODOS", label: "Todos" },
     { value: "ACTIVO", label: "Activos" },
-    { value: "EN_PAUSA", label: "Pausados" },
-    { value: "TERMINADO", label: "Finalizados" },
+    { value: "PAUSADO", label: "Pausados" },
+    { value: "FINALIZADO", label: "Finalizados" },
   ];
 
   return (
@@ -124,17 +124,17 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
-            <Button
-              className="bg-blue-600 text-white hover:bg-blue-700"
-              size="sm"
-              onClick={() => setModalOpen(true)}
-            >
-              <Plus className="size-4" />
-              Nuevo Proyecto
-            </Button>
           </div>
         </div>
       </header>
+
+      {/* Info banner */}
+      <div className="border-b border-blue-100 bg-blue-50 px-6 py-2.5">
+        <div className="flex items-center gap-2 text-sm text-blue-700">
+          <Info className="size-4 shrink-0" />
+          <span>Los proyectos se gestionan desde la <strong>App de Finanzas</strong>. Aquí se sincronizan automáticamente.</span>
+        </div>
+      </div>
 
       {/* Grid de Proyectos */}
       <main className="flex-1 p-6">
@@ -144,20 +144,15 @@ export default function DashboardPage() {
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center">
+            <Building2 className="size-12 text-gray-400" />
             <p className="text-gray-600">
               {projects.length === 0
-                ? "No hay proyectos. Crea uno para comenzar."
+                ? "No hay proyectos disponibles."
                 : "No hay proyectos con el filtro seleccionado."}
             </p>
-            {projects.length === 0 && (
-              <Button
-                className="bg-blue-600 text-white hover:bg-blue-700"
-                onClick={() => setModalOpen(true)}
-              >
-                <Plus className="size-4" />
-                Nuevo Proyecto
-              </Button>
-            )}
+            <p className="text-sm text-gray-500">
+              Los proyectos se crean y editan desde la App de Finanzas
+            </p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -169,12 +164,6 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
-
-      <NuevoProyectoModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        onSuccess={fetchProjects}
-      />
     </div>
   );
 }

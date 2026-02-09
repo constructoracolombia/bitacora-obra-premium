@@ -66,7 +66,7 @@ export default function ProgramacionPage() {
 
         const [projectsRes, activitiesRes, bitacoraRes] = await Promise.all([
           supabase
-            .from("hoja_vida_proyecto")
+            .from("proyectos_maestro")
             .select("id, cliente_nombre, fecha_inicio")
             .order("cliente_nombre"),
           supabase

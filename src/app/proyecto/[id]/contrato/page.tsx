@@ -134,7 +134,7 @@ export default function ContratoPage() {
       }
 
       const { error } = await supabase
-        .from("hoja_vida_proyecto")
+        .from("proyectos_maestro")
         .update({
           cliente_nombre: editForm.cliente_nombre?.trim() || null,
           proyecto_nombre: editForm.proyecto_nombre?.trim() || null,

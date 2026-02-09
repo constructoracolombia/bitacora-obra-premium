@@ -20,7 +20,7 @@ export default function ProgramacionIndexPage() {
       try {
         const supabase = getSupabase();
         const { data } = await supabase
-          .from("hoja_vida_proyecto")
+          .from("proyectos_maestro")
           .select("id, cliente_nombre")
           .order("cliente_nombre");
         if (data) setProjects(data as ProyectoOption[]);

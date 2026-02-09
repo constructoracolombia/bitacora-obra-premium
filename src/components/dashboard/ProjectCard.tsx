@@ -3,9 +3,8 @@
 import { cn } from "@/lib/utils";
 import { MapPin, User, Calendar, DollarSign } from "lucide-react";
 import { differenceInDays, format, isPast } from "date-fns";
-import { es } from "date-fns/locale";
 
-export type ProjectStatus = "ACTIVO" | "EN_PAUSA" | "TERMINADO";
+export type ProjectStatus = "ACTIVO" | "PAUSADO" | "FINALIZADO";
 
 export interface ProjectCardData {
   id: string;
@@ -62,15 +61,23 @@ function CircularProgress({ value }: { value: number }) {
 
 const statusLabels: Record<ProjectStatus, string> = {
   ACTIVO: "Activo",
-  EN_PAUSA: "En Pausa",
-  TERMINADO: "Terminado",
+  PAUSADO: "Pausado",
+  FINALIZADO: "Finalizado",
 };
 
 const statusColors: Record<ProjectStatus, string> = {
   ACTIVO: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  EN_PAUSA: "bg-amber-100 text-amber-700 border-amber-200",
-  TERMINADO: "bg-gray-100 text-gray-600 border-gray-200",
+  PAUSADO: "bg-amber-100 text-amber-700 border-amber-200",
+  FINALIZADO: "bg-gray-100 text-gray-600 border-gray-200",
 };
+
+function formatDateDMY(dateStr: string): string {
+  try {
+    return format(new Date(dateStr), "dd/MM/yyyy");
+  } catch {
+    return dateStr;
+  }
+}
 
 export function ProjectCard({ project, className }: ProjectCardProps) {
   const direccion = project.direccion || "Dirección por definir";
@@ -142,7 +149,7 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
                   ? `Retrasado ${Math.abs(diasParaEntrega ?? 0)} días`
                   : `${diasParaEntrega ?? 0} días para entrega`}
                 {" · "}
-                {format(fechaEntrega, "d MMM yyyy", { locale: es })}
+                {formatDateDMY(project.fecha_entrega_estimada!)}
               </span>
             </div>
           )}

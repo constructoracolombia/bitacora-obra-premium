@@ -58,7 +58,7 @@ export default function BitacoraPage() {
 
         const [projectRes, entriesRes] = await Promise.all([
           supabase
-            .from("hoja_vida_proyecto")
+            .from("proyectos_maestro")
             .select("id, cliente_nombre, fecha_inicio")
             .eq("id", proyectoId)
             .single(),

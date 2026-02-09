@@ -40,7 +40,7 @@ export function GlobalSearch() {
 
       const [proyectosRes, pedidosRes] = await Promise.all([
         supabase
-          .from("hoja_vida_proyecto")
+          .from("proyectos_maestro")
           .select("id, cliente_nombre")
           .ilike("cliente_nombre", term)
           .limit(5),
