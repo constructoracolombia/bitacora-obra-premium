@@ -115,7 +115,7 @@ export async function exportGanttAsImage(
 ): Promise<void> {
   if (!elementRef) return;
   const canvas = await html2canvas(elementRef, {
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#FFFFFF",
     scale: 2,
     useCORS: true,
   });

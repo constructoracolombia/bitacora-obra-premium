@@ -92,7 +92,7 @@ export function ActivitySidePanel({
                 "cursor-pointer rounded-lg border p-3 transition-colors",
                 isSelected
                   ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                  : "border-[#D2D2D7] hover:border-[#007AFF]/30 hover:bg-[#F5F5F7]"
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -100,7 +100,7 @@ export function ActivitySidePanel({
                   {act.actividad}
                 </span>
                 {act.hito_critico && (
-                  <Diamond className="size-4 shrink-0 text-blue-600" />
+                  <Diamond className="size-4 shrink-0 text-[#007AFF]" />
                 )}
               </div>
               <div className="mt-2 flex items-center gap-2">
@@ -196,7 +196,7 @@ export function ActivitySidePanel({
               Cancelar
             </Button>
             <Button
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
               onClick={handleSaveProgress}
               disabled={saving}
             >

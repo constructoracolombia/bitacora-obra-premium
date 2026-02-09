@@ -43,8 +43,8 @@ const UNIDADES = [
   { value: "mt", label: "Metros lineales" },
 ];
 
-const PRESUPUESTO_EXCESO_LIMITE = 1.1; // 10%
-const COSTO_FOTO_REQUERIDA = 500000; // 500k COP
+const PRESUPUESTO_EXCESO_LIMITE = 1.1;
+const COSTO_FOTO_REQUERIDA = 500000;
 
 interface ProyectoOption {
   id: string;
@@ -241,29 +241,29 @@ function PedidosNuevoContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-blue-600" />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="size-8 animate-spin text-[#007AFF]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen bg-white pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-blue-500/20 bg-white">
-        <div className="flex items-center justify-between gap-4 px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
+      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-4 px-8 py-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="size-8 text-[#86868B] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]" asChild>
               <Link href="/dashboard">
-                <ArrowLeft className="size-5" />
+                <ArrowLeft className="size-4" />
               </Link>
             </Button>
-            <h1 className="text-lg font-bold text-foreground">Pide Fácil</h1>
+            <h1 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">Pide Fácil</h1>
           </div>
           <Button
             variant="outline"
             size="sm"
-            className="border-blue-500/40"
+            className="h-8 rounded-lg border-[#D2D2D7] text-[13px] text-[#1D1D1F] hover:bg-[#F5F5F7]"
             onClick={() =>
               exportPedidosExcel(
                 pedidos.map((p) => ({
@@ -279,42 +279,42 @@ function PedidosNuevoContent() {
               )
             }
           >
-            <FileSpreadsheet className="size-4" />
-            Exportar Excel
+            <FileSpreadsheet className="size-3.5" />
+            Exportar
           </Button>
         </div>
       </header>
 
-      <main className="space-y-8 px-4 py-6">
+      <main className="mx-auto max-w-2xl space-y-8 px-8 py-8">
         {/* Wizard */}
-        <section className="rounded-xl border border-blue-500/30 bg-white p-4 shadow-lg sm:p-6">
+        <section className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
           <div className="mb-6 flex gap-2">
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
                 className={cn(
-                  "h-1.5 flex-1 rounded-full transition-colors",
-                  step >= s ? "bg-blue-600" : "bg-muted"
+                  "h-1 flex-1 rounded-full transition-colors",
+                  step >= s ? "bg-[#007AFF]" : "bg-[#F5F5F7]"
                 )}
               />
             ))}
           </div>
 
-          {/* PASO 1 */}
+          {/* STEP 1 */}
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-blue-600">
+              <h2 className="text-[15px] font-semibold text-[#1D1D1F]">
                 Paso 1: Seleccionar Material
               </h2>
               <div className="space-y-2">
-                <Label>Proyecto</Label>
+                <Label className="text-[13px] text-[#86868B]">Proyecto</Label>
                 <Select
                   value={form.proyecto_id}
                   onValueChange={(v) =>
                     setForm((f) => ({ ...f, proyecto_id: v }))
                   }
                 >
-                  <SelectTrigger className="h-12 w-full border-blue-500/30">
+                  <SelectTrigger className="h-11 w-full rounded-xl border-[#D2D2D7]">
                     <SelectValue placeholder="Selecciona un proyecto" />
                   </SelectTrigger>
                   <SelectContent>
@@ -327,14 +327,14 @@ function PedidosNuevoContent() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Material</Label>
+                <Label className="text-[13px] text-[#86868B]">Material</Label>
                 <MaterialAutocomplete
                   value={form.item}
                   onChange={(v) => setForm((f) => ({ ...f, item: v }))}
                 />
               </div>
               <Button
-                className="mt-4 w-full bg-blue-600 text-white"
+                className="mt-4 w-full rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
                 disabled={!canNextStep1}
                 onClick={() => setStep(2)}
               >
@@ -344,14 +344,14 @@ function PedidosNuevoContent() {
             </div>
           )}
 
-          {/* PASO 2 */}
+          {/* STEP 2 */}
           {step === 2 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-blue-600">
+              <h2 className="text-[15px] font-semibold text-[#1D1D1F]">
                 Paso 2: Cantidad y Unidad
               </h2>
               <div className="space-y-2">
-                <Label>Cantidad</Label>
+                <Label className="text-[13px] text-[#86868B]">Cantidad</Label>
                 <Input
                   type="number"
                   min="0"
@@ -361,18 +361,18 @@ function PedidosNuevoContent() {
                     setForm((f) => ({ ...f, cantidad: e.target.value }))
                   }
                   placeholder="0"
-                  className="h-16 text-3xl text-center"
+                  className="h-16 rounded-xl border-[#D2D2D7] text-center text-3xl focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Unidad</Label>
+                <Label className="text-[13px] text-[#86868B]">Unidad</Label>
                 <Select
                   value={form.unidad}
                   onValueChange={(v) =>
                     setForm((f) => ({ ...f, unidad: v }))
                   }
                 >
-                  <SelectTrigger className="h-12 w-full border-blue-500/30">
+                  <SelectTrigger className="h-11 w-full rounded-xl border-[#D2D2D7]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -386,7 +386,7 @@ function PedidosNuevoContent() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Costo estimado (COP)</Label>
+                  <Label className="text-[13px] text-[#86868B]">Costo estimado (COP)</Label>
                   <Input
                     type="number"
                     min="0"
@@ -395,11 +395,11 @@ function PedidosNuevoContent() {
                       setForm((f) => ({ ...f, costo_estimado: e.target.value }))
                     }
                     placeholder="0"
-                    className="h-12"
+                    className="h-11 rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Presupuesto original (COP)</Label>
+                  <Label className="text-[13px] text-[#86868B]">Presupuesto original (COP)</Label>
                   <Input
                     type="number"
                     min="0"
@@ -411,20 +411,20 @@ function PedidosNuevoContent() {
                       }))
                     }
                     placeholder="0"
-                    className="h-12"
+                    className="h-11 rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                   />
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="border-blue-500/40"
+                  className="rounded-xl border-[#D2D2D7]"
                   onClick={() => setStep(1)}
                 >
                   Atrás
                 </Button>
                 <Button
-                  className="flex-1 bg-blue-600 text-white"
+                  className="flex-1 rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
                   disabled={!canNextStep2}
                   onClick={() => setStep(3)}
                 >
@@ -435,27 +435,27 @@ function PedidosNuevoContent() {
             </div>
           )}
 
-          {/* PASO 3 */}
+          {/* STEP 3 */}
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-blue-600">
+              <h2 className="text-[15px] font-semibold text-[#1D1D1F]">
                 Paso 3: Validación
               </h2>
 
-              {/* Resumen */}
-              <div className="rounded-lg border border-blue-500/20 bg-gray-50 p-4">
-                <p className="text-sm text-muted-foreground">
+              {/* Summary */}
+              <div className="rounded-xl border border-[#D2D2D7]/40 bg-[#F5F5F7]/50 p-4">
+                <p className="text-[13px] text-[#86868B]">
                   Presupuesto original: $
                   {presupuestoOriginal.toLocaleString("es-CO")}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[13px] text-[#86868B]">
                   Cantidad solicitada: $
                   {costoEstimado.toLocaleString("es-CO")}
                 </p>
                 {excedePresupuesto && (
-                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
-                    <AlertTriangle className="size-5 shrink-0 text-amber-400" />
-                    <p className="text-sm text-amber-400">
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#FF9500]/30 bg-[#FF9500]/10 p-3">
+                    <AlertTriangle className="size-4 shrink-0 text-[#FF9500]" />
+                    <p className="text-[13px] text-[#FF9500]">
                       La solicitud excede el 10% del presupuesto. Debes
                       justificar.
                     </p>
@@ -465,14 +465,14 @@ function PedidosNuevoContent() {
 
               {excedePresupuesto && (
                 <div className="space-y-2">
-                  <Label>Justificación (obligatorio)</Label>
+                  <Label className="text-[13px] text-[#86868B]">Justificación (obligatorio)</Label>
                   <textarea
                     value={form.justificacion}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, justificacion: e.target.value }))
                     }
                     placeholder="Explica por qué se excede el presupuesto..."
-                    className="min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="min-h-[80px] w-full rounded-xl border border-[#D2D2D7] px-4 py-2.5 text-[13px] text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
                     rows={3}
                   />
                 </div>
@@ -491,13 +491,13 @@ function PedidosNuevoContent() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="border-blue-500/40"
+                  className="rounded-xl border-[#D2D2D7]"
                   onClick={() => setStep(2)}
                 >
                   Atrás
                 </Button>
                 <Button
-                  className="flex-1 bg-blue-600 text-white disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5] disabled:opacity-50"
                   disabled={!canSubmit || submitting}
                   onClick={handleSubmit}
                 >
@@ -515,14 +515,14 @@ function PedidosNuevoContent() {
           )}
         </section>
 
-        {/* Lista de Pedidos Pendientes */}
+        {/* Orders list */}
         <section>
-          <h2 className="mb-4 text-lg font-semibold text-blue-600">
+          <h2 className="mb-4 text-[15px] font-semibold text-[#1D1D1F]">
             Pedidos
           </h2>
 
-          {/* Filtros */}
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
+          {/* Filters */}
+          <div className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl bg-[#F5F5F7] p-1">
             {[
               { value: "TODOS", label: "Todos" },
               { value: "PENDING", label: "Pendientes" },
@@ -534,10 +534,10 @@ function PedidosNuevoContent() {
                 key={f.value}
                 onClick={() => setEstadoFilter(f.value)}
                 className={cn(
-                  "shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                  "shrink-0 rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-all duration-200",
                   estadoFilter === f.value
-                    ? "border-blue-500 bg-blue-600/20 text-blue-600"
-                    : "border-white/20 text-muted-foreground hover:border-blue-500/40"
+                    ? "bg-white text-[#1D1D1F] shadow-sm"
+                    : "text-[#86868B] hover:text-[#1D1D1F]"
                 )}
               >
                 {f.label}
@@ -580,7 +580,7 @@ function PedidosNuevoContent() {
 
 export default function PedidosNuevoPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="size-12 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" /></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-white"><div className="size-8 animate-spin rounded-full border-2 border-[#007AFF] border-t-transparent" /></div>}>
       <PedidosNuevoContent />
     </Suspense>
   );

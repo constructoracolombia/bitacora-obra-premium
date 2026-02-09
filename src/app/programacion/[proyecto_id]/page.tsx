@@ -229,7 +229,7 @@ export default function ProgramacionPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-blue-600" />
+        <Loader2 className="size-12 animate-spin text-[#007AFF]" />
       </div>
     );
   }
@@ -284,7 +284,7 @@ export default function ProgramacionPage() {
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   view === "mensual"
-                    ? "bg-blue-100 text-blue-600"
+                    ? "bg-[#007AFF]/10 text-[#007AFF]"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -295,7 +295,7 @@ export default function ProgramacionPage() {
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   view === "semanal"
-                    ? "bg-blue-100 text-blue-600"
+                    ? "bg-[#007AFF]/10 text-[#007AFF]"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >

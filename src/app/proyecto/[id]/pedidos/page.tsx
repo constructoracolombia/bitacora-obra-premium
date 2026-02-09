@@ -234,7 +234,7 @@ export default function PedidosProyectoPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
-        <Loader2 className="size-12 animate-spin text-blue-600" />
+        <Loader2 className="size-12 animate-spin text-[#007AFF]" />
       </div>
     );
   }

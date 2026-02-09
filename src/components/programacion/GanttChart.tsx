@@ -120,7 +120,7 @@ export function GanttChart({
                   "shrink-0 border-r border-white/5 py-1 text-center text-xs",
                   h.isWeekend && "bg-white/5",
                   format(h.date, "yyyy-MM-dd") === format(today, "yyyy-MM-dd") &&
-                    "bg-blue-100"
+                    "bg-[#007AFF]/10"
                 )}
                 style={{ width: DAY_WIDTH }}
               >
@@ -152,7 +152,7 @@ export function GanttChart({
                 </span>
                 {activity.hito_critico && (
                   <span title="Hito crítico">
-                    <Diamond className="size-4 shrink-0 text-blue-600" />
+                    <Diamond className="size-4 shrink-0 text-[#007AFF]" />
                   </span>
                 )}
                 <span className="text-xs text-muted-foreground">
@@ -178,7 +178,7 @@ export function GanttChart({
                 {/* Progreso (overlay más oscuro) */}
                 {progress > 0 && (
                   <div
-                    className="absolute h-6 rounded-l-md bg-black/30"
+                    className="absolute h-6 rounded-l-md bg-[#007AFF]/30"
                     style={{
                       left: leftPx,
                       width: (widthPx * progress) / 100,
@@ -192,7 +192,7 @@ export function GanttChart({
                     style={{ left: leftPx + widthPx - DAY_WIDTH / 2 }}
                     title={`Hito crítico: ${format(end, "d MMM yyyy", { locale: es })}`}
                   >
-                    <Diamond className="size-5 text-blue-600 drop-shadow-lg" />
+                    <Diamond className="size-5 text-[#007AFF] drop-shadow-lg" />
                   </div>
                 )}
               </div>

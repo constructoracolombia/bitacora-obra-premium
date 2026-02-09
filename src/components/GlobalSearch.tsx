@@ -119,7 +119,7 @@ export function GlobalSearch() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] bg-[#1D1D1F]/40 backdrop-blur-sm"
       onClick={() => setOpen(false)}
     >
       <div
@@ -127,7 +127,7 @@ export function GlobalSearch() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-          <Search className="size-5 text-blue-600" />
+          <Search className="size-5 text-[#007AFF]" />
           <input
             type="text"
             value={query}
@@ -143,7 +143,7 @@ export function GlobalSearch() {
         <div className="mt-2 max-h-[60vh] overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="size-8 animate-spin text-blue-600" />
+              <Loader2 className="size-8 animate-spin text-[#007AFF]" />
             </div>
           ) : results.length > 0 ? (
             <div className="space-y-1 py-2">
@@ -155,9 +155,9 @@ export function GlobalSearch() {
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-gray-100"
                 >
                   {r.type === "proyecto" ? (
-                    <ClipboardList className="size-5 shrink-0 text-blue-600" />
+                    <ClipboardList className="size-5 shrink-0 text-[#007AFF]" />
                   ) : (
-                    <Package className="size-5 shrink-0 text-blue-600" />
+                    <Package className="size-5 shrink-0 text-[#007AFF]" />
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{r.title}</p>

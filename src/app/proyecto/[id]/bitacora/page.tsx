@@ -54,7 +54,7 @@ interface ProyectoInfo {
 }
 
 const CLIMA_OPTIONS = [
-  { value: "Soleado", label: "Soleado", icon: Sun, color: "text-amber-500" },
+  { value: "Soleado", label: "Soleado", icon: Sun, color: "text-[#FF9500]" },
   { value: "Nublado", label: "Nublado", icon: Cloud, color: "text-gray-500" },
   { value: "Lluvia", label: "Lluvia", icon: CloudRain, color: "text-blue-500" },
 ];
@@ -625,7 +625,7 @@ function NuevaEntradaModal({
                 {form.actividades.map((act, i) => (
                   <span
                     key={i}
-                    className="flex items-center gap-1 rounded-full bg-[#007AFF]/5 px-2.5 py-1 text-xs font-medium text-blue-700"
+                    className="flex items-center gap-1 rounded-full bg-[#007AFF]/5 px-2.5 py-1 text-xs font-medium text-[#007AFF]"
                   >
                     {act}
                     <button
