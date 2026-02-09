@@ -35,15 +35,15 @@ export default function ProgramacionIndexPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-blue-600" />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="size-8 animate-spin text-[#007AFF]" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
-      <h1 className="text-2xl font-bold text-[#2D3748]">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-white p-8">
+      <h1 className="text-2xl font-semibold tracking-tight text-[#1D1D1F]">
         Selecciona un proyecto
       </h1>
       <div className="grid w-full max-w-md gap-2">
@@ -51,18 +51,18 @@ export default function ProgramacionIndexPage() {
           <Link key={p.id} href={`/programacion/${p.id}`}>
             <Button
               variant="outline"
-              className="w-full justify-start border-gray-200 hover:bg-blue-50"
+              className="w-full justify-start rounded-xl border-[#D2D2D7] text-[#1D1D1F] hover:bg-[#F5F5F7]"
             >
-              <Calendar className="size-4" />
+              <Calendar className="size-4 text-[#007AFF]" />
               {p.cliente_nombre || "Sin nombre"}
             </Button>
           </Link>
         ))}
       </div>
       {projects.length === 0 && (
-        <p className="text-muted-foreground">No hay proyectos.</p>
+        <p className="text-[#86868B]">No hay proyectos.</p>
       )}
-      <Button variant="ghost" asChild>
+      <Button variant="ghost" className="text-[#86868B] hover:text-[#1D1D1F]" asChild>
         <Link href="/dashboard">Volver al dashboard</Link>
       </Button>
     </div>

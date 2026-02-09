@@ -16,10 +16,10 @@ const ESTADO_LABELS: Record<string, string> = {
 };
 
 const ESTADO_COLORS: Record<string, string> = {
-  PENDING: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  APPROVED: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  DELIVERED: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  CONSUMED: "bg-muted text-muted-foreground border-muted",
+  PENDING: "bg-[#FF9500]/10 text-[#FF9500] border-[#FF9500]/20",
+  APPROVED: "bg-[#34C759]/10 text-[#34C759] border-[#34C759]/20",
+  DELIVERED: "bg-[#007AFF]/10 text-[#007AFF] border-[#007AFF]/20",
+  CONSUMED: "bg-[#F5F5F7] text-[#86868B] border-[#D2D2D7]",
 };
 
 interface PedidoData {
@@ -77,67 +77,65 @@ export function SwipeableOrderCard({
 
   return (
     <div
-      className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+      className="relative overflow-hidden rounded-2xl border border-[#D2D2D7]/60 bg-white"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Acciones de fondo */}
       {showActions && (
         <>
           <div
             className={cn(
-              "absolute inset-y-0 left-0 flex w-24 items-center justify-center bg-emerald-500/30 transition-opacity",
+              "absolute inset-y-0 left-0 flex w-24 items-center justify-center bg-[#34C759]/10 transition-opacity",
               offset > 20 ? "opacity-100" : "opacity-0"
             )}
           >
-            <Check className="size-8 text-emerald-400" />
+            <Check className="size-7 text-[#34C759]" />
           </div>
           <div
             className={cn(
-              "absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-destructive/30 transition-opacity",
+              "absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-[#FF3B30]/10 transition-opacity",
               offset < -20 ? "opacity-100" : "opacity-0"
             )}
           >
-            <X className="size-8 text-destructive" />
+            <X className="size-7 text-[#FF3B30]" />
           </div>
         </>
       )}
 
-      {/* Contenido */}
       <div
         className="relative p-4 transition-transform"
         style={{ transform: `translateX(${offset}px)` }}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-foreground truncate">{pedido.item}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h3 className="text-[15px] font-semibold text-[#1D1D1F] truncate">{pedido.item}</h3>
+            <p className="mt-1 text-[13px] text-[#86868B]">
               {pedido.cantidad} {pedido.unidad ?? "und"}
               {pedido.costo_estimado != null && (
                 <> · ${Number(pedido.costo_estimado).toLocaleString("es-CO")}</>
               )}
             </p>
             {pedido.proyecto?.cliente_nombre && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-[12px] text-[#86868B]">
                 {pedido.proyecto.cliente_nombre}
               </p>
             )}
           </div>
           <span
             className={cn(
-              "shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium",
+              "shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
               ESTADO_COLORS[pedido.estado] ?? ESTADO_COLORS.PENDING
             )}
           >
             {ESTADO_LABELS[pedido.estado] ?? pedido.estado}
           </span>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-[12px] text-[#86868B]">
           {format(new Date(pedido.created_at), "d MMM yyyy, HH:mm", { locale: es })}
         </p>
         {showActions && (
-          <p className="mt-2 text-xs text-blue-600">
+          <p className="mt-2 text-[12px] text-[#007AFF]">
             Desliza para aprobar/rechazar
           </p>
         )}
@@ -145,7 +143,7 @@ export function SwipeableOrderCard({
           <Button
             size="sm"
             variant="outline"
-            className="mt-3 w-full border-blue-300 text-blue-600 hover:bg-blue-50"
+            className="mt-3 w-full rounded-xl border-[#D2D2D7] text-[#007AFF] hover:bg-[#007AFF]/5"
             asChild
           >
             <Link href={`/pedidos/${pedido.id}/actualizar-estado`}>

@@ -27,25 +27,25 @@ export function StatsCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md",
+        "flex flex-col gap-4 rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:shadow-sm",
         className
       )}
     >
       <div className="flex items-start justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <div className="flex size-10 items-center justify-center rounded-lg bg-blue-100">
-          <Icon className="size-5 text-blue-600" />
+        <p className="text-[13px] font-medium text-[#86868B]">{title}</p>
+        <div className="flex size-9 items-center justify-center rounded-xl bg-[#007AFF]/10">
+          <Icon className="size-[18px] text-[#007AFF]" />
         </div>
       </div>
       <div className="flex items-end justify-between gap-2">
-        <span className="text-2xl font-bold text-foreground sm:text-3xl">
+        <span className="text-2xl font-semibold tracking-tight text-[#1D1D1F] sm:text-3xl">
           {value}
         </span>
         {change != null && (
           <span
             className={cn(
-              "flex items-center gap-0.5 text-sm font-medium",
-              isPositive ? "text-emerald-400" : "text-destructive"
+              "flex items-center gap-0.5 text-[13px] font-medium",
+              isPositive ? "text-[#34C759]" : "text-[#FF3B30]"
             )}
           >
             {isPositive ? (
@@ -55,7 +55,7 @@ export function StatsCard({
             )}
             {Math.abs(change.value)}%
             {change.label && (
-              <span className="ml-0.5 text-muted-foreground">
+              <span className="ml-0.5 text-[#86868B]">
                 {change.label}
               </span>
             )}

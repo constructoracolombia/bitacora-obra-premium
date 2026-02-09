@@ -34,12 +34,12 @@ function getBarColor(activity: GanttActivity, today: Date): string {
   const daysLeft = differenceInDays(fin, today);
 
   if (isPast(fin) && activity.estado !== "COMPLETED") {
-    return "bg-destructive"; // Rojo: Retrasado
+    return "bg-[#FF3B30]"; // Retrasado
   }
   if (daysLeft <= 7 && daysLeft >= 0) {
-    return "bg-orange-500"; // Naranja: Próximo a vencerse
+    return "bg-[#FF9500]"; // Próximo a vencerse
   }
-  return "bg-blue-600"; // Azul: En tiempo
+  return "bg-[#007AFF]"; // En tiempo
 }
 
 export function GanttChart({
@@ -106,7 +106,7 @@ export function GanttChart({
       >
         {/* Header: fechas */}
         <div className="flex border-b border-gray-200">
-          <div className="flex w-[200px] shrink-0 items-center border-r border-gray-200 px-3 py-2 font-semibold text-[#2D3748]">
+          <div className="flex w-[200px] shrink-0 items-center border-r border-gray-200 px-3 py-2 font-semibold text-[#1D1D1F]">
             Actividad
           </div>
           <div

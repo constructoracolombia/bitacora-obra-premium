@@ -20,12 +20,12 @@ export function ImageLightbox({
 }: ImageLightboxProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] border-gray-200 bg-gray-900/95 p-0 overflow-hidden">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] border-none bg-[#1D1D1F]/95 p-0 overflow-hidden backdrop-blur-xl">
         <div className="relative flex items-center justify-center min-h-[70vh] p-4">
           <img
             src={src}
             alt={alt}
-            className="max-h-[90vh] w-auto object-contain rounded-lg shadow-2xl"
+            className="max-h-[90vh] w-auto object-contain rounded-xl"
           />
         </div>
       </DialogContent>

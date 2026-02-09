@@ -57,33 +57,33 @@ const ESTADO_CONFIG: Record<
 > = {
   PENDIENTE: {
     label: "Pendiente",
-    color: "text-amber-700",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
+    color: "text-[#FF9500]",
+    bg: "bg-[#FF9500]/10",
+    border: "border-[#FF9500]/20",
   },
   APROBADO: {
     label: "Aprobado",
-    color: "text-blue-700",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
+    color: "text-[#007AFF]",
+    bg: "bg-[#007AFF]/10",
+    border: "border-[#007AFF]/20",
   },
   EN_CAMINO: {
     label: "En Camino",
-    color: "text-purple-700",
-    bg: "bg-purple-50",
-    border: "border-purple-200",
+    color: "text-[#5856D6]",
+    bg: "bg-[#5856D6]/10",
+    border: "border-[#5856D6]/20",
   },
   ENTREGADO: {
     label: "Entregado",
-    color: "text-emerald-700",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
+    color: "text-[#34C759]",
+    bg: "bg-[#34C759]/10",
+    border: "border-[#34C759]/20",
   },
   CONSUMIDO: {
     label: "Consumido",
-    color: "text-gray-600",
-    bg: "bg-gray-50",
-    border: "border-gray-200",
+    color: "text-[#86868B]",
+    bg: "bg-[#F5F5F7]",
+    border: "border-[#D2D2D7]",
   },
 };
 
@@ -233,7 +233,7 @@ export default function PedidosProyectoPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="size-12 animate-spin text-blue-600" />
       </div>
     );
@@ -241,7 +241,7 @@ export default function PedidosProyectoPage() {
 
   if (!project) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8F9FA] p-6">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white p-6">
         <p className="text-gray-500">Proyecto no encontrado</p>
         <Button variant="outline" asChild>
           <Link href="/dashboard">Volver al dashboard</Link>
@@ -251,9 +251,9 @@ export default function PedidosProyectoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
+      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
@@ -262,14 +262,14 @@ export default function PedidosProyectoPage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-[#2D3748]">Pedidos de Material</h1>
+              <h1 className="text-xl font-bold text-[#1D1D1F]">Pedidos de Material</h1>
               <p className="text-sm text-gray-500">
                 {project.cliente_nombre || "Proyecto"}
               </p>
             </div>
           </div>
           <Button
-            className="bg-blue-600 text-white hover:bg-blue-700"
+            className="bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
             onClick={() => setModalOpen(true)}
           >
             <Plus className="size-4" />
@@ -307,8 +307,8 @@ export default function PedidosProyectoPage() {
               className={cn(
                 "shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
                 filter === f.value
-                  ? "border-blue-500 bg-blue-50 text-blue-600"
-                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                  ? "border-[#007AFF] bg-[#007AFF]/5 text-[#007AFF]"
+                  : "border-[#D2D2D7] bg-white text-[#86868B] hover:border-[#86868B]"
               )}
             >
               {f.label}
@@ -330,7 +330,7 @@ export default function PedidosProyectoPage() {
             </p>
             {pedidos.length === 0 && (
               <Button
-                className="bg-blue-600 text-white hover:bg-blue-700"
+                className="bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
                 onClick={() => setModalOpen(true)}
               >
                 <Plus className="size-4" />
@@ -349,13 +349,13 @@ export default function PedidosProyectoPage() {
               return (
                 <article
                   key={pedido.id}
-                  className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                  className="rounded-xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-4">
                     {/* Left: Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="truncate text-base font-semibold text-[#2D3748]">
+                        <h3 className="truncate text-base font-semibold text-[#1D1D1F]">
                           {pedido.item}
                         </h3>
                         <span
@@ -376,7 +376,7 @@ export default function PedidosProyectoPage() {
                           {pedido.cantidad} {pedido.unidad ?? "und"}
                         </span>
                         {pedido.costo_estimado != null && pedido.costo_estimado > 0 && (
-                          <span className="flex items-center gap-1 text-sm text-blue-600">
+                          <span className="flex items-center gap-1 text-sm text-[#007AFF]">
                             <DollarSign className="size-3.5" />
                             {formatCOP(pedido.costo_estimado)}
                           </span>
@@ -399,7 +399,7 @@ export default function PedidosProyectoPage() {
 
                       {pedido.costo_real != null && pedido.costo_real > 0 && (
                         <p className="mt-1 text-xs text-gray-500">
-                          Costo real: <span className="font-medium text-[#2D3748]">{formatCOP(pedido.costo_real)}</span>
+                          Costo real: <span className="font-medium text-[#1D1D1F]">{formatCOP(pedido.costo_real)}</span>
                         </p>
                       )}
                     </div>
@@ -410,11 +410,11 @@ export default function PedidosProyectoPage() {
                         size="sm"
                         variant="outline"
                         className={cn(
-                          "shrink-0 border-gray-200 text-sm font-medium",
-                          estadoNorm === "PENDIENTE" && "text-blue-600 hover:bg-blue-50",
-                          estadoNorm === "APROBADO" && "text-purple-600 hover:bg-purple-50",
-                          estadoNorm === "EN_CAMINO" && "text-emerald-600 hover:bg-emerald-50",
-                          estadoNorm === "ENTREGADO" && "text-gray-600 hover:bg-gray-50"
+                          "shrink-0 border-[#D2D2D7] text-sm font-medium",
+                          estadoNorm === "PENDIENTE" && "text-[#007AFF] hover:bg-[#007AFF]/5",
+                          estadoNorm === "APROBADO" && "text-[#5856D6] hover:bg-[#5856D6]/5",
+                          estadoNorm === "EN_CAMINO" && "text-[#34C759] hover:bg-[#34C759]/5",
+                          estadoNorm === "ENTREGADO" && "text-[#86868B] hover:bg-[#F5F5F7]"
                         )}
                         onClick={() =>
                           handleAdvanceEstado(pedido.id, action.nextEstadoDB)
@@ -540,29 +540,29 @@ function NuevoPedidoModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-gray-200 bg-white sm:max-w-md">
+      <DialogContent className="border-[#D2D2D7]/60 bg-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#2D3748]">Nuevo Pedido de Material</DialogTitle>
+          <DialogTitle className="text-[#1D1D1F]">Nuevo Pedido de Material</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Material */}
           <div className="space-y-2">
-            <Label className="text-[#2D3748]">
+            <Label className="text-[#1D1D1F]">
               Material / Item <span className="text-red-500">*</span>
             </Label>
             <Input
               value={form.item}
               onChange={(e) => setForm((f) => ({ ...f, item: e.target.value }))}
               placeholder="Ej: Cemento Argos x 50kg"
-              className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
             />
           </div>
 
           {/* Cantidad + Unidad */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-[#2D3748]">
+              <Label className="text-[#1D1D1F]">
                 Cantidad <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -574,17 +574,17 @@ function NuevoPedidoModal({
                   setForm((f) => ({ ...f, cantidad: e.target.value }))
                 }
                 placeholder="0"
-                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                className="border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[#2D3748]">Unidad</Label>
+              <Label className="text-[#1D1D1F]">Unidad</Label>
               <select
                 value={form.unidad}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, unidad: e.target.value }))
                 }
-                className="h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="h-10 w-full rounded-md border border-[#D2D2D7] bg-white px-3 text-sm focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
               >
                 {UNIDADES.map((u) => (
                   <option key={u.value} value={u.value}>
@@ -597,7 +597,7 @@ function NuevoPedidoModal({
 
           {/* Costo estimado */}
           <div className="space-y-2">
-            <Label className="text-[#2D3748]">Costo estimado (COP)</Label>
+            <Label className="text-[#1D1D1F]">Costo estimado (COP)</Label>
             <Input
               value={form.costo_estimado}
               onChange={(e) =>
@@ -607,13 +607,13 @@ function NuevoPedidoModal({
                 }))
               }
               placeholder="$ 0"
-              className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
             />
           </div>
 
           {/* Notas */}
           <div className="space-y-2">
-            <Label className="text-[#2D3748]">Notas</Label>
+            <Label className="text-[#1D1D1F]">Notas</Label>
             <textarea
               value={form.notas}
               onChange={(e) =>
@@ -621,26 +621,26 @@ function NuevoPedidoModal({
               }
               placeholder="Observaciones, proveedor preferido, urgencia..."
               rows={3}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-[#D2D2D7] px-3 py-2 text-sm placeholder:text-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
             />
           </div>
 
           {/* Solicitado por */}
           <div className="space-y-2">
-            <Label className="text-[#2D3748]">Solicitado por</Label>
+            <Label className="text-[#1D1D1F]">Solicitado por</Label>
             <Input
               value={form.solicitado_por}
               onChange={(e) =>
                 setForm((f) => ({ ...f, solicitado_por: e.target.value }))
               }
               placeholder="Nombre del solicitante"
-              className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
             />
           </div>
 
           {/* Error */}
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="rounded-lg bg-[#FF3B30]/5 px-3 py-2 text-sm text-[#FF3B30]">
               {error}
             </p>
           )}
@@ -657,7 +657,7 @@ function NuevoPedidoModal({
             <Button
               type="submit"
               disabled={saving}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
             >
               {saving ? (
                 <Loader2 className="size-4 animate-spin" />

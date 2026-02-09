@@ -330,7 +330,7 @@ export default function ProgramacionPage() {
         {/* Gráfico Gantt */}
         <div className="min-w-0 flex-1" ref={ganttRef}>
           <div className="mb-4 flex items-center justify-between gap-2">
-            <h2 className="font-semibold text-[#2D3748]">
+            <h2 className="font-semibold text-[#1D1D1F]">
               Cronograma
             </h2>
             <div className="flex gap-2">

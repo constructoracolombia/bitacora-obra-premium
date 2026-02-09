@@ -1,51 +1,54 @@
 @import "tailwindcss";
 
 /* ============================================
-   Tema Profesional Limpio
+   Apple-Inspired Minimal Design System
    Bitácora Obra Premium
    ============================================ */
 
 :root {
-  --background: #F8F9FA;
+  --background: #FFFFFF;
+  --background-secondary: #F8F9FA;
   --card: #FFFFFF;
   --sidebar: #1A1D29;
-  --primary: #3B82F6;
-  --success: #10B981;
-  --warning: #F59E0B;
-  --text: #2D3748;
+  --primary: #007AFF;
+  --success: #34C759;
+  --warning: #FF9500;
+  --destructive: #FF3B30;
+  --text: #1D1D1F;
+  --text-secondary: #86868B;
+  --border: #D2D2D7;
 
-  /* Variables extendidas (compatibilidad shadcn) */
-  --radius: 0.5rem;
+  /* shadcn compatibility */
+  --radius: 0.75rem;
   --primary-foreground: #ffffff;
-  --foreground: #2D3748;
-  --card-foreground: #2D3748;
+  --foreground: #1D1D1F;
+  --card-foreground: #1D1D1F;
   --popover: #FFFFFF;
-  --popover-foreground: #2D3748;
-  --secondary: #F1F5F9;
-  --secondary-foreground: #2D3748;
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-  --accent: #EFF6FF;
-  --accent-foreground: #1D4ED8;
-  --destructive: #EF4444;
+  --popover-foreground: #1D1D1F;
+  --secondary: #F5F5F7;
+  --secondary-foreground: #1D1D1F;
+  --muted: #F5F5F7;
+  --muted-foreground: #86868B;
+  --accent: #F5F5F7;
+  --accent-foreground: #007AFF;
   --destructive-foreground: #ffffff;
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #3B82F6;
-  --chart-1: #3B82F6;
-  --chart-2: #10B981;
-  --chart-3: #F59E0B;
-  --chart-4: #6366F1;
-  --chart-5: #EC4899;
-  --sidebar-foreground: #E2E8F0;
-  --sidebar-primary: #3B82F6;
+  --border: #D2D2D7;
+  --input: #D2D2D7;
+  --ring: #007AFF;
+  --chart-1: #007AFF;
+  --chart-2: #34C759;
+  --chart-3: #FF9500;
+  --chart-4: #5856D6;
+  --chart-5: #FF2D55;
+  --sidebar-foreground: #E5E5EA;
+  --sidebar-primary: #007AFF;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(59, 130, 246, 0.1);
+  --sidebar-accent: rgba(0, 122, 255, 0.08);
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2D3748;
-  --sidebar-ring: #3B82F6;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #007AFF;
 
-  /* Transiciones */
+  /* Transitions */
   --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
   --transition-slow: 300ms ease;
@@ -97,14 +100,15 @@
    ============================================ */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
-  transition: background-color var(--transition-base), color var(--transition-base);
+  background: #FFFFFF;
+  color: #1D1D1F;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ============================================
-   Utilidades
+   Utilities
    ============================================ */
 
 @layer utilities {
@@ -124,8 +128,8 @@ body {
     transition: transform var(--transition-base), box-shadow var(--transition-base);
   }
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   }
 
   .animate-fade-in {
@@ -156,30 +160,30 @@ body {
 }
 
 /* ============================================
-   Scrollbars
+   Scrollbars (subtle, Apple-like)
    ============================================ */
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #94A3B8 #E2E8F0;
+  scrollbar-color: #C7C7CC transparent;
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #E2E8F0;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #94A3B8;
-  border-radius: 4px;
+  background: #C7C7CC;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748B;
+  background: #AEAEB2;
 }
 
 .scrollbar-card::-webkit-scrollbar-track {
@@ -187,5 +191,5 @@ body {
 }
 
 .scrollbar-card {
-  scrollbar-color: #94A3B8 var(--card);
+  scrollbar-color: #C7C7CC var(--card);
 }

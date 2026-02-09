@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Providers } from "@/components/Providers";
@@ -24,31 +23,15 @@ export const metadata: Metadata = {
     template: "%s | Bitácora Obra Premium",
   },
   description:
-    "Sistema profesional de bitácora de obra para gestión de proyectos de construcción. Control de avances, pedidos de material, programación Gantt y documentación.",
-  keywords: [
-    "bitácora de obra",
-    "gestión de construcción",
-    "proyectos de obra",
-    "control de avances",
-    "pedidos de material",
-    "programación Gantt",
-  ],
+    "Sistema profesional de bitácora de obra para gestión de proyectos de construcción.",
   authors: [{ name: "Bitácora Obra Premium" }],
   creator: "Bitácora Obra Premium",
-  openGraph: {
-    type: "website",
-    locale: "es_ES",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#3B82F6",
+  themeColor: "#007AFF",
 };
 
 export default function RootLayout({
@@ -60,7 +43,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          <div className="flex min-h-screen bg-[#F8F9FA]">
+          <div className="flex min-h-screen bg-white">
             <Sidebar />
             <main className="flex-1 overflow-auto transition-smooth">
               {children}

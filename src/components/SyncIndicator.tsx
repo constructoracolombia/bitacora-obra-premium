@@ -11,12 +11,12 @@ export function SyncIndicator({ className }: SyncIndicatorProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700",
+        "inline-flex items-center gap-1.5 rounded-full border border-[#34C759]/20 bg-[#34C759]/5 px-2.5 py-1 text-[11px] font-medium text-[#34C759]",
         className
       )}
     >
-      <Check className="size-3.5 text-emerald-600" strokeWidth={2.5} />
-      Sincronizado con Finanzas
+      <Check className="size-3.5" strokeWidth={2.5} />
+      Sincronizado
     </span>
   );
 }

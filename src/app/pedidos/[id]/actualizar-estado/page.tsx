@@ -32,8 +32,8 @@ interface PedidoData {
   notas_consumo: string | null;
 }
 
-const DIFERENCIA_ALERTA = 10; // %
-const SOBRECOSTO_WARNING = 1.15; // 15%
+const DIFERENCIA_ALERTA = 10;
+const SOBRECOSTO_WARNING = 1.15;
 
 export default function ActualizarEstadoPage() {
   const params = useParams();
@@ -191,17 +191,17 @@ export default function ActualizarEstadoPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-12 animate-spin text-blue-600" />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="size-8 animate-spin text-[#007AFF]" />
       </div>
     );
   }
 
   if (!pedido) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-        <p className="text-muted-foreground">Pedido no encontrado</p>
-        <Button variant="outline" asChild>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white p-6">
+        <p className="text-[#86868B]">Pedido no encontrado</p>
+        <Button variant="outline" className="rounded-xl border-[#D2D2D7]" asChild>
           <Link href="/pedidos/nuevo">Volver a pedidos</Link>
         </Button>
       </div>
@@ -210,26 +210,26 @@ export default function ActualizarEstadoPage() {
 
   if (pedido.estado === "CONSUMED") {
     return (
-      <div className="min-h-screen p-6">
+      <div className="min-h-screen bg-white p-8">
         <div className="mx-auto max-w-lg">
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="ghost" size="icon" className="size-8 text-[#86868B] hover:bg-[#F5F5F7]" asChild>
             <Link href="/pedidos/nuevo">
-              <ArrowLeft className="size-5" />
+              <ArrowLeft className="size-4" />
             </Link>
           </Button>
-          <div className="mt-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-2 text-emerald-400">
-              <CheckCircle2 className="size-6" />
-              <h2 className="text-lg font-semibold">Pedido ya consumido</h2>
+          <div className="mt-4 rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+            <div className="flex items-center gap-2 text-[#34C759]">
+              <CheckCircle2 className="size-5" />
+              <h2 className="text-[15px] font-semibold">Pedido ya consumido</h2>
             </div>
-            <p className="mt-2 text-muted-foreground">
+            <p className="mt-2 text-[13px] text-[#86868B]">
               Este pedido fue marcado como consumido el{" "}
               {pedido.fecha_consumo
                 ? format(new Date(pedido.fecha_consumo), "d MMM yyyy", { locale: es })
                 : "—"}
               .
             </p>
-            <Button variant="outline" className="mt-4" asChild>
+            <Button variant="outline" className="mt-4 rounded-xl border-[#D2D2D7]" asChild>
               <Link href="/pedidos/nuevo">Volver a pedidos</Link>
             </Button>
           </div>
@@ -240,11 +240,11 @@ export default function ActualizarEstadoPage() {
 
   if (pedido.estado !== "DELIVERED") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-        <p className="text-muted-foreground">
-          Este pedido debe estar en estado "Entregado" para marcarlo como consumido.
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white p-6">
+        <p className="text-[#86868B]">
+          Este pedido debe estar en estado &quot;Entregado&quot; para marcarlo como consumido.
         </p>
-        <Button variant="outline" asChild>
+        <Button variant="outline" className="rounded-xl border-[#D2D2D7]" asChild>
           <Link href="/pedidos/nuevo">Volver a pedidos</Link>
         </Button>
       </div>
@@ -252,35 +252,35 @@ export default function ActualizarEstadoPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6">
+    <div className="min-h-screen bg-white p-8">
       <div className="mx-auto max-w-lg">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" className="size-8 text-[#86868B] hover:bg-[#F5F5F7]" asChild>
           <Link href="/pedidos/nuevo">
-            <ArrowLeft className="size-5" />
+            <ArrowLeft className="size-4" />
           </Link>
         </Button>
 
-        <div className="mt-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h1 className="text-xl font-bold text-[#2D3748]">
+        <div className="mt-4 rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+          <h1 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">
             Marcar como Consumido
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-[13px] text-[#86868B]">
             Registra los datos reales de recepción del pedido.
           </p>
 
           {success ? (
             <div className="mt-6 space-y-4">
-              <div className="flex items-center gap-2 rounded-lg bg-emerald-500/20 p-4 text-emerald-400">
-                <CheckCircle2 className="size-6 shrink-0" />
-                <span className="font-medium">Pedido marcado como consumido</span>
+              <div className="flex items-center gap-2 rounded-xl bg-[#34C759]/10 p-4 text-[#34C759]">
+                <CheckCircle2 className="size-5 shrink-0" />
+                <span className="text-[13px] font-medium">Pedido marcado como consumido</span>
               </div>
               {hayAlertaDiferencia && (
                 <div
                   className={cn(
-                    "rounded-lg border p-4",
+                    "rounded-xl border p-4 text-[13px]",
                     diferenciaPct > 0
-                      ? "border-amber-500/40 bg-amber-500/10 text-amber-400"
-                      : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                      ? "border-[#FF9500]/30 bg-[#FF9500]/10 text-[#FF9500]"
+                      : "border-[#34C759]/30 bg-[#34C759]/10 text-[#34C759]"
                   )}
                 >
                   <span className="font-medium">
@@ -288,47 +288,47 @@ export default function ActualizarEstadoPage() {
                     {diferenciaPct.toFixed(1)}%
                   </span>
                   {diferenciaPct > DIFERENCIA_ALERTA && (
-                    <span className="ml-2 rounded-full bg-destructive/20 px-2 py-0.5 text-xs font-medium text-destructive">
+                    <span className="ml-2 rounded-full bg-[#FF3B30]/10 px-2 py-0.5 text-[11px] font-medium text-[#FF3B30]">
                       Alerta
                     </span>
                   )}
                 </div>
               )}
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="rounded-xl border-[#D2D2D7]" asChild>
                 <Link href="/pedidos/nuevo">Volver a pedidos</Link>
               </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-              {/* Datos de solo lectura */}
-              <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <h3 className="text-sm font-medium text-[#2D3748]">
+              {/* Read-only data */}
+              <div className="space-y-3 rounded-xl border border-[#D2D2D7]/40 bg-[#F5F5F7]/50 p-4">
+                <h3 className="text-[13px] font-medium text-[#1D1D1F]">
                   Datos del pedido
                 </h3>
-                <div className="grid gap-2 text-sm">
+                <div className="grid gap-2 text-[13px]">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Item</span>
-                    <span className="font-medium">{pedido.item}</span>
+                    <span className="text-[#86868B]">Item</span>
+                    <span className="font-medium text-[#1D1D1F]">{pedido.item}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cantidad solicitada</span>
-                    <span className="font-medium">
+                    <span className="text-[#86868B]">Cantidad solicitada</span>
+                    <span className="font-medium text-[#1D1D1F]">
                       {pedido.cantidad} {pedido.unidad ?? "und"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Costo estimado</span>
-                    <span className="font-medium">
+                    <span className="text-[#86868B]">Costo estimado</span>
+                    <span className="font-medium text-[#1D1D1F]">
                       ${(pedido.costo_estimado ?? 0).toLocaleString("es-CO")} COP
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Campos editables */}
+              {/* Editable fields */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Cantidad real recibida *</Label>
+                  <Label className="text-[13px] text-[#86868B]">Cantidad real recibida *</Label>
                   <Input
                     type="number"
                     min="0.01"
@@ -338,12 +338,12 @@ export default function ActualizarEstadoPage() {
                       setForm((f) => ({ ...f, cantidad_real: e.target.value }))
                     }
                     placeholder={String(pedido.cantidad)}
-                    className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/10"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Costo real pagado (COP) *</Label>
+                  <Label className="text-[13px] text-[#86868B]">Costo real pagado (COP) *</Label>
                   <Input
                     type="text"
                     inputMode="numeric"
@@ -357,39 +357,36 @@ export default function ActualizarEstadoPage() {
                       setForm((f) => ({ ...f, costo_real: v }));
                     }}
                     placeholder="0"
-                    className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/10"
                     required
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Formato moneda COP (ej: 1.500.000)
-                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Fecha de recepción *</Label>
+                  <Label className="text-[13px] text-[#86868B]">Fecha de recepción *</Label>
                   <Input
                     type="date"
                     value={form.fecha_recepcion}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, fecha_recepcion: e.target.value }))
                     }
-                    className="h-12 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/10"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Notas adicionales (opcional)</Label>
+                  <Label className="text-[13px] text-[#86868B]">Notas adicionales (opcional)</Label>
                   <textarea
                     value={form.notas}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, notas: e.target.value }))
                     }
                     placeholder="Observaciones sobre la recepción..."
-                    className="min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="min-h-[80px] w-full rounded-xl border border-[#D2D2D7] px-4 py-2.5 text-[13px] text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Factura / Remisión (opcional)</Label>
+                  <Label className="text-[13px] text-[#86868B]">Factura / Remisión (opcional)</Label>
                   <input
                     ref={inputFacturaRef}
                     type="file"
@@ -400,10 +397,10 @@ export default function ActualizarEstadoPage() {
                   <button
                     type="button"
                     onClick={() => inputFacturaRef.current?.click()}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-4 transition-colors hover:border-blue-400 hover:bg-blue-50"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#D2D2D7] bg-[#F5F5F7]/50 py-4 transition-all hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5"
                   >
-                    <Upload className="size-5 text-blue-600" />
-                    <span className="text-sm text-muted-foreground">
+                    <Upload className="size-5 text-[#86868B]" />
+                    <span className="text-[13px] text-[#86868B]">
                       {facturaFile ? facturaFile.name : "PDF o imagen"}
                     </span>
                   </button>
@@ -412,22 +409,22 @@ export default function ActualizarEstadoPage() {
 
               {/* Warnings */}
               {haySobrecosto && (
-                <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-amber-400">
-                  <AlertTriangle className="size-5 shrink-0" />
-                  <p className="text-sm">
+                <div className="flex items-start gap-2 rounded-xl border border-[#FF9500]/30 bg-[#FF9500]/10 p-4">
+                  <AlertTriangle className="size-5 shrink-0 text-[#FF9500]" />
+                  <p className="text-[13px] text-[#FF9500]">
                     El costo real supera el 15% del costo estimado. Revisa los datos.
                   </p>
                 </div>
               )}
               {error && (
-                <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-destructive">
+                <div className="rounded-xl border border-[#FF3B30]/30 bg-[#FF3B30]/10 p-4 text-[13px] text-[#FF3B30]">
                   {error}
                 </div>
               )}
 
               <Button
                 type="submit"
-                className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                className="w-full rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
                 disabled={submitting}
               >
                 {submitting ? (

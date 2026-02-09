@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Building2, Info } from "lucide-react";
+import { Loader2, Building2 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { ProjectCard, type ProjectCardData, type ProjectStatus } from "@/components/dashboard/ProjectCard";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,6 @@ interface ProyectoMaestroRow {
   created_at: string;
 }
 
-/** Mapea el valor de estado de la BD a los estados normalizados de la UI */
 function mapEstado(estado: string | null): ProjectStatus {
   if (!estado) return "ACTIVO";
   const u = estado.toUpperCase();
@@ -102,60 +101,50 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F8F9FA]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
-        <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-bold text-[#2D3748]">Centro de Operaciones</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex rounded-lg border border-gray-200 bg-white p-1">
-              {filters.map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => setFilter(f.value)}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-sm font-medium transition-smooth",
-                    filter === f.value
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  )}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-8 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#1D1D1F]">Proyectos</h1>
+          <div className="flex items-center gap-1 rounded-xl bg-[#F5F5F7] p-1">
+            {filters.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setFilter(f.value)}
+                className={cn(
+                  "rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all duration-200",
+                  filter === f.value
+                    ? "bg-white text-[#1D1D1F] shadow-sm"
+                    : "text-[#86868B] hover:text-[#1D1D1F]"
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
         </div>
       </header>
 
-      {/* Info banner */}
-      <div className="border-b border-blue-100 bg-blue-50 px-6 py-2.5">
-        <div className="flex items-center gap-2 text-sm text-blue-700">
-          <Info className="size-4 shrink-0" />
-          <span>Los proyectos se gestionan desde la <strong>App de Finanzas</strong>. Aquí se sincronizan automáticamente.</span>
-        </div>
-      </div>
-
-      {/* Grid de Proyectos */}
-      <main className="flex-1 p-6">
+      {/* Content */}
+      <main className="mx-auto max-w-7xl px-8 py-8">
         {loading ? (
-          <div className="flex min-h-[320px] items-center justify-center">
-            <Loader2 className="size-10 animate-spin text-blue-600" />
+          <div className="flex min-h-[400px] items-center justify-center">
+            <Loader2 className="size-8 animate-spin text-[#007AFF]" />
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center">
-            <Building2 className="size-12 text-gray-400" />
-            <p className="text-gray-600">
+          <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-center">
+            <Building2 className="size-12 text-[#D2D2D7]" />
+            <p className="text-[15px] text-[#1D1D1F]">
               {projects.length === 0
-                ? "No hay proyectos disponibles."
-                : "No hay proyectos con el filtro seleccionado."}
+                ? "No hay proyectos disponibles"
+                : "Sin resultados para este filtro"}
             </p>
-            <p className="text-sm text-gray-500">
-              Los proyectos se crean y editan desde la App de Finanzas
+            <p className="text-sm text-[#86868B]">
+              Los proyectos se gestionan desde la App de Finanzas
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProjects.map((project) => (
               <Link key={project.id} href={`/proyecto/${project.id}`}>
                 <ProjectCard project={project} />

@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import { AlertTriangle, Camera, Loader2, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { getSupabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -62,15 +61,14 @@ export function FotoEvidenciaInput({
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-2">
+      <Label className="flex items-center gap-2 text-[13px]">
         <Camera className="size-4" />
         Fotos de evidencia (obligatorio para items &gt;500k COP)
       </Label>
-      <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3">
-        <AlertTriangle className="size-5 shrink-0 text-destructive" />
-        <p className="text-sm text-destructive">
-          Este ítem supera $500.000 COP. Debes subir al menos una foto de
-          evidencia.
+      <div className="flex items-center gap-2 rounded-xl border border-[#FF3B30]/20 bg-[#FF3B30]/5 p-3">
+        <AlertTriangle className="size-4 shrink-0 text-[#FF3B30]" />
+        <p className="text-[12px] text-[#FF3B30]">
+          Este ítem supera $500.000 COP. Debes subir al menos una foto de evidencia.
         </p>
       </div>
       <input
@@ -85,7 +83,7 @@ export function FotoEvidenciaInput({
         {fotos.map((url, idx) => (
           <div
             key={url}
-            className="relative aspect-square w-16 overflow-hidden rounded-lg border border-gray-200 bg-gray-100"
+            className="relative aspect-square w-16 overflow-hidden rounded-xl border border-[#D2D2D7]/60 bg-[#F5F5F7]"
           >
             <img
               src={url}
@@ -95,9 +93,9 @@ export function FotoEvidenciaInput({
             <button
               type="button"
               onClick={() => removeFoto(idx)}
-              className="absolute right-1 top-1 rounded-full bg-black/70 p-0.5 text-destructive hover:bg-black/90"
+              className="absolute right-1 top-1 rounded-full bg-[#1D1D1F]/60 p-0.5 backdrop-blur-sm hover:bg-[#1D1D1F]/80"
             >
-              <X className="size-3" />
+              <X className="size-3 text-white" />
             </button>
           </div>
         ))}
@@ -106,24 +104,23 @@ export function FotoEvidenciaInput({
           onClick={() => inputRef.current?.click()}
           disabled={uploading || !proyectoId}
           className={cn(
-            "flex aspect-square w-16 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:border-blue-400 hover:bg-blue-50",
+            "flex aspect-square w-16 items-center justify-center rounded-xl border-2 border-dashed border-[#D2D2D7] bg-[#F5F5F7]/50 transition-all hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5",
             (uploading || !proyectoId) && "opacity-50"
           )}
         >
           {uploading ? (
-            <Loader2 className="size-6 animate-spin text-blue-600" />
+            <Loader2 className="size-5 animate-spin text-[#007AFF]" />
           ) : (
-            <Camera className="size-6 text-blue-600" />
+            <Camera className="size-5 text-[#86868B]" />
           )}
         </button>
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-[12px] text-[#FF3B30]">{error}</p>}
       {fotos.length > 0 && (
-        <p className="text-sm text-emerald-400">
-          ✓ {fotos.length} foto(s) subida(s)
+        <p className="text-[12px] text-[#34C759]">
+          {fotos.length} foto(s) subida(s)
         </p>
       )}
     </div>
   );
 }
-

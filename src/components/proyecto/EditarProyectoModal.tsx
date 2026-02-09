@@ -1,54 +1,35 @@
 "use client";
 
 import { Building2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 interface EditarProyectoModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  proyectoId: string;
-  datosIniciales: {
-    cliente_nombre: string | null;
-    direccion: string | null;
-    presupuesto_total: number | null;
-    fecha_inicio: string | null;
-    fecha_entrega_estimada: string | null;
-    margen_objetivo: number | null;
-    residente_asignado: string | null;
-    estado: string | null;
-  };
-  onSuccess: () => void;
 }
 
-export function EditarProyectoModal({
-  open,
-  onOpenChange,
-}: EditarProyectoModalProps) {
+export function EditarProyectoModal({ open, onOpenChange }: EditarProyectoModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-gray-200 bg-white sm:max-w-md">
+      <DialogContent className="border-[#D2D2D7]/60 bg-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#2D3748]">Editar Proyecto</DialogTitle>
+          <DialogTitle className="text-[15px] font-semibold text-[#1D1D1F]">Editar Proyecto</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4 py-6 text-center">
-          <Building2 className="size-12 text-amber-500" />
-          <p className="text-gray-700">
+          <div className="flex size-16 items-center justify-center rounded-2xl bg-[#FF9500]/10">
+            <Building2 className="size-8 text-[#FF9500]" />
+          </div>
+          <p className="text-[15px] text-[#1D1D1F]">
             Los proyectos se gestionan desde <strong>Finanzas</strong>.
           </p>
-          <p className="text-sm text-gray-500">
-            Para editar los datos del proyecto (cliente, presupuesto, fechas, estado),
-            utiliza la aplicación de Finanzas. Los cambios se reflejarán aquí automáticamente.
+          <p className="text-[13px] text-[#86868B]">
+            Para editar los datos del proyecto, utiliza la aplicación de Finanzas. Los cambios se reflejarán aquí automáticamente.
           </p>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="mt-2 border-gray-200"
+            className="mt-2 rounded-xl border-[#D2D2D7]"
           >
             Entendido
           </Button>

@@ -155,15 +155,15 @@ export default function BitacoraProyectoPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
-        <Loader2 className="size-12 animate-spin text-blue-600" />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="size-12 animate-spin text-[#007AFF]" />
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8F9FA] p-6">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white p-6">
         <p className="text-gray-500">Proyecto no encontrado</p>
         <Button variant="outline" asChild>
           <Link href="/dashboard">Volver al dashboard</Link>
@@ -173,9 +173,9 @@ export default function BitacoraProyectoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
+      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
@@ -184,14 +184,14 @@ export default function BitacoraProyectoPage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-[#2D3748]">Bitácora Diaria</h1>
+              <h1 className="text-xl font-bold text-[#1D1D1F]">Bitácora Diaria</h1>
               <p className="text-sm text-gray-500">
                 {project.cliente_nombre || "Proyecto"}
               </p>
             </div>
           </div>
           <Button
-            className="bg-blue-600 text-white hover:bg-blue-700"
+            className="bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
             onClick={() => setModalOpen(true)}
           >
             <Plus className="size-4" />
@@ -210,7 +210,7 @@ export default function BitacoraProyectoPage() {
               Registra la primera entrada del día para comenzar
             </p>
             <Button
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
               onClick={() => setModalOpen(true)}
             >
               <Plus className="size-4" />
@@ -220,22 +220,22 @@ export default function BitacoraProyectoPage() {
         ) : (
           <div className="relative">
             {/* Línea azul vertical */}
-            <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-blue-200" />
+            <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-[#007AFF]/20" />
 
             <div className="space-y-6">
               {entries.map((entry) => (
                 <div key={entry.id} className="relative flex gap-5">
                   {/* Punto del timeline */}
-                  <div className="relative z-10 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-blue-500 bg-white">
-                    <div className="h-3 w-3 rounded-full bg-blue-500" />
+                  <div className="relative z-10 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[#007AFF] bg-white">
+                    <div className="h-3 w-3 rounded-full bg-[#007AFF]" />
                   </div>
 
                   {/* Card */}
-                  <div className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+                  <div className="min-w-0 flex-1 rounded-xl border border-[#D2D2D7] bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                     {/* Fecha + clima */}
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-base font-semibold capitalize text-[#2D3748]">
+                        <h3 className="text-base font-semibold capitalize text-[#1D1D1F]">
                           {formatFechaTitulo(entry.fecha)}
                         </h3>
                         <p className="mt-0.5 text-xs text-gray-400">
@@ -243,7 +243,7 @@ export default function BitacoraProyectoPage() {
                         </p>
                       </div>
                       {entry.clima && (
-                        <span className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
+                        <span className="flex items-center gap-1.5 rounded-full border border-[#D2D2D7] bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
                           {getClimaIcon(entry.clima)}
                           {entry.clima}
                         </span>
@@ -263,7 +263,7 @@ export default function BitacoraProyectoPage() {
                         {entry.actividades_realizadas.map((act, i) => (
                           <span
                             key={i}
-                            className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700"
+                            className="rounded-full bg-[#007AFF]/10 px-2.5 py-0.5 text-xs font-medium text-[#007AFF]"
                           >
                             {act}
                           </span>
@@ -301,7 +301,7 @@ export default function BitacoraProyectoPage() {
                             key={i}
                             type="button"
                             onClick={() => setLightbox({ open: true, src: url })}
-                            className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-100"
+                            className="group relative aspect-square overflow-hidden rounded-lg border border-[#D2D2D7] bg-gray-100"
                           >
                             <img
                               src={url}
@@ -508,29 +508,29 @@ function NuevaEntradaModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-gray-200 bg-white sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-[#D2D2D7] bg-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-[#2D3748]">Nueva Entrada de Bitácora</DialogTitle>
+          <DialogTitle className="text-[#1D1D1F]">Nueva Entrada de Bitácora</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Fecha */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-[#2D3748]">
-              <Calendar className="size-4 text-blue-600" />
+            <Label className="flex items-center gap-2 text-[#1D1D1F]">
+              <Calendar className="size-4 text-[#007AFF]" />
               Fecha
             </Label>
             <Input
               type="date"
               value={form.fecha}
               onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
-              className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
             />
           </div>
 
           {/* Novedades */}
           <div className="space-y-2">
-            <Label className="text-[#2D3748]">Novedades del día</Label>
+            <Label className="text-[#1D1D1F]">Novedades del día</Label>
             <textarea
               value={form.novedades}
               onChange={(e) =>
@@ -538,15 +538,15 @@ function NuevaEntradaModal({
               }
               placeholder="Describe las novedades, avances o situaciones del día..."
               rows={4}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-[#D2D2D7] px-3 py-2 text-sm placeholder:text-gray-400 focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
             />
           </div>
 
           {/* Personal + Clima (side by side) */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-[#2D3748]">
-                <Users className="size-4 text-blue-600" />
+              <Label className="flex items-center gap-2 text-[#1D1D1F]">
+                <Users className="size-4 text-[#007AFF]" />
                 Personal en obra
               </Label>
               <Input
@@ -560,13 +560,13 @@ function NuevaEntradaModal({
                   }))
                 }
                 placeholder="0"
-                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                className="border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
               />
               <p className="text-xs text-gray-400">Oficiales + Ayudantes</p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[#2D3748]">Clima</Label>
+              <Label className="text-[#1D1D1F]">Clima</Label>
               <div className="flex gap-2">
                 {CLIMA_OPTIONS.map((opt) => {
                   const Icon = opt.icon;
@@ -581,8 +581,8 @@ function NuevaEntradaModal({
                       className={cn(
                         "flex flex-1 flex-col items-center gap-1 rounded-lg border-2 px-2 py-2.5 text-xs font-medium transition-all",
                         isSelected
-                          ? "border-blue-500 bg-blue-50 text-blue-700"
-                          : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                          ? "border-[#007AFF] bg-[#007AFF]/5 text-[#007AFF]"
+                          : "border-[#D2D2D7] bg-white text-gray-500 hover:border-gray-300"
                       )}
                     >
                       <Icon className={cn("size-5", isSelected ? opt.color : "text-gray-400")} />
@@ -596,8 +596,8 @@ function NuevaEntradaModal({
 
           {/* Actividades realizadas (tags) */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-[#2D3748]">
-              <Tag className="size-4 text-blue-600" />
+            <Label className="flex items-center gap-2 text-[#1D1D1F]">
+              <Tag className="size-4 text-[#007AFF]" />
               Actividades realizadas
             </Label>
             <div className="flex gap-2">
@@ -608,14 +608,14 @@ function NuevaEntradaModal({
                 }
                 onKeyDown={handleActividadKeyDown}
                 placeholder="Escribir y presionar Enter..."
-                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                className="border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
               />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={addActividad}
-                className="shrink-0 border-gray-200"
+                className="shrink-0 border-[#D2D2D7]"
               >
                 <Plus className="size-4" />
               </Button>
@@ -625,13 +625,13 @@ function NuevaEntradaModal({
                 {form.actividades.map((act, i) => (
                   <span
                     key={i}
-                    className="flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
+                    className="flex items-center gap-1 rounded-full bg-[#007AFF]/5 px-2.5 py-1 text-xs font-medium text-blue-700"
                   >
                     {act}
                     <button
                       type="button"
                       onClick={() => removeActividad(i)}
-                      className="ml-0.5 rounded-full p-0.5 hover:bg-blue-200"
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-[#007AFF]/20"
                     >
                       <X className="size-3" />
                     </button>
@@ -643,8 +643,8 @@ function NuevaEntradaModal({
 
           {/* Fotos (drag & drop) */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-[#2D3748]">
-              <Camera className="size-4 text-blue-600" />
+            <Label className="flex items-center gap-2 text-[#1D1D1F]">
+              <Camera className="size-4 text-[#007AFF]" />
               Fotos del día
             </Label>
             <div
@@ -656,8 +656,8 @@ function NuevaEntradaModal({
               className={cn(
                 "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 transition-colors",
                 dragActive
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/50"
+                  ? "border-blue-500 bg-[#007AFF]/5"
+                  : "border-gray-300 bg-gray-50 hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5"
               )}
             >
               <input
@@ -672,7 +672,7 @@ function NuevaEntradaModal({
                 }}
               />
               {uploading ? (
-                <Loader2 className="size-8 animate-spin text-blue-600" />
+                <Loader2 className="size-8 animate-spin text-[#007AFF]" />
               ) : (
                 <Camera className="size-8 text-gray-400" />
               )}
@@ -689,7 +689,7 @@ function NuevaEntradaModal({
                 {fotos.map((url, i) => (
                   <div
                     key={i}
-                    className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200"
+                    className="group relative aspect-square overflow-hidden rounded-lg border border-[#D2D2D7]"
                   >
                     <img
                       src={url}
@@ -699,7 +699,7 @@ function NuevaEntradaModal({
                     <button
                       type="button"
                       onClick={() => removeFoto(i)}
-                      className="absolute right-1 top-1 rounded-full bg-red-500 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      className="absolute right-1 top-1 rounded-full bg-[#FF3B30] p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
                     >
                       <X className="size-3.5" />
                     </button>
@@ -711,8 +711,8 @@ function NuevaEntradaModal({
 
           {/* Reportado por */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-[#2D3748]">
-              <User className="size-4 text-blue-600" />
+            <Label className="flex items-center gap-2 text-[#1D1D1F]">
+              <User className="size-4 text-[#007AFF]" />
               Reportado por
             </Label>
             <Input
@@ -721,13 +721,13 @@ function NuevaEntradaModal({
                 setForm((f) => ({ ...f, reportado_por: e.target.value }))
               }
               placeholder="Nombre del residente o encargado"
-              className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              className="border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
             />
           </div>
 
           {/* Error */}
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="rounded-lg bg-[#FF3B30]/5 px-3 py-2 text-sm text-[#FF3B30]">
               {error}
             </p>
           )}
@@ -738,14 +738,14 @@ function NuevaEntradaModal({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="border-gray-200"
+              className="border-[#D2D2D7]"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={saving || uploading}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
             >
               {saving ? (
                 <Loader2 className="size-4 animate-spin" />

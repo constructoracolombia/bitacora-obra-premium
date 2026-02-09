@@ -23,8 +23,8 @@ interface ProjectCardProps {
 }
 
 function CircularProgress({ value }: { value: number }) {
-  const size = 64;
-  const strokeWidth = 6;
+  const size = 56;
+  const strokeWidth = 5;
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (value / 100) * circumference;
@@ -33,7 +33,7 @@ function CircularProgress({ value }: { value: number }) {
     <div className="relative inline-flex items-center justify-center">
       <svg width={size} height={size} className="-rotate-90">
         <circle
-          className="text-gray-200"
+          className="text-[#F5F5F7]"
           strokeWidth={strokeWidth}
           stroke="currentColor"
           fill="transparent"
@@ -42,7 +42,7 @@ function CircularProgress({ value }: { value: number }) {
           cy={size / 2}
         />
         <circle
-          className="text-blue-600 transition-all duration-500"
+          className="text-[#007AFF] transition-all duration-500"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -54,7 +54,7 @@ function CircularProgress({ value }: { value: number }) {
           cy={size / 2}
         />
       </svg>
-      <span className="absolute text-sm font-bold text-[#2D3748]">{Math.round(value)}%</span>
+      <span className="absolute text-xs font-semibold text-[#1D1D1F]">{Math.round(value)}%</span>
     </div>
   );
 }
@@ -66,9 +66,9 @@ const statusLabels: Record<ProjectStatus, string> = {
 };
 
 const statusColors: Record<ProjectStatus, string> = {
-  ACTIVO: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  PAUSADO: "bg-amber-100 text-amber-700 border-amber-200",
-  FINALIZADO: "bg-gray-100 text-gray-600 border-gray-200",
+  ACTIVO: "bg-[#34C759]/10 text-[#34C759] border-[#34C759]/20",
+  PAUSADO: "bg-[#FF9500]/10 text-[#FF9500] border-[#FF9500]/20",
+  FINALIZADO: "bg-[#F5F5F7] text-[#86868B] border-[#D2D2D7]",
 };
 
 function formatDateDMY(dateStr: string): string {
@@ -93,7 +93,7 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
   return (
     <article
       className={cn(
-        "rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md",
+        "group rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:shadow-md",
         "cursor-pointer",
         className
       )}
@@ -103,15 +103,15 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
           <CircularProgress value={project.porcentaje_avance} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold text-[#2D3748]">
+          <h3 className="truncate text-[15px] font-semibold tracking-tight text-[#1D1D1F]">
             {project.cliente_nombre || "Proyecto sin nombre"}
           </h3>
-          <div className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
+          <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-[#86868B]">
             <MapPin className="size-3.5 shrink-0" />
             <span className="truncate">{direccion}</span>
           </div>
           {project.presupuesto_total != null && project.presupuesto_total > 0 && (
-            <div className="mt-1 flex items-center gap-1.5 text-sm text-blue-600">
+            <div className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-[#007AFF]">
               <DollarSign className="size-3.5 shrink-0" />
               <span>
                 {project.presupuesto_total.toLocaleString("es-CO", {
@@ -122,32 +122,32 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
               </span>
             </div>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                "rounded-full border px-2 py-0.5 text-xs font-medium",
+                "rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
                 statusColors[project.estado]
               )}
             >
               {statusLabels[project.estado]}
             </span>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-[12px] text-[#86868B]">
               <User className="size-3.5" />
               <span>{residente}</span>
             </div>
           </div>
           {fechaEntrega && (
-            <div className="mt-2 flex items-center gap-1.5">
-              <Calendar className="size-3.5 shrink-0" />
+            <div className="mt-2.5 flex items-center gap-1.5">
+              <Calendar className="size-3.5 shrink-0 text-[#86868B]" />
               <span
                 className={cn(
-                  "text-xs font-medium",
-                  estaRetrasado ? "text-red-600" : "text-gray-500"
+                  "text-[12px] font-medium",
+                  estaRetrasado ? "text-[#FF3B30]" : "text-[#86868B]"
                 )}
               >
                 {estaRetrasado
                   ? `Retrasado ${Math.abs(diasParaEntrega ?? 0)} días`
-                  : `${diasParaEntrega ?? 0} días para entrega`}
+                  : `${diasParaEntrega ?? 0} días restantes`}
                 {" · "}
                 {formatDateDMY(project.fecha_entrega_estimada!)}
               </span>

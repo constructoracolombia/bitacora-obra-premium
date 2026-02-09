@@ -31,20 +31,20 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col border-r border-slate-700/50 bg-[#1A1D29] transition-all duration-200 ease-in-out",
-        collapsed ? "w-[72px]" : "w-64"
+        "flex flex-col bg-[#1A1D29] transition-all duration-200 ease-in-out",
+        collapsed ? "w-[68px]" : "w-60"
       )}
     >
-      {/* Header - Logo */}
+      {/* Header */}
       <div
         className={cn(
-          "flex h-16 items-center border-b border-slate-700/50",
+          "flex h-14 items-center border-b border-white/[0.06]",
           collapsed ? "justify-center px-0" : "justify-between px-4"
         )}
       >
         {!collapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2 transition-smooth">
-            <span className="text-lg font-bold text-white">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="text-[15px] font-semibold tracking-tight text-white">
               Bitácora Obra
             </span>
           </Link>
@@ -53,58 +53,58 @@ export function Sidebar() {
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="shrink-0 text-slate-400 hover:bg-slate-700/50 hover:text-white"
+          className="size-8 shrink-0 text-white/40 hover:bg-white/[0.06] hover:text-white/80"
         >
           {collapsed ? (
-            <ChevronRight className="size-5" />
+            <ChevronRight className="size-4" />
           ) : (
-            <ChevronLeft className="size-5" />
+            <ChevronLeft className="size-4" />
           )}
         </Button>
       </div>
 
-      {/* Búsqueda */}
+      {/* Search */}
       {!collapsed && (
-        <div className="flex items-center gap-1 border-b border-slate-700/50 p-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-slate-400 hover:bg-blue-500/10 hover:text-blue-400"
+        <div className="border-b border-white/[0.06] p-2">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/40 transition-all hover:bg-white/[0.06] hover:text-white/60"
             onClick={() => {
               if (typeof window !== "undefined") {
                 window.dispatchEvent(new CustomEvent("open-global-search"));
               }
             }}
-            title="Buscar (Cmd+K)"
           >
             <Search className="size-4" />
-          </Button>
+            <span>Buscar...</span>
+            <kbd className="ml-auto rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-white/30">
+              ⌘K
+            </kbd>
+          </button>
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto p-2 scrollbar-card">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-2 scrollbar-card">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || 
+          const isActive =
+            pathname === item.href ||
             (item.href === "/dashboard" && pathname?.startsWith("/proyecto"));
-          const linkContent = (
-            <div
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-smooth",
-                collapsed ? "justify-center px-0" : "",
-                isActive
-                  ? "border-l-4 border-blue-500 bg-blue-500/10 text-white"
-                  : "border-l-4 border-transparent text-slate-400 hover:bg-slate-700/50 hover:text-white"
-              )}
-            >
-              <Icon className="size-5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </div>
-          );
           return (
             <Link key={item.href + item.label} href={item.href}>
-              {linkContent}
+              <div
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
+                  collapsed ? "justify-center px-0" : "",
+                  isActive
+                    ? "bg-[#007AFF]/10 text-white"
+                    : "text-white/50 hover:bg-white/[0.06] hover:text-white/80"
+                )}
+              >
+                <Icon className={cn("size-[18px] shrink-0", isActive && "text-[#007AFF]")} />
+                {!collapsed && <span>{item.label}</span>}
+              </div>
             </Link>
           );
         })}

@@ -29,7 +29,6 @@ import { ImageLightbox } from "@/components/proyecto/ImageLightbox";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays, isPast } from "date-fns";
 
-// Tipos para lista_actividades (Alcance Cerrado)
 interface ActividadAlcance {
   id: string;
   descripcion: string;
@@ -39,7 +38,6 @@ interface ActividadAlcance {
   evidencia_url?: string | null;
 }
 
-// Tipos para checklist_calidad
 interface EvidenciaCalidad {
   url: string;
   fecha: string;
@@ -111,12 +109,12 @@ function mapEstadoLabel(estado: string | null): string {
 }
 
 function mapEstadoColor(estado: string | null): string {
-  if (!estado) return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  if (!estado) return "bg-[#34C759]/10 text-[#34C759] border-[#34C759]/20";
   const u = estado.toUpperCase();
-  if (u === "ACTIVO") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (u === "PAUSADO" || u === "EN_PAUSA") return "bg-amber-100 text-amber-700 border-amber-200";
-  if (u === "FINALIZADO" || u === "TERMINADO") return "bg-gray-100 text-gray-600 border-gray-200";
-  return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  if (u === "ACTIVO") return "bg-[#34C759]/10 text-[#34C759] border-[#34C759]/20";
+  if (u === "PAUSADO" || u === "EN_PAUSA") return "bg-[#FF9500]/10 text-[#FF9500] border-[#FF9500]/20";
+  if (u === "FINALIZADO" || u === "TERMINADO") return "bg-[#F5F5F7] text-[#86868B] border-[#D2D2D7]";
+  return "bg-[#34C759]/10 text-[#34C759] border-[#34C759]/20";
 }
 
 export default function ProyectoDetallePage() {
@@ -303,17 +301,17 @@ export default function ProyectoDetallePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
-        <Loader2 className="size-12 animate-spin text-blue-600" />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="size-8 animate-spin text-[#007AFF]" />
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8F9FA] p-6">
-        <p className="text-muted-foreground">Proyecto no encontrado</p>
-        <Button variant="outline" asChild>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white p-6">
+        <p className="text-[#86868B]">Proyecto no encontrado</p>
+        <Button variant="outline" className="rounded-xl border-[#D2D2D7]" asChild>
           <Link href="/dashboard">Volver al dashboard</Link>
         </Button>
       </div>
@@ -332,47 +330,45 @@ export default function ProyectoDetallePage() {
   const estaRetrasado = fechaEntrega ? isPast(fechaEntrega) && project.porcentaje_avance < 100 : false;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between gap-4 px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
+      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-8 py-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="size-8 text-[#86868B] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]" asChild>
               <Link href="/dashboard">
-                <ArrowLeft className="size-5" />
+                <ArrowLeft className="size-4" />
               </Link>
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-[#2D3748]">
+              <h1 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">
                 {project.cliente_nombre || "Proyecto"}
               </h1>
               {project.direccion && (
-                <p className="text-sm text-gray-500">{project.direccion}</p>
+                <p className="text-[13px] text-[#86868B]">{project.direccion}</p>
               )}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* Badge: Sincronizado con Finanzas */}
-            <span className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+            <span className="flex items-center gap-1.5 rounded-full border border-[#007AFF]/20 bg-[#007AFF]/5 px-3 py-1 text-[11px] font-medium text-[#007AFF]">
               <RefreshCw className="size-3" />
-              Sincronizado con Finanzas
+              Sincronizado
             </span>
-            {/* Badge: Estado */}
             <span
               className={cn(
-                "rounded-full border px-2.5 py-1 text-xs font-medium",
+                "rounded-full border px-2.5 py-1 text-[11px] font-medium",
                 mapEstadoColor(project.estado)
               )}
             >
               {mapEstadoLabel(project.estado)}
             </span>
-            <Button variant="outline" size="sm" className="border-gray-200" asChild>
+            <Button variant="outline" size="sm" className="h-8 rounded-lg border-[#D2D2D7] text-[13px] text-[#1D1D1F] hover:bg-[#F5F5F7]" asChild>
               <Link href={`/proyecto/${project.id}/bitacora`}>
-                <Calendar className="size-4" />
+                <Calendar className="size-3.5" />
                 Bitácora
               </Link>
             </Button>
-            <Button variant="outline" size="sm" className="border-gray-200" asChild>
+            <Button variant="outline" size="sm" className="h-8 rounded-lg border-[#D2D2D7] text-[13px] text-[#1D1D1F] hover:bg-[#F5F5F7]" asChild>
               <Link href={`/programacion/${project.id}`}>
                 Gantt
               </Link>
@@ -381,22 +377,22 @@ export default function ProyectoDetallePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl p-6">
-        {/* Datos del Proyecto - Solo Lectura */}
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[#2D3748]">Datos del Proyecto</h2>
-            <span className="text-xs text-gray-400">Solo lectura</span>
+      <main className="mx-auto max-w-6xl px-8 py-8">
+        {/* Project Data - Read Only */}
+        <div className="mb-8 rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-[15px] font-semibold text-[#1D1D1F]">Datos del Proyecto</h2>
+            <span className="text-[11px] text-[#86868B]">Solo lectura</span>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-blue-50 p-2">
-                <DollarSign className="size-4 text-blue-600" />
+              <div className="flex size-9 items-center justify-center rounded-xl bg-[#007AFF]/10">
+                <DollarSign className="size-4 text-[#007AFF]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Presupuesto</p>
-                <p className="mt-0.5 text-base font-semibold text-[#2D3748]">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Presupuesto</p>
+                <p className="mt-0.5 text-[15px] font-semibold text-[#1D1D1F]">
                   {project.presupuesto_total
                     ? project.presupuesto_total.toLocaleString("es-CO", {
                         style: "currency",
@@ -409,70 +405,70 @@ export default function ProyectoDetallePage() {
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-blue-50 p-2">
-                <MapPin className="size-4 text-blue-600" />
+              <div className="flex size-9 items-center justify-center rounded-xl bg-[#007AFF]/10">
+                <MapPin className="size-4 text-[#007AFF]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Dirección</p>
-                <p className="mt-0.5 text-sm font-medium text-[#2D3748]">{project.direccion || "—"}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Dirección</p>
+                <p className="mt-0.5 text-[13px] font-medium text-[#1D1D1F]">{project.direccion || "—"}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-blue-50 p-2">
-                <User className="size-4 text-blue-600" />
+              <div className="flex size-9 items-center justify-center rounded-xl bg-[#007AFF]/10">
+                <User className="size-4 text-[#007AFF]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Residente</p>
-                <p className="mt-0.5 text-sm font-medium text-[#2D3748]">{project.residente_asignado || "Sin asignar"}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Residente</p>
+                <p className="mt-0.5 text-[13px] font-medium text-[#1D1D1F]">{project.residente_asignado || "Sin asignar"}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-blue-50 p-2">
-                <Target className="size-4 text-blue-600" />
+              <div className="flex size-9 items-center justify-center rounded-xl bg-[#007AFF]/10">
+                <Target className="size-4 text-[#007AFF]" />
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Avance</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <div className="h-2 w-24 overflow-hidden rounded-full bg-gray-200">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Avance</p>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#F5F5F7]">
                     <div
-                      className="h-full rounded-full bg-blue-600 transition-all duration-500"
+                      className="h-full rounded-full bg-[#007AFF] transition-all duration-500"
                       style={{ width: `${Math.min(project.porcentaje_avance, 100)}%` }}
                     />
                   </div>
-                  <span className="text-sm font-semibold text-[#2D3748]">{Math.round(project.porcentaje_avance)}%</span>
+                  <span className="text-[13px] font-semibold text-[#1D1D1F]">{Math.round(project.porcentaje_avance)}%</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Fechas y margen */}
-          <div className="mt-5 grid gap-4 border-t border-gray-100 pt-4 sm:grid-cols-3 lg:grid-cols-4">
+          {/* Dates and margin */}
+          <div className="mt-5 grid gap-4 border-t border-[#D2D2D7]/40 pt-5 sm:grid-cols-3 lg:grid-cols-4">
             <div className="flex items-center gap-2">
-              <Calendar className="size-4 text-gray-400" />
+              <Calendar className="size-4 text-[#86868B]" />
               <div>
-                <p className="text-xs text-gray-500">Inicio</p>
-                <p className="text-sm font-medium text-[#2D3748]">
+                <p className="text-[11px] text-[#86868B]">Inicio</p>
+                <p className="text-[13px] font-medium text-[#1D1D1F]">
                   {project.fecha_inicio ? formatDateDMY(project.fecha_inicio) : "—"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Calendar className="size-4 text-gray-400" />
+              <Calendar className="size-4 text-[#86868B]" />
               <div>
-                <p className="text-xs text-gray-500">Entrega estimada</p>
-                <p className={cn("text-sm font-medium", estaRetrasado ? "text-red-600" : "text-[#2D3748]")}>
+                <p className="text-[11px] text-[#86868B]">Entrega estimada</p>
+                <p className={cn("text-[13px] font-medium", estaRetrasado ? "text-[#FF3B30]" : "text-[#1D1D1F]")}>
                   {project.fecha_entrega_estimada ? formatDateDMY(project.fecha_entrega_estimada) : "—"}
                 </p>
               </div>
             </div>
             {diasRestantes !== null && (
               <div className="flex items-center gap-2">
-                <Clock className="size-4 text-gray-400" />
+                <Clock className="size-4 text-[#86868B]" />
                 <div>
-                  <p className="text-xs text-gray-500">Días restantes</p>
-                  <p className={cn("text-sm font-semibold", estaRetrasado ? "text-red-600" : "text-[#2D3748]")}>
+                  <p className="text-[11px] text-[#86868B]">Días restantes</p>
+                  <p className={cn("text-[13px] font-semibold", estaRetrasado ? "text-[#FF3B30]" : "text-[#1D1D1F]")}>
                     {estaRetrasado
                       ? `Retrasado ${Math.abs(diasRestantes)} días`
                       : `${diasRestantes} días`}
@@ -482,10 +478,10 @@ export default function ProyectoDetallePage() {
             )}
             {project.margen_objetivo != null && (
               <div className="flex items-center gap-2">
-                <Target className="size-4 text-gray-400" />
+                <Target className="size-4 text-[#86868B]" />
                 <div>
-                  <p className="text-xs text-gray-500">Margen objetivo</p>
-                  <p className="text-sm font-medium text-[#2D3748]">{project.margen_objetivo}%</p>
+                  <p className="text-[11px] text-[#86868B]">Margen objetivo</p>
+                  <p className="text-[13px] font-medium text-[#1D1D1F]">{project.margen_objetivo}%</p>
                 </div>
               </div>
             )}
@@ -493,78 +489,63 @@ export default function ProyectoDetallePage() {
         </div>
 
         <Tabs defaultValue="informacion" className="space-y-6">
-          <TabsList variant="line" className="h-auto w-full justify-start gap-1 border-b border-gray-200 bg-transparent p-0">
-            <TabsTrigger
-              value="informacion"
-              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
-            >
-              Actividades
-            </TabsTrigger>
-            <TabsTrigger
-              value="contrato"
-              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
-            >
-              Contrato
-            </TabsTrigger>
-            <TabsTrigger
-              value="bitacora"
-              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
-            >
-              Bitácora
-            </TabsTrigger>
-            <TabsTrigger
-              value="pedidos"
-              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
-            >
-              Pedidos
-            </TabsTrigger>
-            <TabsTrigger
-              value="programacion"
-              className="rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none"
-            >
-              Programación
-            </TabsTrigger>
+          <TabsList variant="line" className="h-auto w-full justify-start gap-0 border-b border-[#D2D2D7]/40 bg-transparent p-0">
+            {[
+              { value: "informacion", label: "Actividades" },
+              { value: "contrato", label: "Contrato" },
+              { value: "bitacora", label: "Bitácora" },
+              { value: "pedidos", label: "Pedidos" },
+              { value: "programacion", label: "Programación" },
+            ].map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="rounded-none border-b-2 border-transparent bg-transparent px-5 py-2.5 text-[13px] font-medium text-[#86868B] transition-all data-[state=active]:border-[#007AFF] data-[state=active]:text-[#007AFF] data-[state=active]:shadow-none"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          {/* TAB 1: Actividades, Referencias, Calidad */}
+          {/* TAB 1: Actividades */}
           <TabsContent value="informacion" className="mt-6 space-y-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
               {project.lista_actividades.length === 0 ? (
-                <p className="py-8 text-center text-muted-foreground">
+                <p className="py-8 text-center text-[13px] text-[#86868B]">
                   Actividades pendientes por definir
                 </p>
               ) : (
                 <>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[#2D3748]">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-[15px] font-semibold text-[#1D1D1F]">
                   Actividades contratadas
                 </h2>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-gray-200 text-blue-600 hover:bg-blue-50"
+                  className="h-8 rounded-lg border-[#D2D2D7] text-[13px] text-[#007AFF] hover:bg-[#007AFF]/5"
                   onClick={addActividadAlcance}
                 >
-                  <Plus className="size-4" />
-                  Añadir actividad
+                  <Plus className="size-3.5" />
+                  Añadir
                 </Button>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-[13px]">
                   <thead>
-                    <tr className="border-b border-gray-200 text-left text-gray-500">
-                      <th className="pb-3 pr-4 text-xs font-medium uppercase">Completado</th>
-                      <th className="pb-3 pr-4 text-xs font-medium uppercase">Descripción</th>
-                      <th className="pb-3 pr-4 text-xs font-medium uppercase">Unidad</th>
-                      <th className="pb-3 pr-4 text-xs font-medium uppercase">Cantidad</th>
-                      <th className="pb-3 text-xs font-medium uppercase">Evidencia</th>
+                    <tr className="border-b border-[#D2D2D7]/40 text-left">
+                      <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Estado</th>
+                      <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Descripción</th>
+                      <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Unidad</th>
+                      <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Cantidad</th>
+                      <th className="pb-3 text-[11px] font-medium uppercase tracking-wider text-[#86868B]">Evidencia</th>
                     </tr>
                   </thead>
                   <tbody>
                     {project.lista_actividades.map((act) => (
                       <tr
                         key={act.id}
-                        className="border-b border-gray-100 transition-colors hover:bg-gray-50"
+                        className="border-b border-[#D2D2D7]/20 transition-colors hover:bg-[#F5F5F7]/50"
                       >
                         <td className="py-3 pr-4">
                           <Checkbox
@@ -573,19 +554,19 @@ export default function ProyectoDetallePage() {
                               toggleActividadCompletado(act.id, checked === true)
                             }
                             disabled={!act.evidencia_url}
-                            className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                            className="border-[#D2D2D7] data-[state=checked]:bg-[#007AFF] data-[state=checked]:border-[#007AFF]"
                           />
                         </td>
-                        <td className="py-3 pr-4 font-medium text-[#2D3748]">{act.descripcion}</td>
-                        <td className="py-3 pr-4 text-gray-600">{act.unidad}</td>
-                        <td className="py-3 pr-4 text-gray-600">{act.cantidad}</td>
+                        <td className="py-3 pr-4 font-medium text-[#1D1D1F]">{act.descripcion}</td>
+                        <td className="py-3 pr-4 text-[#86868B]">{act.unidad}</td>
+                        <td className="py-3 pr-4 text-[#86868B]">{act.cantidad}</td>
                         <td className="py-3">
                           {act.evidencia_url ? (
                             <a
                               href={act.evidencia_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
+                              className="text-[#007AFF] hover:underline"
                             >
                               Ver foto
                             </a>
@@ -593,7 +574,7 @@ export default function ProyectoDetallePage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-gray-200 text-blue-600 hover:bg-blue-50"
+                              className="h-7 rounded-lg border-[#D2D2D7] text-[12px] text-[#007AFF] hover:bg-[#007AFF]/5"
                               onClick={() =>
                                 setUploadModal({
                                   open: true,
@@ -602,8 +583,8 @@ export default function ProyectoDetallePage() {
                                 })
                               }
                             >
-                              <Upload className="size-3.5" />
-                              Subir Evidencia
+                              <Upload className="size-3" />
+                              Subir
                             </Button>
                           )}
                         </td>
@@ -616,25 +597,25 @@ export default function ProyectoDetallePage() {
               )}
             </div>
 
-            {/* Referencias Visuales */}
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-[#2D3748]">
+            {/* Visual References */}
+            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+              <h2 className="mb-4 text-[15px] font-semibold text-[#1D1D1F]">
                 Referencias Visuales
               </h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 {todasImagenes.map(({ url, tipo }) => (
                   <button
                     key={url}
                     type="button"
                     onClick={() => setLightbox({ open: true, src: url })}
-                    className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-100 shadow-sm transition-all hover:shadow-md"
+                    className="group relative aspect-square overflow-hidden rounded-xl border border-[#D2D2D7]/60 bg-[#F5F5F7] transition-all hover:shadow-md"
                   >
                     <img
                       src={url}
                       alt={tipo}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
-                    <span className="absolute bottom-0 left-0 right-0 bg-gray-900/70 px-2 py-1 text-xs text-white">
+                    <span className="absolute bottom-0 left-0 right-0 bg-[#1D1D1F]/60 px-2 py-1 text-[11px] text-white backdrop-blur-sm">
                       {tipo}
                     </span>
                   </button>
@@ -642,40 +623,39 @@ export default function ProyectoDetallePage() {
                 <button
                   type="button"
                   onClick={() => setReferenciaModal(true)}
-                  className="flex aspect-square items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:border-blue-400 hover:bg-blue-50"
+                  className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-[#D2D2D7] bg-[#F5F5F7]/50 transition-colors hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5"
                 >
-                  <ImageIcon className="size-10 text-gray-400" />
-                  <span className="sr-only">Subir imagen</span>
+                  <ImageIcon className="size-8 text-[#D2D2D7]" />
                 </button>
               </div>
               {todasImagenes.length === 0 && (
-                <p className="py-8 text-center text-muted-foreground">
+                <p className="py-8 text-center text-[13px] text-[#86868B]">
                   No hay planos ni renders. Sube imágenes para comenzar.
                 </p>
               )}
             </div>
 
-            {/* Control de Calidad */}
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[#2D3748]">
+            {/* Quality Checklist */}
+            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-[15px] font-semibold text-[#1D1D1F]">
                   Checklist de calidad
                 </h2>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-gray-200 text-blue-600 hover:bg-blue-50"
+                  className="h-8 rounded-lg border-[#D2D2D7] text-[13px] text-[#007AFF] hover:bg-[#007AFF]/5"
                   onClick={addItemCalidad}
                 >
-                  <Plus className="size-4" />
-                  Añadir ítem
+                  <Plus className="size-3.5" />
+                  Añadir
                 </Button>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {project.checklist_calidad.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+                    className="rounded-xl border border-[#D2D2D7]/40 bg-[#F5F5F7]/50 p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -685,12 +665,12 @@ export default function ProyectoDetallePage() {
                             toggleCalidadTerminado(item.id, checked === true)
                           }
                           disabled={item.evidencias.length === 0}
-                          className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          className="border-[#D2D2D7] data-[state=checked]:bg-[#007AFF] data-[state=checked]:border-[#007AFF]"
                         />
                         <span
                           className={cn(
-                            "font-medium text-[#2D3748]",
-                            item.terminado && "text-gray-400 line-through"
+                            "text-[13px] font-medium text-[#1D1D1F]",
+                            item.terminado && "text-[#86868B] line-through"
                           )}
                         >
                           {item.descripcion}
@@ -699,7 +679,7 @@ export default function ProyectoDetallePage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="shrink-0 border-gray-200 text-blue-600 hover:bg-blue-50"
+                        className="h-7 shrink-0 rounded-lg border-[#D2D2D7] text-[12px] text-[#007AFF] hover:bg-[#007AFF]/5"
                         onClick={() =>
                           setUploadModal({
                             open: true,
@@ -708,29 +688,24 @@ export default function ProyectoDetallePage() {
                           })
                         }
                       >
-                        <Upload className="size-3.5" />
-                        Subir evidencia
+                        <Upload className="size-3" />
+                        Evidencia
                       </Button>
                     </div>
                     {item.evidencias.length > 0 && (
-                      <div className="mt-3 space-y-2 border-t border-gray-200 pt-3">
-                        <p className="text-xs font-medium text-gray-500">
-                          Historial de evidencias
-                        </p>
+                      <div className="mt-3 space-y-1.5 border-t border-[#D2D2D7]/30 pt-3">
+                        <p className="text-[11px] font-medium text-[#86868B]">Historial</p>
                         {item.evidencias.map((ev, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 text-sm"
-                          >
+                          <div key={idx} className="flex items-center gap-2 text-[12px]">
                             <a
                               href={ev.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
+                              className="text-[#007AFF] hover:underline"
                             >
                               Evidencia {idx + 1}
                             </a>
-                            <span className="text-gray-500">
+                            <span className="text-[#86868B]">
                               {formatDateDMY(ev.fecha)}
                             </span>
                           </div>
@@ -741,8 +716,8 @@ export default function ProyectoDetallePage() {
                 ))}
               </div>
               {project.checklist_calidad.length === 0 && (
-                <p className="py-8 text-center text-muted-foreground">
-                  No hay ítems en el checklist. Añade uno para comenzar.
+                <p className="py-8 text-center text-[13px] text-[#86868B]">
+                  No hay ítems en el checklist.
                 </p>
               )}
             </div>
@@ -750,15 +725,15 @@ export default function ProyectoDetallePage() {
 
           {/* TAB 2: Contrato */}
           <TabsContent value="contrato" className="mt-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#2D3748]">
-                <FileCheck className="size-5 text-blue-600" />
+            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+              <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold text-[#1D1D1F]">
+                <FileCheck className="size-4 text-[#007AFF]" />
                 Analizar Contrato con IA
               </h2>
-              <p className="mb-4 text-muted-foreground">
+              <p className="mb-4 text-[13px] text-[#86868B]">
                 Sube un PDF o DOCX del contrato para extraer automáticamente cliente, presupuesto, fechas y alcance.
               </p>
-              <Button className="bg-blue-600 text-white hover:bg-blue-700" asChild>
+              <Button className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]" asChild>
                 <Link href={`/proyecto/${project.id}/contrato`}>
                   <FileText className="size-4" />
                   Ir a Analizar Contrato
@@ -767,16 +742,14 @@ export default function ProyectoDetallePage() {
             </div>
           </TabsContent>
 
-          {/* TAB 3: Bitácora */}
+          {/* TAB 3: Bitacora */}
           <TabsContent value="bitacora" className="mt-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-[#2D3748]">
-                Bitácora Diaria
-              </h2>
-              <p className="mb-4 text-muted-foreground">
+            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+              <h2 className="mb-3 text-[15px] font-semibold text-[#1D1D1F]">Bitácora Diaria</h2>
+              <p className="mb-4 text-[13px] text-[#86868B]">
                 Registra las novedades del día, personal y fotos de avance.
               </p>
-              <Button className="bg-blue-600 text-white hover:bg-blue-700" asChild>
+              <Button className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]" asChild>
                 <Link href={`/proyecto/${project.id}/bitacora`}>
                   <Calendar className="size-4" />
                   Ir a Bitácora
@@ -787,14 +760,12 @@ export default function ProyectoDetallePage() {
 
           {/* TAB 4: Pedidos */}
           <TabsContent value="pedidos" className="mt-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-[#2D3748]">
-                Pedidos de Material
-              </h2>
-              <p className="mb-4 text-muted-foreground">
+            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+              <h2 className="mb-3 text-[15px] font-semibold text-[#1D1D1F]">Pedidos de Material</h2>
+              <p className="mb-4 text-[13px] text-[#86868B]">
                 Solicita materiales para este proyecto.
               </p>
-              <Button className="bg-blue-600 text-white hover:bg-blue-700" asChild>
+              <Button className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]" asChild>
                 <Link href={`/proyecto/${project.id}/pedidos`}>
                   Ver Pedidos
                 </Link>
@@ -802,16 +773,14 @@ export default function ProyectoDetallePage() {
             </div>
           </TabsContent>
 
-          {/* TAB 5: Programación */}
+          {/* TAB 5: Programacion */}
           <TabsContent value="programacion" className="mt-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-[#2D3748]">
-                Gantt de Programación
-              </h2>
-              <p className="mb-4 text-muted-foreground">
+            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+              <h2 className="mb-3 text-[15px] font-semibold text-[#1D1D1F]">Gantt de Programación</h2>
+              <p className="mb-4 text-[13px] text-[#86868B]">
                 Visualiza el cronograma y avance de actividades.
               </p>
-              <Button className="bg-blue-600 text-white hover:bg-blue-700" asChild>
+              <Button className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]" asChild>
                 <Link href={`/programacion/${project.id}`}>
                   Ver Gantt
                 </Link>
@@ -821,7 +790,7 @@ export default function ProyectoDetallePage() {
         </Tabs>
       </main>
 
-      {/* Modales */}
+      {/* Modals */}
       <UploadEvidenciaModal
         open={uploadModal.open}
         onOpenChange={(open) =>

@@ -68,9 +68,9 @@ export function UploadEvidenciaModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-gray-200 bg-white sm:max-w-md">
+      <DialogContent className="border-[#D2D2D7]/60 bg-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#2D3748]">
+          <DialogTitle className="text-[15px] font-semibold text-[#1D1D1F]">
             Subir evidencia fotográfica
           </DialogTitle>
         </DialogHeader>
@@ -86,25 +86,25 @@ export function UploadEvidenciaModal({
           <div
             onClick={() => inputRef.current?.click()}
             className={cn(
-              "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-12 transition-colors hover:border-blue-400 hover:bg-blue-50",
+              "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#D2D2D7] bg-[#F5F5F7]/50 py-12 transition-all hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5",
               uploading && "pointer-events-none opacity-60"
             )}
           >
             {uploading ? (
-              <Loader2 className="size-12 animate-spin text-blue-600" />
+              <Loader2 className="size-10 animate-spin text-[#007AFF]" />
             ) : (
-              <Upload className="size-12 text-blue-600" />
+              <Upload className="size-10 text-[#86868B]" />
             )}
-            <span className="text-sm text-muted-foreground">
+            <span className="text-[13px] text-[#86868B]">
               {uploading ? "Subiendo..." : "Haz clic o arrastra una imagen"}
             </span>
           </div>
           {error && (
-            <p className="text-center text-sm text-destructive">{error}</p>
+            <p className="text-center text-[13px] text-[#FF3B30]">{error}</p>
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="rounded-xl border-[#D2D2D7]" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
         </DialogFooter>

@@ -42,10 +42,10 @@ const ESTADO_LABELS: Record<string, string> = {
 };
 
 const ESTADO_COLORS: Record<string, string> = {
-  PENDING: "bg-muted text-muted-foreground",
-  IN_PROGRESS: "bg-blue-100 text-blue-600",
-  COMPLETED: "bg-emerald-500/20 text-emerald-400",
-  DELAYED: "bg-destructive/20 text-destructive",
+  PENDING: "bg-[#F5F5F7] text-[#86868B]",
+  IN_PROGRESS: "bg-[#007AFF]/10 text-[#007AFF]",
+  COMPLETED: "bg-[#34C759]/10 text-[#34C759]",
+  DELAYED: "bg-[#FF3B30]/10 text-[#FF3B30]",
 };
 
 export function ActivitySidePanel({
@@ -75,7 +75,7 @@ export function ActivitySidePanel({
 
   return (
     <div className="flex w-72 shrink-0 flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <h3 className="mb-4 font-semibold text-[#2D3748]">
+      <h3 className="mb-4 font-semibold text-[#1D1D1F]">
         Actividades ({activities.length})
       </h3>
       <div className="flex-1 space-y-2 overflow-y-auto">
@@ -161,7 +161,7 @@ export function ActivitySidePanel({
       >
         <DialogContent className="border-gray-200 bg-white">
           <DialogHeader>
-            <DialogTitle className="text-[#2D3748]">
+            <DialogTitle className="text-[#1D1D1F]">
               Actualizar progreso
             </DialogTitle>
           </DialogHeader>

@@ -162,19 +162,19 @@ export default function ContratoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
-      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-4 px-4 py-4 sm:px-6">
-          <Button variant="ghost" size="icon" asChild>
+    <div className="min-h-screen bg-white">
+      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
+        <div className="flex items-center gap-3 px-8 py-4">
+          <Button variant="ghost" size="icon" className="size-8 text-[#86868B] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]" asChild>
             <Link href={`/proyecto/${proyectoId}`}>
-              <ArrowLeft className="size-5" />
+              <ArrowLeft className="size-4" />
             </Link>
           </Button>
-          <h1 className="text-xl font-bold text-[#2D3748]">Analizar Contrato</h1>
+          <h1 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">Analizar Contrato</h1>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl p-4 sm:p-6">
+      <main className="mx-auto max-w-2xl px-8 py-8">
         {/* Drag & Drop */}
         <div
           onDragEnter={handleDrag}
@@ -182,10 +182,10 @@ export default function ContratoPage() {
           onDragOver={handleDrag}
           onDrop={handleDrop}
           className={cn(
-            "flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors",
+            "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 transition-all",
             dragActive
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 bg-white hover:border-blue-400 hover:bg-gray-50"
+              ? "border-[#007AFF] bg-[#007AFF]/5"
+              : "border-[#D2D2D7] bg-[#F5F5F7]/50 hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5"
           )}
         >
           <input
@@ -197,23 +197,23 @@ export default function ContratoPage() {
           />
           <label
             htmlFor="contrato-file"
-            className="flex cursor-pointer flex-col items-center gap-2"
+            className="flex cursor-pointer flex-col items-center gap-3"
           >
-            <FileText className="size-12 text-gray-400" />
-            <span className="text-sm font-medium text-gray-600">
+            <FileText className="size-10 text-[#86868B]" />
+            <span className="text-[13px] font-medium text-[#86868B]">
               Arrastra PDF o DOCX aquí, o haz clic para seleccionar
             </span>
           </label>
           {file && (
-            <p className="mt-2 text-sm text-blue-600">{file.name}</p>
+            <p className="mt-3 text-[13px] font-medium text-[#007AFF]">{file.name}</p>
           )}
         </div>
 
-        <div className="mt-4 flex justify-center">
+        <div className="mt-5 flex justify-center">
           <Button
             onClick={handleAnalizar}
             disabled={!file || analyzing}
-            className="bg-blue-600 text-white hover:bg-blue-700"
+            className="rounded-xl bg-[#007AFF] px-6 text-white shadow-sm hover:bg-[#0051D5]"
           >
             {analyzing ? (
               <Loader2 className="size-4 animate-spin" />
@@ -224,16 +224,16 @@ export default function ContratoPage() {
           </Button>
         </div>
 
-        {/* Resultados editables */}
+        {/* Editable results */}
         {editForm && (
-          <div className="mt-8 space-y-4">
-            <h2 className="text-lg font-semibold text-[#2D3748]">
+          <div className="mt-8 space-y-5">
+            <h2 className="text-[15px] font-semibold text-[#1D1D1F]">
               Resultados (editable)
             </h2>
-            <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="space-y-4 rounded-2xl border border-[#D2D2D7]/60 bg-white p-5">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Cliente</Label>
+                  <Label className="text-[13px] text-[#86868B]">Cliente</Label>
                   <Input
                     value={editForm.cliente_nombre ?? ""}
                     onChange={(e) =>
@@ -241,11 +241,11 @@ export default function ContratoPage() {
                         f ? { ...f, cliente_nombre: e.target.value } : f
                       )
                     }
-                    className="border-gray-200"
+                    className="rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Proyecto</Label>
+                  <Label className="text-[13px] text-[#86868B]">Proyecto</Label>
                   <Input
                     value={editForm.proyecto_nombre ?? ""}
                     onChange={(e) =>
@@ -253,12 +253,12 @@ export default function ContratoPage() {
                         f ? { ...f, proyecto_nombre: e.target.value } : f
                       )
                     }
-                    className="border-gray-200"
+                    className="rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Presupuesto Total (COP)</Label>
+                <Label className="text-[13px] text-[#86868B]">Presupuesto Total (COP)</Label>
                 <Input
                   value={
                     editForm.presupuesto_total != null
@@ -272,12 +272,12 @@ export default function ContratoPage() {
                     );
                   }}
                   placeholder="0"
-                  className="border-gray-200"
+                  className="rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label>Fecha Firma</Label>
+                  <Label className="text-[13px] text-[#86868B]">Fecha Firma</Label>
                   <Input
                     type="date"
                     value={editForm.fecha_firma ?? ""}
@@ -286,11 +286,11 @@ export default function ContratoPage() {
                         f ? { ...f, fecha_firma: e.target.value } : f
                       )
                     }
-                    className="border-gray-200"
+                    className="rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Fecha Inicio</Label>
+                  <Label className="text-[13px] text-[#86868B]">Fecha Inicio</Label>
                   <Input
                     type="date"
                     value={editForm.fecha_inicio ?? ""}
@@ -299,11 +299,11 @@ export default function ContratoPage() {
                         f ? { ...f, fecha_inicio: e.target.value } : f
                       )
                     }
-                    className="border-gray-200"
+                    className="rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Fecha Entrega</Label>
+                  <Label className="text-[13px] text-[#86868B]">Fecha Entrega</Label>
                   <Input
                     type="date"
                     value={editForm.fecha_entrega ?? ""}
@@ -312,12 +312,12 @@ export default function ContratoPage() {
                         f ? { ...f, fecha_entrega: e.target.value } : f
                       )
                     }
-                    className="border-gray-200"
+                    className="rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Conjunto</Label>
+                <Label className="text-[13px] text-[#86868B]">Conjunto</Label>
                 <Input
                   value={editForm.conjunto ?? ""}
                   onChange={(e) =>
@@ -325,11 +325,11 @@ export default function ContratoPage() {
                       f ? { ...f, conjunto: e.target.value } : f
                     )
                   }
-                  className="border-gray-200"
+                  className="rounded-xl border-[#D2D2D7] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Alcance</Label>
+                <Label className="text-[13px] text-[#86868B]">Alcance</Label>
                 <textarea
                   value={editForm.alcance ?? ""}
                   onChange={(e) =>
@@ -338,7 +338,7 @@ export default function ContratoPage() {
                     )
                   }
                   rows={4}
-                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-xl border border-[#D2D2D7] px-4 py-2.5 text-[13px] text-[#1D1D1F] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
                 />
               </div>
             </div>
@@ -346,7 +346,7 @@ export default function ContratoPage() {
             <Button
               onClick={handleConfirmar}
               disabled={saving}
-              className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              className="w-full rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
             >
               {saving ? (
                 <Loader2 className="size-4 animate-spin" />

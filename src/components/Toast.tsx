@@ -5,7 +5,6 @@ import {
   useContext,
   useState,
   useCallback,
-  useEffect,
   type ReactNode,
 } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, X } from "lucide-react";
@@ -35,9 +34,9 @@ const ICONS = {
 };
 
 const COLORS = {
-  success: "text-emerald-400 border-emerald-500/30",
-  error: "text-destructive border-destructive/30",
-  warning: "text-amber-400 border-amber-500/30",
+  success: "border-[#34C759]/20 text-[#34C759]",
+  error: "border-[#FF3B30]/20 text-[#FF3B30]",
+  warning: "border-[#FF9500]/20 text-[#FF9500]",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -77,13 +76,13 @@ function ToastContainer({
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
       {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
+        <ToastItemComponent key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
     </div>
   );
 }
 
-function ToastItem({
+function ToastItemComponent({
   toast,
   onRemove,
 }: {
@@ -95,17 +94,17 @@ function ToastItem({
   return (
     <div
       className={cn(
-        "pointer-events-auto flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg",
+        "pointer-events-auto flex items-center gap-3 rounded-2xl border border-[#D2D2D7]/60 bg-white px-4 py-3 shadow-lg",
         COLORS[toast.type]
       )}
       role="alert"
     >
       <Icon className="size-5 shrink-0" />
-      <p className="flex-1 text-sm font-medium text-foreground">{toast.message}</p>
+      <p className="flex-1 text-[13px] font-medium text-[#1D1D1F]">{toast.message}</p>
       <button
         type="button"
         onClick={() => onRemove(toast.id)}
-        className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-foreground"
+        className="shrink-0 rounded-lg p-1 text-[#86868B] transition-colors hover:bg-[#F5F5F7] hover:text-[#1D1D1F]"
         aria-label="Cerrar"
       >
         <X className="size-4" />
