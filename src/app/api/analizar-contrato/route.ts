@@ -1,111 +1,75 @@
-import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-
-const PROMPT = `Analiza el siguiente texto de un contrato de construcción y extrae la información en formato JSON.
-Devuelve ÚNICAMENTE un objeto JSON válido, sin markdown ni texto adicional, con estas claves:
-- cliente_nombre (string)
-- proyecto_nombre (string)
-- presupuesto_total (number, en COP)
-- fecha_firma (string YYYY-MM-DD si existe, o null)
-- fecha_inicio (string YYYY-MM-DD si existe, o null)
-- fecha_entrega (string YYYY-MM-DD si existe, o null)
-- conjunto (string o null)
-- alcance (string descriptivo del alcance del contrato)
-
-Si no encuentras un valor, usa null. Para fechas, normaliza al formato YYYY-MM-DD.`;
-
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  const { PDFParse } = await import("pdf-parse/node");
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
-  try {
-    const result = await parser.getText();
-    return result.text || "";
-  } finally {
-    await parser.destroy();
-  }
-}
-
-async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
-  const mammoth = await import("mammoth");
-  const result = await mammoth.extractRawText({ buffer });
-  return result.value || "";
-}
+import Anthropic from '@anthropic-ai/sdk';
+import { NextRequest, NextResponse } from 'next/server';
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY no configurada" },
-        { status: 500 }
-      );
-    }
-
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+    const file = formData.get('file') as File;
+    
     if (!file) {
-      return NextResponse.json(
-        { error: "No se envió archivo" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const name = file.name.toLowerCase();
-    let text = "";
-
-    if (name.endsWith(".pdf")) {
-      text = await extractTextFromPDF(buffer);
-    } else if (name.endsWith(".docx") || name.endsWith(".doc")) {
-      text = await extractTextFromDOCX(buffer);
+    let textoContrato = '';
+    
+    if (file.type === 'application/pdf') {
+      const pdfData = await pdfParse(buffer);
+      textoContrato = pdfData.text;
+    } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const result = await mammoth.extractRawText({ buffer });
+      textoContrato = result.value;
     } else {
-      return NextResponse.json(
-        { error: "Formato no soportado. Use PDF o DOCX." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Formato no soportado. Use PDF o DOCX' }, { status: 400 });
     }
 
-    if (!text.trim()) {
-      return NextResponse.json(
-        { error: "No se pudo extraer texto del documento" },
-        { status: 400 }
-      );
-    }
-
-    const anthropic = new Anthropic({ apiKey });
-    const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: `${PROMPT}\n\n---\nTexto del contrato:\n\n${text.slice(0, 50000)}`,
-        },
-      ],
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    const content = message.content[0];
-    if (content.type !== "text") {
-      return NextResponse.json(
-        { error: "Respuesta inesperada del modelo" },
-        { status: 500 }
-      );
-    }
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: `Analiza este contrato de construcción/remodelación y extrae la información en formato JSON.
 
-    const raw = content.text.trim();
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    const jsonStr = jsonMatch ? jsonMatch[0] : raw;
-    const parsed = JSON.parse(jsonStr);
+CONTRATO:
+${textoContrato}
 
-    return NextResponse.json(parsed);
-  } catch (err) {
-    console.error("Error analizar-contrato:", err);
-    return NextResponse.json(
-      {
-        error:
-          err instanceof Error ? err.message : "Error al analizar el contrato",
-      },
-      { status: 500 }
-    );
+Responde SOLO con este JSON:
+
+{
+  "cliente_nombre": "Nombre del cliente",
+  "proyecto_nombre": "Dirección",
+  "presupuesto_total": 50000000,
+  "fecha_firma": "2026-01-15",
+  "fecha_inicio": "2026-01-29",
+  "fecha_entrega": "2026-04-30",
+  "conjunto": "Nombre conjunto o null",
+  "alcance": [
+    {"actividad": "Demolición", "cantidad": 50, "unidad": "m²"}
+  ]
+}`
+      }]
+    });
+
+    const respuestaTexto = message.content[0].type === 'text' ? message.content[0].text : '';
+    const jsonLimpio = respuestaTexto.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const datosExtraidos = JSON.parse(jsonLimpio);
+
+    return NextResponse.json({
+      success: true,
+      datos: datosExtraidos
+    });
+
+  } catch (error: any) {
+    console.error('Error analizando contrato:', error);
+    return NextResponse.json({
+      error: 'Error procesando el contrato',
+      details: error.message
+    }, { status: 500 });
   }
 }
