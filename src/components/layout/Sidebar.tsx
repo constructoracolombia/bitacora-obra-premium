@@ -8,20 +8,16 @@ import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
   ChevronRight,
-  LayoutDashboard,
   ClipboardList,
+  PlusCircle,
   Package,
-  Calendar,
-  FileBarChart,
-  Search,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/dashboard", icon: ClipboardList, label: "Proyectos" },
-  { href: "/pedidos/nuevo", icon: Package, label: "Pedidos" },
-  { href: "/programacion", icon: Calendar, label: "Programación" },
-  { href: "/dashboard", icon: FileBarChart, label: "Reportes" },
+  { href: "/proyectos", icon: ClipboardList, label: "Proyectos" },
+  { href: "/adicionales", icon: PlusCircle, label: "Adicionales" },
+  { href: "/requisiciones", icon: Package, label: "Requisiciones" },
 ];
 
 export function Sidebar() {
@@ -43,7 +39,7 @@ export function Sidebar() {
         )}
       >
         {!collapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/proyectos" className="flex items-center gap-2">
             <span className="text-[15px] font-semibold tracking-tight text-white">
               Bitácora Obra
             </span>
@@ -63,39 +59,17 @@ export function Sidebar() {
         </Button>
       </div>
 
-      {/* Search */}
-      {!collapsed && (
-        <div className="border-b border-white/[0.06] p-2">
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/40 transition-all hover:bg-white/[0.06] hover:text-white/60"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                window.dispatchEvent(new CustomEvent("open-global-search"));
-              }
-            }}
-          >
-            <Search className="size-4" />
-            <span>Buscar...</span>
-            <kbd className="ml-auto rounded border border-white/10 px-1.5 py-0.5 text-[10px] text-white/30">
-              ⌘K
-            </kbd>
-          </button>
-        </div>
-      )}
-
       {/* Navigation */}
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-2 scrollbar-card">
+      <nav className="flex-1 space-y-0.5 p-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
-            pathname === item.href ||
-            (item.href === "/dashboard" && pathname?.startsWith("/proyecto"));
+            pathname === item.href || pathname?.startsWith(item.href + "/");
           return (
-            <Link key={item.href + item.label} href={item.href}>
+            <Link key={item.href} href={item.href}>
               <div
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
                   collapsed ? "justify-center px-0" : "",
                   isActive
                     ? "bg-[#007AFF]/10 text-white"
@@ -109,6 +83,23 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Logout */}
+      <div className="border-t border-white/[0.06] p-2">
+        <button
+          type="button"
+          className={cn(
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-white/40 transition-all duration-150 hover:bg-white/[0.06] hover:text-white/60",
+            collapsed && "justify-center px-0"
+          )}
+          onClick={() => {
+            // TODO: implement logout
+          }}
+        >
+          <LogOut className="size-[18px] shrink-0" />
+          {!collapsed && <span>Cerrar sesión</span>}
+        </button>
+      </div>
     </aside>
   );
 }

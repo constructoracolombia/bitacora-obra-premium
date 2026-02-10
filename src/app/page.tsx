@@ -7,15 +7,12 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/dashboard');
+    router.push('/proyectos');
   }, [router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="text-center">
-        <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#007AFF] border-r-transparent"></div>
-        <p className="text-sm text-gray-600">Cargando...</p>
-      </div>
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#007AFF] border-r-transparent"></div>
     </div>
   );
 }
