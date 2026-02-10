@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Building2, MapPin, DollarSign, User } from "lucide-react";
+import { Loader2, Building2, MapPin, DollarSign, User, Plus } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type FilterStatus = "TODOS" | "ACTIVO" | "PAUSADO" | "FINALIZADO";
@@ -92,7 +93,8 @@ export default function ProyectosPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-[#1D1D1F]">
             Proyectos
           </h1>
-          <div className="flex items-center gap-1 rounded-xl bg-[#F5F5F7] p-1">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 rounded-xl bg-[#F5F5F7] p-1">
             {filters.map((f) => (
               <button
                 key={f.value}
@@ -107,6 +109,13 @@ export default function ProyectosPage() {
                 {f.label}
               </button>
             ))}
+            </div>
+            <Button asChild className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
+              <Link href="/proyectos/nuevo">
+                <Plus className="size-4" />
+                Nuevo Proyecto
+              </Link>
+            </Button>
           </div>
         </div>
       </header>
@@ -126,8 +135,14 @@ export default function ProyectosPage() {
                 : "Sin resultados para este filtro"}
             </p>
             <p className="text-sm text-[#86868B]">
-              Los proyectos se gestionan desde la App de Finanzas
+              Crea tu primer proyecto para comenzar
             </p>
+            <Button asChild className="mt-2 rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
+              <Link href="/proyectos/nuevo">
+                <Plus className="size-4" />
+                Nuevo Proyecto
+              </Link>
+            </Button>
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2">
