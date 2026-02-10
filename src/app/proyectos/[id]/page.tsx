@@ -12,6 +12,9 @@ import {
   Calendar,
   Save,
   CheckCircle2,
+  Percent,
+  Info,
+  Lock,
 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -34,6 +37,8 @@ interface Proyecto {
   conjunto: string | null;
   alcance_text: string | null;
   proyecto_nombre: string | null;
+  margen_objetivo: number | null;
+  app_origen: string | null;
 }
 
 interface Actividad {
@@ -57,7 +62,9 @@ type TabId = (typeof TABS)[number]["id"];
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   ACTIVO: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Activo" },
   EN_PAUSA: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Pausado" },
+  PAUSADO: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Pausado" },
   TERMINADO: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Finalizado" },
+  FINALIZADO: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Finalizado" },
 };
 
 const ACTIVIDAD_STATUS: Record<string, { bg: string; text: string; label: string }> = {
@@ -76,11 +83,24 @@ export default function ProyectoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("info");
 
-  // Editable fields
-  const [notas, setNotas] = useState("");
+  // Editable fields (info tab - only for BITACORA origin)
+  const [editForm, setEditForm] = useState({
+    cliente_nombre: "",
+    direccion: "",
+    presupuesto_total: "",
+    fecha_inicio: "",
+    fecha_entrega_estimada: "",
+    margen_objetivo: "",
+    residente_asignado: "",
+  });
+
+  // Alcance (always editable)
   const [alcance, setAlcance] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+
+  const [savingInfo, setSavingInfo] = useState(false);
+  const [savedInfo, setSavedInfo] = useState(false);
+  const [savingAlcance, setSavingAlcance] = useState(false);
+  const [savedAlcance, setSavedAlcance] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -113,10 +133,20 @@ export default function ProyectoDetailPage() {
           conjunto: (r.conjunto as string) ?? null,
           alcance_text: (r.alcance_text as string) ?? null,
           proyecto_nombre: (r.proyecto_nombre as string) ?? null,
+          margen_objetivo: (r.margen_objetivo as number) ?? null,
+          app_origen: (r.app_origen as string) ?? null,
         };
         setProject(p);
-        setNotas(""); // Could use a "notas" field if available
         setAlcance(p.alcance_text ?? "");
+        setEditForm({
+          cliente_nombre: p.cliente_nombre ?? "",
+          direccion: p.direccion ?? "",
+          presupuesto_total: p.presupuesto_total != null ? String(p.presupuesto_total) : "",
+          fecha_inicio: p.fecha_inicio ?? "",
+          fecha_entrega_estimada: p.fecha_entrega_estimada ?? "",
+          margen_objetivo: p.margen_objetivo != null ? String(p.margen_objetivo) : "20",
+          residente_asignado: p.residente_asignado ?? "",
+        });
       }
 
       if (actRes.data) {
@@ -143,22 +173,52 @@ export default function ProyectoDetailPage() {
     if (projectId) fetchData();
   }, [projectId, fetchData]);
 
+  const isFromFinanzas = project?.app_origen === "FINANZAS";
+
+  async function handleSaveInfo() {
+    if (!project || isFromFinanzas) return;
+    setSavingInfo(true);
+    setSavedInfo(false);
+    try {
+      const supabase = getSupabase();
+      await supabase
+        .from("proyectos_maestro")
+        .update({
+          cliente_nombre: editForm.cliente_nombre.trim() || null,
+          direccion: editForm.direccion.trim() || null,
+          presupuesto_total: Number(editForm.presupuesto_total) || null,
+          fecha_inicio: editForm.fecha_inicio || null,
+          fecha_entrega_estimada: editForm.fecha_entrega_estimada || null,
+          margen_objetivo: Number(editForm.margen_objetivo) || 20,
+          residente_asignado: editForm.residente_asignado.trim() || null,
+        })
+        .eq("id", project.id);
+      setSavedInfo(true);
+      setTimeout(() => setSavedInfo(false), 2000);
+      fetchData();
+    } catch (err) {
+      console.error("Error saving info:", err);
+    } finally {
+      setSavingInfo(false);
+    }
+  }
+
   async function handleSaveAlcance() {
     if (!project) return;
-    setSaving(true);
-    setSaved(false);
+    setSavingAlcance(true);
+    setSavedAlcance(false);
     try {
       const supabase = getSupabase();
       await supabase
         .from("proyectos_maestro")
         .update({ alcance_text: alcance })
         .eq("id", project.id);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setSavedAlcance(true);
+      setTimeout(() => setSavedAlcance(false), 2000);
     } catch (err) {
-      console.error("Error saving:", err);
+      console.error("Error saving alcance:", err);
     } finally {
-      setSaving(false);
+      setSavingAlcance(false);
     }
   }
 
@@ -210,9 +270,17 @@ export default function ProyectoDetailPage() {
               <p className="truncate text-[13px] text-[#86868B]">{project.direccion}</p>
             )}
           </div>
-          <span className={cn("shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold", statusStyle.bg, statusStyle.text)}>
-            {statusStyle.label}
-          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className={cn(
+              "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+              isFromFinanzas ? "bg-[#007AFF]/8 text-[#007AFF]" : "bg-[#FF9500]/10 text-[#FF9500]"
+            )}>
+              {isFromFinanzas ? "Finanzas" : "Bitácora"}
+            </span>
+            <span className={cn("rounded-full px-3 py-1 text-[12px] font-semibold", statusStyle.bg, statusStyle.text)}>
+              {statusStyle.label}
+            </span>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -240,7 +308,7 @@ export default function ProyectoDetailPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-8 py-8">
-        {/* TAB: Info */}
+        {/* ─── TAB: Info ─── */}
         {activeTab === "info" && (
           <div className="space-y-6">
             {/* Progress */}
@@ -257,22 +325,126 @@ export default function ProyectoDetailPage() {
               </div>
             </div>
 
-            {/* Details grid */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InfoCard icon={User} label="Cliente" value={project.cliente_nombre || "—"} />
-              <InfoCard icon={MapPin} label="Dirección" value={project.direccion || "—"} />
-              <InfoCard icon={DollarSign} label="Presupuesto" value={project.presupuesto_total ? `$${project.presupuesto_total.toLocaleString("es-CO")}` : "—"} />
-              <InfoCard icon={User} label="Residente" value={project.residente_asignado || "—"} />
-              <InfoCard icon={Calendar} label="Fecha inicio" value={formatDate(project.fecha_inicio)} />
-              <InfoCard icon={Calendar} label="Fecha entrega" value={formatDate(project.fecha_entrega_estimada)} />
-              {project.conjunto && (
-                <InfoCard icon={MapPin} label="Conjunto" value={project.conjunto} />
-              )}
-            </div>
+            {/* Read-only notice for Finanzas */}
+            {isFromFinanzas && (
+              <div className="flex items-start gap-3 rounded-2xl border border-[#007AFF]/20 bg-[#007AFF]/5 p-4">
+                <Lock className="mt-0.5 size-4 shrink-0 text-[#007AFF]" />
+                <div>
+                  <p className="text-[13px] font-medium text-[#1D1D1F]">Proyecto gestionado desde Finanzas</p>
+                  <p className="mt-0.5 text-[12px] text-[#86868B]">Los datos principales son de solo lectura. Usa la App de Finanzas para editarlos.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Editable form (Bitácora) or Read-only cards (Finanzas) */}
+            {isFromFinanzas ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <InfoCard icon={User} label="Cliente" value={project.cliente_nombre || "—"} />
+                <InfoCard icon={MapPin} label="Dirección" value={project.direccion || "—"} />
+                <InfoCard icon={DollarSign} label="Presupuesto" value={project.presupuesto_total ? `$${project.presupuesto_total.toLocaleString("es-CO")}` : "—"} />
+                <InfoCard icon={Percent} label="Margen objetivo" value={project.margen_objetivo != null ? `${project.margen_objetivo}%` : "—"} />
+                <InfoCard icon={Calendar} label="Fecha inicio" value={formatDate(project.fecha_inicio)} />
+                <InfoCard icon={Calendar} label="Fecha entrega" value={formatDate(project.fecha_entrega_estimada)} />
+                <InfoCard icon={User} label="Residente" value={project.residente_asignado || "—"} />
+                {project.conjunto && (
+                  <InfoCard icon={MapPin} label="Conjunto" value={project.conjunto} />
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6 space-y-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-[13px] text-[#86868B]">Cliente</Label>
+                    <Input
+                      value={editForm.cliente_nombre}
+                      onChange={(e) => setEditForm((f) => ({ ...f, cliente_nombre: e.target.value }))}
+                      className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[13px] text-[#86868B]">Dirección</Label>
+                    <Input
+                      value={editForm.direccion}
+                      onChange={(e) => setEditForm((f) => ({ ...f, direccion: e.target.value }))}
+                      className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[13px] text-[#86868B]">Presupuesto (COP)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={editForm.presupuesto_total}
+                      onChange={(e) => setEditForm((f) => ({ ...f, presupuesto_total: e.target.value }))}
+                      className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[13px] text-[#86868B]">Margen objetivo (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={editForm.margen_objetivo}
+                      onChange={(e) => setEditForm((f) => ({ ...f, margen_objetivo: e.target.value }))}
+                      className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[13px] text-[#86868B]">Fecha inicio</Label>
+                    <Input
+                      type="date"
+                      value={editForm.fecha_inicio}
+                      onChange={(e) => setEditForm((f) => ({ ...f, fecha_inicio: e.target.value }))}
+                      className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[13px] text-[#86868B]">Fecha entrega</Label>
+                    <Input
+                      type="date"
+                      value={editForm.fecha_entrega_estimada}
+                      onChange={(e) => setEditForm((f) => ({ ...f, fecha_entrega_estimada: e.target.value }))}
+                      className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label className="text-[13px] text-[#86868B]">Residente asignado</Label>
+                    <Input
+                      value={editForm.residente_asignado}
+                      onChange={(e) => setEditForm((f) => ({ ...f, residente_asignado: e.target.value }))}
+                      placeholder="Nombre del residente"
+                      className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 border-t border-[#F5F5F7] pt-5">
+                  <Button
+                    onClick={handleSaveInfo}
+                    disabled={savingInfo}
+                    className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
+                  >
+                    {savingInfo ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Save className="size-4" />
+                    )}
+                    Guardar cambios
+                  </Button>
+                  {savedInfo && (
+                    <span className="flex items-center gap-1.5 text-[13px] text-[#34C759]">
+                      <CheckCircle2 className="size-4" />
+                      Guardado
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB: Alcance */}
+        {/* ─── TAB: Alcance ─── */}
         {activeTab === "alcance" && (
           <div className="space-y-6">
             <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
@@ -287,17 +459,17 @@ export default function ProyectoDetailPage() {
               <div className="mt-4 flex items-center gap-3">
                 <Button
                   onClick={handleSaveAlcance}
-                  disabled={saving}
+                  disabled={savingAlcance}
                   className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
                 >
-                  {saving ? (
+                  {savingAlcance ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <Save className="size-4" />
                   )}
                   Guardar cambios
                 </Button>
-                {saved && (
+                {savedAlcance && (
                   <span className="flex items-center gap-1.5 text-[13px] text-[#34C759]">
                     <CheckCircle2 className="size-4" />
                     Guardado
@@ -308,14 +480,14 @@ export default function ProyectoDetailPage() {
           </div>
         )}
 
-        {/* TAB: Programacion */}
+        {/* ─── TAB: Programación ─── */}
         {activeTab === "programacion" && (
           <div className="space-y-4">
             {actividades.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#D2D2D7] bg-white p-16 text-center">
                 <Calendar className="size-10 text-[#D2D2D7]" />
                 <p className="text-[15px] text-[#1D1D1F]">Sin actividades programadas</p>
-                <p className="text-[13px] text-[#86868B]">Las actividades se agregan desde la programación del proyecto</p>
+                <p className="text-[13px] text-[#86868B]">Próximamente: programación de actividades</p>
               </div>
             ) : (
               actividades.map((act) => {
@@ -345,7 +517,6 @@ export default function ProyectoDetailPage() {
                         {st.label}
                       </span>
                     </div>
-                    {/* Progress */}
                     <div className="mt-3">
                       <div className="mb-1 flex items-center justify-between text-[11px]">
                         <span className="text-[#86868B]">Progreso</span>
