@@ -13,7 +13,7 @@ import {
   User,
   Calendar,
 } from "lucide-react";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase, getProyectosTable } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -94,8 +94,9 @@ export default function AdicionalDetailPage() {
         setAdicional(ad);
 
         // Fetch project name
+        const projTable = await getProyectosTable();
         const { data: proj } = await supabase
-          .from("proyectos_maestro")
+          .from(projTable)
           .select("cliente_nombre")
           .eq("id", ad.proyecto_id)
           .single();

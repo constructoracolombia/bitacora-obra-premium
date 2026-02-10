@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Building2, MapPin, DollarSign, User, Plus, Calendar } from "lucide-react";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase, getProyectosTable } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -46,15 +46,19 @@ export default function ProyectosPage() {
   const [filter, setFilter] = useState<FilterStatus>("ACTIVO");
 
   useEffect(() => {
-    async function fetch() {
+    async function fetchProjects() {
       try {
         const supabase = getSupabase();
+        const table = await getProyectosTable();
+
         const { data, error } = await supabase
-          .from("proyectos_maestro")
-          .select("id, cliente_nombre, direccion, presupuesto_total, porcentaje_avance, estado, residente_asignado, fecha_inicio, fecha_entrega_estimada, app_origen")
+          .from(table)
+          .select("*")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
+
+        console.log(`[${table}] Proyectos cargados:`, data?.length);
 
         setProjects(
           (data ?? []).map((r: Record<string, unknown>) => ({
@@ -76,7 +80,7 @@ export default function ProyectosPage() {
         setLoading(false);
       }
     }
-    fetch();
+    fetchProjects();
   }, []);
 
   const filtered =

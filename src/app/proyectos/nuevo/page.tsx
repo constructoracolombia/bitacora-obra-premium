@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase, getProyectosTable } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,8 +59,9 @@ export default function NuevoProyectoPage() {
 
     try {
       const supabase = getSupabase();
+      const table = await getProyectosTable();
       const { data, error: insertErr } = await supabase
-        .from("proyectos_maestro")
+        .from(table)
         .insert({
           cliente_nombre: form.cliente_nombre.trim(),
           direccion: form.direccion.trim(),

@@ -23,3 +23,29 @@ export function getSupabase(): SupabaseClient {
   supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
   return supabaseInstance;
 }
+
+/**
+ * Nombre de la tabla de proyectos.
+ * Intenta "proyectos_maestro" (tabla compartida con Finanzas).
+ * Fallback a "hoja_vida_proyecto" (tabla original de Bitácora).
+ */
+let resolvedTable: string | null = null;
+
+export async function getProyectosTable(): Promise<string> {
+  if (resolvedTable) return resolvedTable;
+
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("proyectos_maestro")
+    .select("id")
+    .limit(1);
+
+  if (error) {
+    console.warn("proyectos_maestro no disponible, usando hoja_vida_proyecto");
+    resolvedTable = "hoja_vida_proyecto";
+  } else {
+    resolvedTable = "proyectos_maestro";
+  }
+
+  return resolvedTable;
+}
