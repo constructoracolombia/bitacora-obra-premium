@@ -38,7 +38,7 @@ interface Adicional {
 }
 
 const STEPS = [
-  { key: "SOLICITUD_CLIENTE", label: "Solicitud del cliente", dateField: "fecha_solicitud" },
+  { key: "SOLICITUD_CLIENTE", label: "Solicitud del cliente", dateField: "fecha_solicitud", action: "Solicitar" },
   { key: "APROBADO_GERENCIA", label: "Aprobado por gerencia", dateField: "fecha_aprobacion", action: "Aprobar" },
   { key: "PAGO_50_CONFIRMADO", label: "Cliente pagó 50%", dateField: "fecha_pago_50", action: "Confirmar Pago 50%" },
   { key: "EN_EJECUCION", label: "Trabajo iniciado", dateField: "fecha_inicio_trabajo", action: "Iniciar Trabajo" },
