@@ -46,6 +46,7 @@ const STEPS = [
     key: "SOLICITADO",
     label: "Solicitado",
     dateField: "fecha_solicitud",
+    action: "Solicitar",
     description: "Requisición creada por el residente",
   },
   {
