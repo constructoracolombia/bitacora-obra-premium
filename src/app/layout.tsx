@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Providers } from "@/components/Providers";
+import { VersionCheck } from "./version-check";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,6 +27,11 @@ export const metadata: Metadata = {
     "Sistema profesional de bitácora de obra para gestión de proyectos de construcción.",
   authors: [{ name: "Bitácora Obra Premium" }],
   creator: "Bitácora Obra Premium",
+  other: {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+  },
 };
 
 export const viewport: Viewport = {
@@ -41,7 +47,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <VersionCheck />
         <Providers>
           <div className="flex min-h-screen bg-white">
             <Sidebar />
