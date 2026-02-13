@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import {
   FolderKanban,
   PlusCircle,
@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
   async function cargarEstadisticas() {
     try {
-      const supabase = getSupabase();
+      const supabase = createClient();
 
       const [proyectosRes, adicionalesRes, requisicionesRes] = await Promise.all([
         supabase.from('proyectos_maestro').select('estado'),

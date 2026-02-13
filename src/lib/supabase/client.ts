@@ -1,9 +1,8 @@
-import { getSupabase } from "@/lib/supabase";
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
-/**
- * @deprecated Use getSupabase() from "@/lib/supabase" instead.
- * Mantiene compatibilidad con imports existentes.
- */
 export function createClient() {
-  return getSupabase();
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 }
