@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, Package, Building2, Home, Tag } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -47,7 +47,7 @@ export default function RequisicionesPage() {
   useEffect(() => {
     async function fetch() {
       try {
-        const supabase = createClient();
+        const supabase = getSupabase();
         const [reqRes, projRes] = await Promise.all([
           supabase
             .from("requisiciones")

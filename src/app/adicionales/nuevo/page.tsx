@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +31,7 @@ export default function NuevoAdicionalPage() {
   useEffect(() => {
     async function fetch() {
       try {
-        const supabase = createClient();
+        const supabase = getSupabase();
         const { data } = await supabase
           .from("proyectos_maestro")
           .select("id, cliente_nombre")
@@ -54,7 +54,7 @@ export default function NuevoAdicionalPage() {
     setError(null);
 
     try {
-      const supabase = createClient();
+      const supabase = getSupabase();
       const { error: insertErr } = await supabase.from("adicionales").insert({
         proyecto_id: form.proyecto_id,
         descripcion: form.descripcion.trim(),

@@ -1,25 +1,13 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
-let supabaseInstance: SupabaseClient | null = null;
+let supabaseInstance: ReturnType<typeof createClient> | null = null;
 
-/**
- * Cliente Supabase singleton optimizado.
- * Reutiliza la misma instancia en todo el ciclo de vida de la aplicación.
- */
-export function getSupabase(): SupabaseClient {
-  if (supabaseInstance) {
-    return supabaseInstance;
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Missing Supabase environment variables. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local"
+export function getSupabase() {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(
+      'https://korjxxpjnjsgbeznukhx.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtvcmp4eHBqbmpzZ2Jlem51a2h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNTQzMzcsImV4cCI6MjA4NTYzMDMzN30.xw35oUfk7KybQiCl8B9ly84NQ5UUO2aYzwr8GZAbS1I'
     );
   }
-
-  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
   return supabaseInstance;
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, PlusCircle, DollarSign, Building2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -43,7 +43,7 @@ export default function AdicionalesPage() {
   useEffect(() => {
     async function fetch() {
       try {
-        const supabase = createClient();
+        const supabase = getSupabase();
         const [adRes, projRes] = await Promise.all([
           supabase
             .from("adicionales")

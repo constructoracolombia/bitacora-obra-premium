@@ -13,7 +13,7 @@ import {
   User,
   Calendar,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -64,7 +64,7 @@ export default function AdicionalDetailPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const supabase = createClient();
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from("adicionales")
         .select("*")
@@ -121,7 +121,7 @@ export default function AdicionalDetailPage() {
     setActing(true);
 
     try {
-      const supabase = createClient();
+      const supabase = getSupabase();
       const update: Record<string, unknown> = {
         estado: nextStep.key,
         [nextStep.dateField]: new Date().toISOString(),

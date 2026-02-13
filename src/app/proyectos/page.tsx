@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Plus, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -23,7 +23,7 @@ export default function ProyectosPage() {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<'TODOS' | 'ACTIVO' | 'PAUSADO' | 'FINALIZADO'>('ACTIVO');
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = getSupabase();
 
   useEffect(() => {
     cargarProyectos();
