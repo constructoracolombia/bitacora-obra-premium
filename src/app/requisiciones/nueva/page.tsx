@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
-import { getSupabase, getProyectosTable } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,9 +57,8 @@ export default function NuevaRequisicionPage() {
     async function fetch() {
       try {
         const supabase = getSupabase();
-        const projTable = await getProyectosTable();
         const { data } = await supabase
-          .from(projTable)
+          .from("proyectos_maestro")
           .select("id, cliente_nombre")
           .order("cliente_nombre");
         if (data) setProyectos(data as ProyectoOption[]);

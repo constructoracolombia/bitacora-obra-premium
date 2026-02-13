@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, Package, Building2, Home, Tag } from "lucide-react";
-import { getSupabase, getProyectosTable } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -48,14 +48,13 @@ export default function RequisicionesPage() {
     async function fetch() {
       try {
         const supabase = getSupabase();
-        const projTable = await getProyectosTable();
         const [reqRes, projRes] = await Promise.all([
           supabase
             .from("requisiciones")
             .select("*")
             .order("created_at", { ascending: false }),
           supabase
-            .from(projTable)
+            .from("proyectos_maestro")
             .select("id, cliente_nombre")
             .order("cliente_nombre"),
         ]);

@@ -89,7 +89,7 @@ async function main() {
 
   for (let i = 0; i < PROYECTOS_EJEMPLO.length; i++) {
     const p = PROYECTOS_EJEMPLO[i];
-    const { error } = await supabase.from("hoja_vida_proyecto").insert(p);
+    const { error } = await supabase.from("proyectos_maestro").insert(p);
 
     if (error) {
       console.error(`   ❌ ${p.cliente_nombre}: ${error.message}`);

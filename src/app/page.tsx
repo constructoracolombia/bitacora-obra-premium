@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabase, getProyectosTable } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import {
   FolderKanban,
   PlusCircle,
@@ -25,10 +25,9 @@ export default function DashboardPage() {
   async function cargarEstadisticas() {
     try {
       const supabase = getSupabase();
-      const projTable = await getProyectosTable();
 
       const [proyectosRes, adicionalesRes, requisicionesRes] = await Promise.all([
-        supabase.from(projTable).select('estado'),
+        supabase.from('proyectos_maestro').select('estado'),
         supabase.from('adicionales').select('estado'),
         supabase.from('requisiciones').select('estado'),
       ]);

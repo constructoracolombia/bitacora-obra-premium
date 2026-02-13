@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, PlusCircle, DollarSign, Building2 } from "lucide-react";
-import { getSupabase, getProyectosTable } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -44,14 +44,13 @@ export default function AdicionalesPage() {
     async function fetch() {
       try {
         const supabase = getSupabase();
-        const projTable = await getProyectosTable();
         const [adRes, projRes] = await Promise.all([
           supabase
             .from("adicionales")
             .select("*")
             .order("created_at", { ascending: false }),
           supabase
-            .from(projTable)
+            .from("proyectos_maestro")
             .select("id, cliente_nombre")
             .order("cliente_nombre"),
         ]);
