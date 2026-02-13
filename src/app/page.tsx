@@ -1,13 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/proyectos');
+    router.replace('/proyectos');
   }, [router]);
 
   return (

@@ -45,12 +45,20 @@ export default function ProyectosPage() {
 
       const { data, error } = await query;
 
+      console.log('=== DEBUG PROYECTOS ===');
+      console.log('Tabla usada:', table);
+      console.log('Filtro actual:', filtro);
+      console.log('Data recibida:', data);
+      console.log('Total proyectos:', data?.length);
+      console.log('Error:', error);
+      console.log('Primer proyecto:', data?.[0]);
+      console.log('========================');
+
       if (error) {
         console.error('Error:', error);
         return;
       }
 
-      console.log('Proyectos cargados:', data?.length);
       setProyectos(data || []);
     } catch (err) {
       console.error('Error cargando proyectos:', err);
