@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
   ChevronRight,
+  LayoutDashboard,
   ClipboardList,
   PlusCircle,
   Package,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
+  { href: "/", icon: LayoutDashboard, label: "Inicio", exact: true },
   { href: "/proyectos", icon: ClipboardList, label: "Proyectos" },
   { href: "/adicionales", icon: PlusCircle, label: "Adicionales" },
   { href: "/requisiciones", icon: Package, label: "Requisiciones" },
@@ -39,7 +41,7 @@ export function Sidebar() {
         )}
       >
         {!collapsed && (
-          <Link href="/proyectos" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <span className="text-[15px] font-semibold tracking-tight text-white">
               Bitácora Obra
             </span>
@@ -63,8 +65,9 @@ export function Sidebar() {
       <nav className="flex-1 space-y-0.5 p-2">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            pathname === item.href || pathname?.startsWith(item.href + "/");
+          const isActive = (item as { exact?: boolean }).exact
+            ? pathname === item.href
+            : pathname === item.href || pathname?.startsWith(item.href + "/");
           return (
             <Link key={item.href} href={item.href}>
               <div
