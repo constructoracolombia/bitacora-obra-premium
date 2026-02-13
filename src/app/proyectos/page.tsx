@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSupabase, getProyectosTable } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Plus, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -23,6 +23,7 @@ export default function ProyectosPage() {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<'TODOS' | 'ACTIVO' | 'PAUSADO' | 'FINALIZADO'>('ACTIVO');
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     cargarProyectos();
@@ -30,38 +31,38 @@ export default function ProyectosPage() {
 
   async function cargarProyectos() {
     setLoading(true);
-    try {
-      const supabase = getSupabase();
-      const table = await getProyectosTable();
+    console.log('🔍 Cargando proyectos, filtro:', filtro);
 
+    try {
       let query = supabase
-        .from(table)
+        .from('proyectos_maestro')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (filtro !== 'TODOS') {
-        query = query.eq('estado', filtro);
+      // Aplicar filtro de estado
+      if (filtro === 'ACTIVO') {
+        query = query.eq('estado', 'ACTIVO');
+      } else if (filtro === 'PAUSADO') {
+        query = query.eq('estado', 'PAUSADO');
+      } else if (filtro === 'FINALIZADO') {
+        query = query.eq('estado', 'FINALIZADO');
       }
+      // Si filtro === 'TODOS', no filtrar
 
       const { data, error } = await query;
 
-      console.log('=== DEBUG PROYECTOS ===');
-      console.log('Tabla usada:', table);
-      console.log('Filtro actual:', filtro);
-      console.log('Data recibida:', data);
-      console.log('Total proyectos:', data?.length);
-      console.log('Error:', error);
-      console.log('Primer proyecto:', data?.[0]);
-      console.log('========================');
+      console.log('✅ Datos recibidos:', data?.length, 'proyectos');
+      console.log('❌ Error:', error);
+      console.log('📋 Primer proyecto:', data?.[0]);
 
       if (error) {
-        console.error('Error:', error);
+        console.error('Error completo:', error);
         return;
       }
 
       setProyectos(data || []);
     } catch (err) {
-      console.error('Error cargando proyectos:', err);
+      console.error('Exception:', err);
     } finally {
       setLoading(false);
     }
