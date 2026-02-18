@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
-import { getSupabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,7 +56,6 @@ export default function NuevaRequisicionPage() {
   useEffect(() => {
     async function fetch() {
       try {
-        const supabase = getSupabase();
         const { data } = await supabase
           .from("proyectos_maestro")
           .select("id, cliente_nombre")
@@ -79,7 +78,6 @@ export default function NuevaRequisicionPage() {
     setError(null);
 
     try {
-      const supabase = getSupabase();
       const { error: insertErr } = await supabase.from("requisiciones").insert({
         proyecto_id: form.proyecto_id,
         apartamento: form.apartamento.trim(),

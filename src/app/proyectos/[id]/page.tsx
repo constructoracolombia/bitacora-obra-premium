@@ -16,7 +16,7 @@ import {
   Info,
   Lock,
 } from "lucide-react";
-import { getSupabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,7 +104,6 @@ export default function ProyectoDetailPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const supabase = getSupabase();
       const [projRes, actRes] = await Promise.all([
         supabase
           .from("proyectos_maestro")
@@ -180,7 +179,6 @@ export default function ProyectoDetailPage() {
     setSavingInfo(true);
     setSavedInfo(false);
     try {
-      const supabase = getSupabase();
       await supabase
         .from("proyectos_maestro")
         .update({
@@ -208,7 +206,6 @@ export default function ProyectoDetailPage() {
     setSavingAlcance(true);
     setSavedAlcance(false);
     try {
-      const supabase = getSupabase();
       await supabase
         .from("proyectos_maestro")
         .update({ alcance_text: alcance })

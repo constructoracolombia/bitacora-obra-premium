@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSupabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Plus, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { Building2, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Proyecto {
   id: string;
@@ -23,7 +23,6 @@ export default function ProyectosPage() {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<'TODOS' | 'ACTIVO' | 'PAUSADO' | 'FINALIZADO'>('ACTIVO');
   const router = useRouter();
-  const supabase = getSupabase();
 
   useEffect(() => {
     cargarProyectos();
@@ -31,7 +30,7 @@ export default function ProyectosPage() {
 
   async function cargarProyectos() {
     setLoading(true);
-    console.log('🔍 Cargando proyectos, filtro:', filtro);
+    console.log('🔍 Cargando proyectos con filtro:', filtro);
 
     try {
       let query = supabase
@@ -39,24 +38,17 @@ export default function ProyectosPage() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      // Aplicar filtro de estado
-      if (filtro === 'ACTIVO') {
-        query = query.eq('estado', 'ACTIVO');
-      } else if (filtro === 'PAUSADO') {
-        query = query.eq('estado', 'PAUSADO');
-      } else if (filtro === 'FINALIZADO') {
-        query = query.eq('estado', 'FINALIZADO');
+      if (filtro !== 'TODOS') {
+        query = query.eq('estado', filtro);
       }
-      // Si filtro === 'TODOS', no filtrar
 
       const { data, error } = await query;
 
-      console.log('✅ Datos recibidos:', data?.length, 'proyectos');
+      console.log('✅ Datos:', data);
       console.log('❌ Error:', error);
-      console.log('📋 Primer proyecto:', data?.[0]);
 
       if (error) {
-        console.error('Error completo:', error);
+        console.error('Error detallado:', error);
         return;
       }
 
@@ -69,7 +61,6 @@ export default function ProyectosPage() {
   }
 
   const formatoCOP = (valor: number) => {
-    if (!valor) return '$0';
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency: 'COP',
@@ -80,7 +71,6 @@ export default function ProyectosPage() {
   return (
     <div className="min-h-screen bg-white p-8">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">Proyectos</h1>
           <Button
@@ -92,7 +82,6 @@ export default function ProyectosPage() {
           </Button>
         </div>
 
-        {/* Filtros */}
         <div className="mb-6 flex gap-2">
           {(['TODOS', 'ACTIVO', 'PAUSADO', 'FINALIZADO'] as const).map((f) => (
             <button
@@ -109,14 +98,12 @@ export default function ProyectosPage() {
           ))}
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#007AFF] border-r-transparent"></div>
           </div>
         )}
 
-        {/* Empty State */}
         {!loading && proyectos.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20">
             <Building2 className="mb-4 h-16 w-16 text-gray-300" />
@@ -126,7 +113,6 @@ export default function ProyectosPage() {
           </div>
         )}
 
-        {/* Grid de Proyectos */}
         {!loading && proyectos.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2">
             {proyectos.map((proyecto) => (
@@ -138,7 +124,7 @@ export default function ProyectosPage() {
                 <div className="mb-4 flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {proyecto.cliente_nombre || 'Sin nombre'}
+                      {proyecto.cliente_nombre}
                     </h3>
                     {proyecto.direccion && (
                       <p className="mt-1 text-sm text-gray-600">{proyecto.direccion}</p>
@@ -158,28 +144,22 @@ export default function ProyectosPage() {
                 </div>
 
                 <div className="space-y-2 border-t border-gray-100 pt-4">
-                  {proyecto.presupuesto_total > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Presupuesto</span>
-                      <span className="text-sm font-semibold text-gray-900">
-                        {formatoCOP(proyecto.presupuesto_total)}
-                      </span>
-                    </div>
-                  )}
-                  {proyecto.fecha_inicio && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Inicio</span>
-                      <span className="text-sm text-gray-900">
-                        {new Date(proyecto.fecha_inicio + 'T12:00:00').toLocaleDateString('es-CO')}
-                      </span>
-                    </div>
-                  )}
-                  {proyecto.margen_objetivo > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Margen objetivo</span>
-                      <span className="text-sm text-gray-900">{proyecto.margen_objetivo}%</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Presupuesto</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {formatoCOP(proyecto.presupuesto_total)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Inicio</span>
+                    <span className="text-sm text-gray-900">
+                      {new Date(proyecto.fecha_inicio).toLocaleDateString('es-CO')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Margen objetivo</span>
+                    <span className="text-sm text-gray-900">{proyecto.margen_objetivo}%</span>
+                  </div>
                 </div>
 
                 {proyecto.app_origen === 'FINANZAS' && (
