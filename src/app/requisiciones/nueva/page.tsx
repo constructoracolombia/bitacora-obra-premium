@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,7 @@ const UNIDADES = [
 ];
 
 export default function NuevaRequisicionPage() {
+  const supabase = getSupabaseClient();
   const router = useRouter();
   const [proyectos, setProyectos] = useState<ProyectoOption[]>([]);
   const [loading, setLoading] = useState(true);

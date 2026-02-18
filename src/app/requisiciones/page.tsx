@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, Package, Building2, Home, Tag } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -38,6 +38,7 @@ const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }>
 type FilterEstado = "TODOS" | "SOLICITADO" | "APROBADO_COMPRA" | "COMPRADO" | "RECIBIDO";
 
 export default function RequisicionesPage() {
+  const supabase = getSupabaseClient();
   const [requisiciones, setRequisiciones] = useState<Requisicion[]>([]);
   const [proyectos, setProyectos] = useState<ProyectoOption[]>([]);
   const [loading, setLoading] = useState(true);

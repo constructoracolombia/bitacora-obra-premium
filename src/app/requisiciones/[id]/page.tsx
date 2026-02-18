@@ -16,7 +16,7 @@ import {
   User,
   Calendar,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -81,6 +81,7 @@ function getStepIndex(estado: string): number {
 }
 
 export default function RequisicionDetailPage() {
+  const supabase = getSupabaseClient();
   const params = useParams();
   const id = params.id as string;
 

@@ -16,7 +16,7 @@ import {
   Info,
   Lock,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +75,7 @@ const ACTIVIDAD_STATUS: Record<string, { bg: string; text: string; label: string
 };
 
 export default function ProyectoDetailPage() {
+  const supabase = getSupabaseClient();
   const params = useParams();
   const projectId = params.id as string;
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase-client';
 import { Building2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -19,6 +19,7 @@ interface Proyecto {
 }
 
 export default function ProyectosPage() {
+  const supabase = getSupabaseClient();
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<'TODOS' | 'ACTIVO' | 'PAUSADO' | 'FINALIZADO'>('ACTIVO');

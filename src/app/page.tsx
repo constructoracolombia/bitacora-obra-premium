@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase-client';
 import {
   FolderKanban,
   PlusCircle,
@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function DashboardPage() {
+  const supabase = getSupabaseClient();
   const router = useRouter();
   const [stats, setStats] = useState({
     proyectos: { activos: 0, total: 0 },

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, PlusCircle, DollarSign, Building2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -35,6 +35,7 @@ const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 export default function AdicionalesPage() {
+  const supabase = getSupabaseClient();
   const [adicionales, setAdicionales] = useState<Adicional[]>([]);
   const [proyectos, setProyectos] = useState<ProyectoOption[]>([]);
   const [loading, setLoading] = useState(true);
