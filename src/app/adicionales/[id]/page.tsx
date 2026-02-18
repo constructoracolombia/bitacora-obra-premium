@@ -120,7 +120,7 @@ export default function AdicionalDetailPage() {
     setActing(true);
 
     try {
-      const update: Record<string, unknown> = {
+      const update: any = {
         estado: nextStep.key,
         [nextStep.dateField]: new Date().toISOString(),
       };
