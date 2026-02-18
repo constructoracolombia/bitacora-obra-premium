@@ -125,6 +125,7 @@ export default function AdicionalDetailPage() {
         [nextStep.dateField]: new Date().toISOString(),
       };
 
+      // @ts-ignore - Supabase type inference issue
       const { error } = await supabase
         .from("adicionales")
         .update(update)
