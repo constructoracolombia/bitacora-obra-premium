@@ -287,11 +287,13 @@ export default function ProyectoDetailPage() {
 
   async function cargarHistorialAlcance() {
     if (!projectId) return;
-    const { data } = await supabase
+    console.log("Cargando historial para proyecto:", projectId);
+    const { data, error } = await supabase
       .from("alcance_historial")
       .select("*")
       .eq("proyecto_id", projectId)
       .order("created_at", { ascending: false });
+    console.log("Historial cargado:", data?.length, "registros, error:", error);
     setHistorialAlcance(data || []);
   }
 
@@ -627,87 +629,123 @@ export default function ProyectoDetailPage() {
         {/* ─── TAB: Alcance ─── */}
         {activeTab === "alcance" && (
           <div className="space-y-6">
-            {/* New entry */}
-            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
-              <Label className="text-[13px] text-[#86868B]">Alcance del proyecto</Label>
+            {/* Textarea para nuevo texto */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Alcance del proyecto
+              </label>
               <textarea
                 value={alcance}
                 onChange={(e) => setAlcance(e.target.value)}
-                placeholder="Describe el alcance del proyecto: actividades incluidas, entregables, especificaciones técnicas..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={6}
-                className="mt-2 w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-[14px] leading-relaxed text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
+                placeholder="Describe el alcance del proyecto: actividades incluidas, entregables, especificaciones técnicas..."
               />
-              <div className="mt-4 flex items-center gap-3">
-                <Button onClick={handleSaveAlcance} disabled={savingAlcance || !alcance.trim()} className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
-                  {savingAlcance ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                  Guardar texto
-                </Button>
-                {savedAlcance && <span className="flex items-center gap-1.5 text-[13px] text-[#34C759]"><CheckCircle2 className="size-4" />Guardado</span>}
-              </div>
             </div>
 
-            {/* Historial */}
-            {historialAlcance.length > 0 && (
-              <div>
-                <h3 className="mb-3 text-[13px] font-medium text-[#86868B]">
-                  Historial de alcance ({historialAlcance.length})
-                </h3>
+            {/* Boton guardar */}
+            <Button
+              onClick={handleSaveAlcance}
+              disabled={savingAlcance || !alcance.trim()}
+              className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
+            >
+              {savingAlcance ? "Guardando..." : "Guardar texto"}
+            </Button>
+
+            {/* Historial de textos */}
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                Historial de alcance ({historialAlcance.length})
+              </h3>
+              {historialAlcance.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No hay registros de alcance todavia.</p>
+              ) : (
                 <div className="space-y-3">
                   {historialAlcance.map((registro) => (
-                    <div key={registro.id} className="rounded-2xl border border-[#D2D2D7]/60 bg-[#F5F5F7]/50 p-5">
-                      <div className="mb-2 flex items-start justify-between">
-                        <span className="text-[11px] text-[#86868B]">
-                          {new Date(registro.created_at).toLocaleString("es-CO", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                    <div
+                      key={registro.id}
+                      className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <span className="text-xs font-medium text-gray-600">
+                            {new Date(registro.created_at).toLocaleString("es-CO", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
                         <button
-                          onClick={() => handleDeleteHistorial(registro.id)}
-                          className="rounded-md p-1 text-[#86868B] hover:bg-[#FF3B30]/10 hover:text-[#FF3B30]"
+                          onClick={async () => {
+                            if (confirm("Eliminar este registro?")) {
+                              await handleDeleteHistorial(registro.id);
+                            }
+                          }}
+                          className="text-xs text-red-500 hover:text-red-700 font-medium"
                         >
-                          <Trash2 className="size-3.5" />
+                          Eliminar
                         </button>
                       </div>
-                      <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1D1D1F]">
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                         {registro.texto}
                       </p>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Image */}
-            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
-              <Label className="text-[13px] text-[#86868B]">Imagen de alcance</Label>
+            {/* Imagen de alcance */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Imagen de alcance
+              </label>
               <input type="file" accept="image/*" className="hidden" id="alcance-upload" onChange={handleImageUpload} disabled={uploadingImage} />
-              {alcanceImagen ? (
-                <div className="relative mt-3 overflow-hidden rounded-xl border border-[#D2D2D7]/40">
-                  {uploadingImage && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
-                      <Loader2 className="size-8 animate-spin text-[#007AFF]" />
+              {!alcanceImagen ? (
+                <label
+                  htmlFor="alcance-upload"
+                  className="block border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                >
+                  {uploadingImage ? (
+                    <div className="flex flex-col items-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-[#007AFF] mb-2" />
+                      <p className="text-sm text-gray-600">Subiendo imagen...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <ImagePlus className="h-12 w-12 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">Click para subir imagen del alcance</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG hasta 10MB</p>
                     </div>
                   )}
-                  <img src={alcanceImagen} alt="Alcance del proyecto" className="w-full" />
-                  <div className="absolute right-2 top-2 flex gap-2">
-                    <label htmlFor="alcance-upload" className="flex size-8 cursor-pointer items-center justify-center rounded-full bg-[#007AFF] text-white shadow-md hover:bg-[#0051D5]">
-                      <ImagePlus className="size-4" />
+                </label>
+              ) : (
+                <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                  {uploadingImage && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
+                      <Loader2 className="h-8 w-8 animate-spin text-[#007AFF]" />
+                    </div>
+                  )}
+                  <img src={alcanceImagen} alt="Alcance del proyecto" className="w-full h-auto" />
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <label
+                      htmlFor="alcance-upload"
+                      className="bg-blue-500 text-white rounded-full p-2 cursor-pointer hover:bg-blue-600 shadow-lg"
+                    >
+                      <ImagePlus className="h-4 w-4" />
                     </label>
-                    <button onClick={handleRemoveImage} className="flex size-8 items-center justify-center rounded-full bg-[#FF3B30] text-white shadow-md hover:bg-[#FF3B30]/90">
-                      <X className="size-4" />
+                    <button
+                      onClick={handleRemoveImage}
+                      className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg"
+                    >
+                      <X className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-              ) : (
-                <label htmlFor="alcance-upload" className="mt-3 flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[#D2D2D7] p-8 transition-colors hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5">
-                  {uploadingImage ? <Loader2 className="size-8 animate-spin text-[#007AFF]" /> : <ImagePlus className="size-8 text-[#D2D2D7]" />}
-                  <span className="text-[13px] text-[#86868B]">{uploadingImage ? "Subiendo..." : "Click para subir imagen del alcance"}</span>
-                  <span className="text-[11px] text-[#C7C7CC]">PNG, JPG hasta 10MB — se guarda automaticamente</span>
-                </label>
               )}
             </div>
           </div>
