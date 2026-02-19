@@ -287,37 +287,73 @@ export default function ProyectoDetailPage() {
 
   async function cargarHistorialAlcance() {
     if (!projectId) return;
-    console.log("Cargando historial para proyecto:", projectId);
-    const { data, error } = await supabase
-      .from("alcance_historial")
-      .select("*")
-      .eq("proyecto_id", projectId)
-      .order("created_at", { ascending: false });
-    console.log("Historial cargado:", data?.length, "registros, error:", error);
-    setHistorialAlcance(data || []);
+    try {
+      console.log("📋 Cargando historial para proyecto:", projectId);
+      const { data, error } = await supabase
+        .from("alcance_historial")
+        .select("*")
+        .eq("proyecto_id", projectId)
+        .order("created_at", { ascending: false });
+
+      console.log("📋 Historial cargado:", data);
+      console.log("❌ Error:", error);
+
+      if (error) {
+        console.error("Error cargando historial:", error);
+        return;
+      }
+
+      setHistorialAlcance(data || []);
+    } catch (err) {
+      console.error("Exception cargando historial:", err);
+    }
   }
 
   useEffect(() => {
     if (activeTab === "alcance" && projectId) {
+      console.log("🔄 Tab Alcance abierto, cargando historial...");
       cargarHistorialAlcance();
     }
   }, [activeTab, projectId]);
 
   async function handleSaveAlcance() {
-    if (!project || !alcance.trim()) return;
+    const textoLimpio = alcance.trim();
+    if (!project || !textoLimpio) {
+      alert("Escribe algo antes de guardar");
+      return;
+    }
+
     setSavingAlcance(true);
     setSavedAlcance(false);
     try {
-      await supabase.from("alcance_historial").insert({
-        proyecto_id: project.id,
-        texto: alcance.trim(),
-      });
+      console.log("💾 Guardando texto...", textoLimpio);
+
+      const { data, error } = await supabase
+        .from("alcance_historial")
+        .insert({
+          proyecto_id: project.id,
+          texto: textoLimpio,
+        })
+        .select();
+
+      console.log("✅ Guardado:", data);
+      console.log("❌ Error:", error);
+
+      if (error) {
+        console.error("Error guardando:", error);
+        alert("Error al guardar: " + error.message);
+        return;
+      }
+
       setAlcance("");
       setSavedAlcance(true);
       setTimeout(() => setSavedAlcance(false), 2000);
       await cargarHistorialAlcance();
+
+      console.log("✅ Texto guardado exitosamente");
     } catch (err) {
-      console.error("Error saving alcance:", err);
+      console.error("Exception guardando:", err);
+      alert("Error al guardar");
     } finally {
       setSavingAlcance(false);
     }
@@ -325,10 +361,14 @@ export default function ProyectoDetailPage() {
 
   async function handleDeleteHistorial(id: string) {
     try {
-      await supabase.from("alcance_historial").delete().eq("id", id);
+      const { error } = await supabase.from("alcance_historial").delete().eq("id", id);
+      if (error) {
+        console.error("Error eliminando:", error);
+        return;
+      }
       setHistorialAlcance((prev) => prev.filter((h) => h.id !== id));
     } catch (err) {
-      console.error("Error deleting historial:", err);
+      console.error("Exception eliminando historial:", err);
     }
   }
 
