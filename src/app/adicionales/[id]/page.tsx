@@ -151,13 +151,13 @@ export default function AdicionalDetailPage() {
     if (!adicional) return;
 
     const currentIdx = getStepIndex(adicional.estado);
-    const nextStep = STEPS[currentIdx + 1];
 
-    if (!nextStep) {
+    if (currentIdx + 1 >= STEPS.length) {
       alert("El adicional ya esta completado");
       return;
     }
 
+    const nextStep = STEPS[currentIdx + 1];
     setActing(true);
 
     try {
@@ -166,15 +166,21 @@ export default function AdicionalDetailPage() {
         [nextStep.dateField]: new Date().toISOString(),
       };
 
+      console.log("Avanzando a:", nextStep.key, "desde:", adicional.estado);
+
       const { error } = await supabase
         .from("adicionales")
         .update(update as any)
         .eq("id", adicional.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error:", error);
+        throw error;
+      }
+
       await fetchData();
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error avanzando:", err);
       alert("Error al avanzar paso");
     } finally {
       setActing(false);
