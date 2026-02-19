@@ -12,6 +12,7 @@ import {
   ClipboardList,
   PlusCircle,
   Package,
+  Hammer,
   LogOut,
 } from "lucide-react";
 
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/proyectos", icon: ClipboardList, label: "Proyectos" },
   { href: "/adicionales", icon: PlusCircle, label: "Adicionales" },
   { href: "/requisiciones", icon: Package, label: "Requisiciones" },
+  { href: "/carpinterias", icon: Hammer, label: "Carpintería" },
 ];
 
 export function Sidebar() {
