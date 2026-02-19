@@ -311,12 +311,20 @@ export default function ProyectoDetailPage() {
       const { error: uploadError } = await supabase.storage.from("proyectos").upload(path, file);
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from("proyectos").getPublicUrl(path);
-      setAlcanceImagen(urlData.publicUrl);
+      const imageUrl = urlData.publicUrl;
+      setAlcanceImagen(imageUrl);
+      await supabase.from("proyectos_maestro").update({ alcance_imagen: imageUrl }).eq("id", project.id);
     } catch (err) {
       console.error("Error uploading image:", err);
     } finally {
       setUploadingImage(false);
     }
+  }
+
+  async function handleRemoveImage() {
+    if (!project) return;
+    setAlcanceImagen(null);
+    await supabase.from("proyectos_maestro").update({ alcance_imagen: null }).eq("id", project.id);
   }
 
   // ── Kanban / CPM handlers ──
@@ -427,7 +435,6 @@ export default function ProyectoDetailPage() {
   }
 
   const statusStyle = STATUS_STYLES[project.estado ?? "ACTIVO"] ?? STATUS_STYLES.ACTIVO;
-  const criticalCount = actividades.filter((a) => a.es_critica && a.estado !== "TERMINADO").length;
 
   return (
     <div className="min-h-screen bg-white">
@@ -474,11 +481,6 @@ export default function ProyectoDetailPage() {
                 {tab.id === "adicionales" && adicionales.length > 0 && (
                   <span className="ml-1.5 rounded-full bg-[#007AFF]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#007AFF]">
                     {adicionales.length}
-                  </span>
-                )}
-                {tab.id === "programacion" && criticalCount > 0 && (
-                  <span className="ml-1.5 rounded-full bg-[#FF3B30]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#FF3B30]">
-                    {criticalCount}
                   </span>
                 )}
                 {activeTab === tab.id && (
@@ -582,12 +584,20 @@ export default function ProyectoDetailPage() {
               />
             </div>
 
+            <div className="flex items-center gap-3">
+              <Button onClick={handleSaveAlcance} disabled={savingAlcance} className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
+                {savingAlcance ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                Guardar texto
+              </Button>
+              {savedAlcance && <span className="flex items-center gap-1.5 text-[13px] text-[#34C759]"><CheckCircle2 className="size-4" />Guardado</span>}
+            </div>
+
             <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
               <Label className="text-[13px] text-[#86868B]">Imagen de alcance</Label>
               {alcanceImagen ? (
                 <div className="relative mt-3">
-                  <img src={alcanceImagen} alt="Alcance" className="max-h-80 w-full rounded-xl object-contain border border-[#D2D2D7]/40" />
-                  <button onClick={() => setAlcanceImagen(null)} className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70">
+                  <img src={alcanceImagen} alt="Alcance del proyecto" className="w-full rounded-xl border border-[#D2D2D7]/40" />
+                  <button onClick={handleRemoveImage} className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-[#FF3B30] text-white shadow-md hover:bg-[#FF3B30]/90">
                     <X className="size-4" />
                   </button>
                 </div>
@@ -595,17 +605,10 @@ export default function ProyectoDetailPage() {
                 <label className="mt-3 flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[#D2D2D7] p-8 transition-colors hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5">
                   {uploadingImage ? <Loader2 className="size-8 animate-spin text-[#007AFF]" /> : <ImagePlus className="size-8 text-[#D2D2D7]" />}
                   <span className="text-[13px] text-[#86868B]">{uploadingImage ? "Subiendo..." : "Click para subir imagen del alcance"}</span>
+                  <span className="text-[11px] text-[#C7C7CC]">PNG, JPG hasta 10MB — se guarda automaticamente</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
                 </label>
               )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button onClick={handleSaveAlcance} disabled={savingAlcance} className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
-                {savingAlcance ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                Guardar cambios
-              </Button>
-              {savedAlcance && <span className="flex items-center gap-1.5 text-[13px] text-[#34C759]"><CheckCircle2 className="size-4" />Guardado</span>}
             </div>
           </div>
         )}
@@ -663,16 +666,9 @@ export default function ProyectoDetailPage() {
               <div className="h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
                 <div className="h-full rounded-full bg-[#34C759] transition-all duration-500" style={{ width: `${kanbanProgress}%` }} />
               </div>
-              <div className="mt-2 flex items-center justify-between">
-                <p className="text-[12px] text-[#86868B]">
-                  {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades
-                </p>
-                {criticalCount > 0 && (
-                  <p className="text-[12px] font-medium text-[#FF3B30]">
-                    {criticalCount} en ruta critica
-                  </p>
-                )}
-              </div>
+              <p className="mt-2 text-[12px] text-[#86868B]">
+                {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades
+              </p>
             </div>
 
             {/* Add new task button */}

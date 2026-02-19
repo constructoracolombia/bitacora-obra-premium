@@ -2,7 +2,6 @@
 "use client";
 
 import { Calendar, Clock, AlertTriangle, Edit2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export interface Actividad {
   id: string;
@@ -46,15 +45,7 @@ export function ActividadCard({ actividad, onMoverEstado, onEditar, onEliminar }
   const diasRetraso = calcularRetraso();
 
   return (
-    <div
-      className={cn(
-        "group rounded-xl border bg-white p-4 transition-all hover:shadow-md",
-        actividad.es_critica ? "border-[#FF3B30]/30" : "border-[#D2D2D7]/60"
-      )}
-    >
-      {actividad.es_critica && (
-        <div className="mb-2 h-1 w-full rounded-full bg-[#FF3B30]/40" />
-      )}
+    <div className="group rounded-xl border border-[#D2D2D7]/60 bg-white p-4 transition-all hover:shadow-md">
       <div className="mb-2 flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <h4 className="text-[13px] font-semibold text-[#1D1D1F]">{actividad.titulo}</h4>
@@ -91,13 +82,9 @@ export function ActividadCard({ actividad, onMoverEstado, onEditar, onEliminar }
       )}
 
       {diasRetraso != null && diasRetraso > 0 && (
-        <div className={cn(
-          "mb-2 rounded-lg p-2 text-[11px]",
-          actividad.es_critica ? "bg-[#FF3B30]/10 text-[#FF3B30]" : "bg-[#FF9500]/10 text-[#FF9500]"
-        )}>
+        <div className="mb-2 rounded-lg bg-[#FF9500]/10 p-2 text-[11px] text-[#FF9500]">
           <AlertTriangle className="mr-1 inline size-3" />
           Retrasada {diasRetraso} días
-          {actividad.es_critica && " — Impacta entrega final"}
         </div>
       )}
 
