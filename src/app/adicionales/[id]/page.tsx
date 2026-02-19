@@ -151,9 +151,8 @@ export default function AdicionalDetailPage() {
     if (!adicional) return;
 
     const currentIdx = getStepIndex(adicional.estado);
-    if (currentIdx < 0 || currentIdx >= STEPS.length) return;
-
     const nextStep = STEPS[currentIdx + 1];
+
     if (!nextStep) {
       alert("El adicional ya esta completado");
       return;
@@ -172,15 +171,11 @@ export default function AdicionalDetailPage() {
         .update(update as any)
         .eq("id", adicional.id);
 
-      if (error) {
-        console.error("Error:", error);
-        throw error;
-      }
-
+      if (error) throw error;
       await fetchData();
     } catch (err) {
-      console.error("Error avanzando:", err);
-      alert("Error al avanzar paso: " + ((err as any)?.message || "desconocido"));
+      console.error("Error:", err);
+      alert("Error al avanzar paso");
     } finally {
       setActing(false);
     }
