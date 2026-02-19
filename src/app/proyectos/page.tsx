@@ -2,9 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 import { Building2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+const SUPABASE_CLIENT = createClient(
+  'https://ngawmyhrfgdckjyynhbr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nYXdteWhyZmdkY2tqeXluaGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MTM3MzQsImV4cCI6MjA4NTE4OTczNH0.Drp40nu7XyRz6dWmlbgGBiqdSxlwPzubj-lX48N6JSs'
+);
 
 interface Proyecto {
   id: string;
@@ -19,7 +24,6 @@ interface Proyecto {
 }
 
 export default function ProyectosPage() {
-  const supabase = getSupabaseClient();
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<'TODOS' | 'ACTIVO' | 'PAUSADO' | 'FINALIZADO'>('ACTIVO');
@@ -34,7 +38,7 @@ export default function ProyectosPage() {
     console.log('🔍 Cargando proyectos con filtro:', filtro);
 
     try {
-      let query = supabase
+      let query = SUPABASE_CLIENT
         .from('proyectos_maestro')
         .select('*')
         .order('created_at', { ascending: false });
