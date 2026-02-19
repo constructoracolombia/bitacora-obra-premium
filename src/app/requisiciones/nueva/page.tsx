@@ -89,7 +89,8 @@ export default function NuevaRequisicionPage() {
         unidad: form.unidad,
         solicitado_por: form.solicitado_por.trim() || null,
         notas: form.notas.trim() || null,
-        estado: "SOLICITADO",
+        estado: "solicitada",
+        fecha_solicitada: new Date().toISOString(),
       });
 
       if (insertErr) throw insertErr;
