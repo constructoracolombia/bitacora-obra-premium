@@ -151,7 +151,10 @@ export default function AdicionalDetailPage() {
     if (!adicional) return;
 
     const currentIdx = getStepIndex(adicional.estado);
-    if (currentIdx >= STEPS.length - 1) return;
+    if (currentIdx >= STEPS.length - 1) {
+      alert("El adicional ya esta completado");
+      return;
+    }
 
     const nextStep = STEPS[currentIdx + 1];
     setActing(true);
@@ -164,14 +167,18 @@ export default function AdicionalDetailPage() {
 
       const { error } = await supabase
         .from("adicionales")
-        .update(update)
+        .update(update as any)
         .eq("id", adicional.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error:", error);
+        throw error;
+      }
+
       await fetchData();
     } catch (err) {
-      console.error("Error avanzando paso:", err);
-      alert("Error al avanzar paso");
+      console.error("Error avanzando:", err);
+      alert("Error al avanzar paso: " + ((err as any)?.message || "desconocido"));
     } finally {
       setActing(false);
     }
@@ -264,31 +271,49 @@ export default function AdicionalDetailPage() {
             Flujo de aprobación
           </h3>
 
-          <div className="space-y-0">
+          <div className="space-y-2">
             {STEPS.map((step, idx) => {
               const isCompleted = currentStepIndex > idx;
               const isCurrent = currentStepIndex === idx;
+              const canCheck = isCurrent;
               const stepDate =
                 adicional[step.dateField as keyof Adicional] as string | null;
 
               return (
-                <div key={step.key} className="flex gap-4">
-                  {/* Circulo indicador */}
+                <div key={step.key} className="flex gap-4 items-start">
+                  {/* Checkbox + linea vertical */}
                   <div className="flex flex-col items-center">
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold ${
-                        isCompleted
-                          ? "bg-blue-500 text-white"
-                          : isCurrent
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-300 text-gray-600"
-                      }`}
-                    >
-                      {isCompleted ? "✓" : idx + 1}
-                    </div>
+                    <label className="relative cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isCompleted}
+                        disabled={!canCheck || acting}
+                        onChange={async () => {
+                          if (canCheck && !acting) {
+                            await avanzarPaso();
+                          }
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
+                          isCompleted
+                            ? "bg-blue-500 border-blue-500"
+                            : canCheck
+                              ? "border-blue-500 hover:bg-blue-50 cursor-pointer"
+                              : "border-gray-300 bg-gray-100 cursor-not-allowed"
+                        }`}
+                      >
+                        {isCompleted && (
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </label>
                     {idx < STEPS.length - 1 && (
                       <div
-                        className={`w-1 flex-1 min-h-[80px] ${
+                        className={`w-0.5 h-12 mt-2 transition-colors ${
                           isCompleted ? "bg-blue-500" : "bg-gray-300"
                         }`}
                       />
@@ -296,20 +321,34 @@ export default function AdicionalDetailPage() {
                   </div>
 
                   {/* Contenido del paso */}
-                  <div className="flex-1 pb-8">
-                    <h4
-                      className={`text-base font-semibold ${
-                        isCurrent
-                          ? "text-blue-600"
-                          : isCompleted
+                  <div className="flex-1 pb-2">
+                    <div className="flex items-baseline gap-2">
+                      <span
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
+                          isCompleted
+                            ? "bg-blue-500 text-white"
+                            : isCurrent
+                              ? "bg-blue-100 text-blue-600 border-2 border-blue-500"
+                              : "bg-gray-200 text-gray-500"
+                        }`}
+                      >
+                        {idx + 1}
+                      </span>
+                      <h4
+                        className={`font-semibold ${
+                          isCompleted
                             ? "text-gray-900"
-                            : "text-gray-400"
-                      }`}
-                    >
-                      {step.label}
-                    </h4>
+                            : isCurrent
+                              ? "text-blue-600"
+                              : "text-gray-400"
+                        }`}
+                      >
+                        {step.label}
+                      </h4>
+                    </div>
+
                     <p
-                      className={`text-sm mt-1 ${
+                      className={`text-sm mt-1 ml-8 ${
                         isCompleted || isCurrent ? "text-gray-600" : "text-gray-400"
                       }`}
                     >
@@ -317,30 +356,27 @@ export default function AdicionalDetailPage() {
                     </p>
 
                     {stepDate && (
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-gray-500 mt-1 ml-8">
                         {new Date(stepDate).toLocaleString("es-CO", {
-                          year: "numeric",
-                          month: "long",
                           day: "numeric",
+                          month: "long",
+                          year: "numeric",
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </p>
                     )}
 
-                    {isCurrent && step.action && !acting && (
-                      <button
-                        onClick={avanzarPaso}
-                        className="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors"
-                      >
-                        {step.action}
-                      </button>
+                    {isCurrent && !acting && (
+                      <p className="text-xs text-blue-600 mt-1 ml-8 font-medium">
+                        ← Marca la casilla para avanzar
+                      </p>
                     )}
 
-                    {isCurrent && acting && (
-                      <div className="mt-3 flex items-center gap-2 text-blue-600">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
-                        <span className="text-sm">Procesando...</span>
+                    {acting && isCurrent && (
+                      <div className="flex items-center gap-2 text-blue-600 mt-2 ml-8">
+                        <div className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full" />
+                        <span className="text-xs">Procesando...</span>
                       </div>
                     )}
                   </div>
