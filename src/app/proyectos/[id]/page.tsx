@@ -304,18 +304,42 @@ export default function ProyectoDetailPage() {
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !project) return;
+
+    // Show local preview immediately
+    const localPreview = URL.createObjectURL(file);
+    setAlcanceImagen(localPreview);
     setUploadingImage(true);
+
     try {
       const ext = file.name.split(".").pop();
-      const path = `alcance/${project.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("proyectos").upload(path, file);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("proyectos").getPublicUrl(path);
+      const fileName = `${project.id}-${Date.now()}.${ext}`;
+      const filePath = `alcance/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("alcance-imagenes")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        throw uploadError;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("alcance-imagenes")
+        .getPublicUrl(filePath);
+
       const imageUrl = urlData.publicUrl;
       setAlcanceImagen(imageUrl);
-      await supabase.from("proyectos_maestro").update({ alcance_imagen: imageUrl }).eq("id", project.id);
+
+      await supabase
+        .from("proyectos_maestro")
+        .update({ alcance_imagen: imageUrl })
+        .eq("id", project.id);
+
+      setProject((prev) => prev ? { ...prev, alcance_imagen: imageUrl } : prev);
     } catch (err) {
       console.error("Error uploading image:", err);
+      // Keep local preview even if DB save fails
     } finally {
       setUploadingImage(false);
     }
@@ -324,6 +348,7 @@ export default function ProyectoDetailPage() {
   async function handleRemoveImage() {
     if (!project) return;
     setAlcanceImagen(null);
+    setProject((prev) => prev ? { ...prev, alcance_imagen: null } : prev);
     await supabase.from("proyectos_maestro").update({ alcance_imagen: null }).eq("id", project.id);
   }
 
@@ -594,19 +619,38 @@ export default function ProyectoDetailPage() {
 
             <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
               <Label className="text-[13px] text-[#86868B]">Imagen de alcance</Label>
+
+              <input type="file" accept="image/*" className="hidden" id="alcance-upload" onChange={handleImageUpload} disabled={uploadingImage} />
+
               {alcanceImagen ? (
-                <div className="relative mt-3">
-                  <img src={alcanceImagen} alt="Alcance del proyecto" className="w-full rounded-xl border border-[#D2D2D7]/40" />
-                  <button onClick={handleRemoveImage} className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-[#FF3B30] text-white shadow-md hover:bg-[#FF3B30]/90">
-                    <X className="size-4" />
-                  </button>
+                <div className="relative mt-3 overflow-hidden rounded-xl border border-[#D2D2D7]/40">
+                  {uploadingImage && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
+                      <Loader2 className="size-8 animate-spin text-[#007AFF]" />
+                    </div>
+                  )}
+                  <img
+                    src={alcanceImagen}
+                    alt="Alcance del proyecto"
+                    className="w-full"
+                    onError={(e) => {
+                      console.error("Error loading image:", alcanceImagen);
+                    }}
+                  />
+                  <div className="absolute right-2 top-2 flex gap-2">
+                    <label htmlFor="alcance-upload" className="flex size-8 cursor-pointer items-center justify-center rounded-full bg-[#007AFF] text-white shadow-md hover:bg-[#0051D5]">
+                      <ImagePlus className="size-4" />
+                    </label>
+                    <button onClick={handleRemoveImage} className="flex size-8 items-center justify-center rounded-full bg-[#FF3B30] text-white shadow-md hover:bg-[#FF3B30]/90">
+                      <X className="size-4" />
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <label className="mt-3 flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[#D2D2D7] p-8 transition-colors hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5">
+                <label htmlFor="alcance-upload" className="mt-3 flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[#D2D2D7] p-8 transition-colors hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5">
                   {uploadingImage ? <Loader2 className="size-8 animate-spin text-[#007AFF]" /> : <ImagePlus className="size-8 text-[#D2D2D7]" />}
                   <span className="text-[13px] text-[#86868B]">{uploadingImage ? "Subiendo..." : "Click para subir imagen del alcance"}</span>
                   <span className="text-[11px] text-[#C7C7CC]">PNG, JPG hasta 10MB — se guarda automaticamente</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
                 </label>
               )}
             </div>
