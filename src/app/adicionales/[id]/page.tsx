@@ -273,45 +273,51 @@ export default function AdicionalDetailPage() {
 
               return (
                 <div key={step.key} className="flex gap-4">
-                  {/* Indicator */}
+                  {/* Circulo indicador */}
                   <div className="flex flex-col items-center">
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
+                      className={`flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold ${
                         isCompleted
-                          ? "bg-green-500 text-white"
+                          ? "bg-blue-500 text-white"
                           : isCurrent
-                            ? "bg-blue-500 text-white animate-pulse"
-                            : "bg-gray-200 text-gray-400"
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-300 text-gray-600"
                       }`}
                     >
                       {isCompleted ? "✓" : idx + 1}
                     </div>
                     {idx < STEPS.length - 1 && (
                       <div
-                        className={`w-0.5 h-16 ${
-                          isCompleted ? "bg-green-500" : "bg-gray-200"
+                        className={`w-1 flex-1 min-h-[80px] ${
+                          isCompleted ? "bg-blue-500" : "bg-gray-300"
                         }`}
                       />
                     )}
                   </div>
 
-                  {/* Content */}
+                  {/* Contenido del paso */}
                   <div className="flex-1 pb-8">
                     <h4
-                      className={`font-semibold ${
+                      className={`text-base font-semibold ${
                         isCurrent
                           ? "text-blue-600"
                           : isCompleted
-                            ? "text-green-600"
+                            ? "text-gray-900"
                             : "text-gray-400"
                       }`}
                     >
                       {step.label}
                     </h4>
-                    <p className="text-sm text-gray-600">{step.description}</p>
+                    <p
+                      className={`text-sm mt-1 ${
+                        isCompleted || isCurrent ? "text-gray-600" : "text-gray-400"
+                      }`}
+                    >
+                      {step.description}
+                    </p>
 
                     {stepDate && (
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 mt-2">
                         {new Date(stepDate).toLocaleString("es-CO", {
                           year: "numeric",
                           month: "long",
@@ -322,14 +328,20 @@ export default function AdicionalDetailPage() {
                       </p>
                     )}
 
-                    {isCurrent && step.action && (
-                      <Button
+                    {isCurrent && step.action && !acting && (
+                      <button
                         onClick={avanzarPaso}
-                        disabled={acting}
-                        className="mt-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600"
+                        className="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors"
                       >
-                        {acting ? "Procesando..." : step.action}
-                      </Button>
+                        {step.action}
+                      </button>
+                    )}
+
+                    {isCurrent && acting && (
+                      <div className="mt-3 flex items-center gap-2 text-blue-600">
+                        <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                        <span className="text-sm">Procesando...</span>
+                      </div>
                     )}
                   </div>
                 </div>
