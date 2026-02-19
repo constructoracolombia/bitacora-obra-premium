@@ -118,6 +118,12 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 const ADICIONAL_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  solicitado: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Solicitud" },
+  aprobado_gerencia: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Aprobado" },
+  pago_50: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "50% Pagado" },
+  trabajo_iniciado: { bg: "bg-[#007AFF]/10", text: "text-[#007AFF]", label: "En ejecución" },
+  trabajo_finalizado: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Finalizado" },
+  pagado: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Pagado" },
   SOLICITUD_CLIENTE: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Solicitud" },
   APROBADO_GERENCIA: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Aprobado" },
   PAGO_50_CONFIRMADO: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "50% Pagado" },

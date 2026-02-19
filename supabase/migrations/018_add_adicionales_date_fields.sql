@@ -1,0 +1,6 @@
+ALTER TABLE adicionales ADD COLUMN IF NOT EXISTS fecha_solicitud TIMESTAMPTZ;
+ALTER TABLE adicionales ADD COLUMN IF NOT EXISTS fecha_aprobacion TIMESTAMPTZ;
+ALTER TABLE adicionales ADD COLUMN IF NOT EXISTS fecha_primer_pago TIMESTAMPTZ;
+ALTER TABLE adicionales ADD COLUMN IF NOT EXISTS fecha_inicio_trabajo TIMESTAMPTZ;
+ALTER TABLE adicionales ADD COLUMN IF NOT EXISTS fecha_fin_trabajo TIMESTAMPTZ;
+ALTER TABLE adicionales ADD COLUMN IF NOT EXISTS fecha_pago_final TIMESTAMPTZ;

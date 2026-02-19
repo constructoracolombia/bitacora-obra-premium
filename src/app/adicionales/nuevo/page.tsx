@@ -60,7 +60,8 @@ export default function NuevoAdicionalPage() {
         descripcion: form.descripcion.trim(),
         monto: Number(form.monto),
         solicitado_por: form.solicitado_por.trim() || null,
-        estado: "SOLICITUD_CLIENTE",
+        estado: "solicitado",
+        fecha_solicitud: new Date().toISOString(),
       });
 
       if (insertErr) throw insertErr;
