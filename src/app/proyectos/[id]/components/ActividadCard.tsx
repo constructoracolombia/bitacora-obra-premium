@@ -48,18 +48,16 @@ export function ActividadCard({ actividad, onMoverEstado, onEditar, onEliminar }
   return (
     <div
       className={cn(
-        "group rounded-xl border-2 bg-white p-4 transition-all hover:shadow-md",
-        actividad.es_critica ? "border-[#FF3B30]/40 shadow-sm" : "border-[#D2D2D7]/60"
+        "group rounded-xl border bg-white p-4 transition-all hover:shadow-md",
+        actividad.es_critica ? "border-[#FF3B30]/30" : "border-[#D2D2D7]/60"
       )}
     >
+      {actividad.es_critica && (
+        <div className="mb-2 h-1 w-full rounded-full bg-[#FF3B30]/40" />
+      )}
       <div className="mb-2 flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <h4 className="text-[13px] font-semibold text-[#1D1D1F]">{actividad.titulo}</h4>
-          {actividad.es_critica && (
-            <span className="mt-1 inline-block rounded-md bg-[#FF3B30]/10 px-2 py-0.5 text-[10px] font-bold text-[#FF3B30]">
-              RUTA CRITICA
-            </span>
-          )}
         </div>
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button onClick={() => onEditar(actividad)} className="rounded-md p-1 text-[#86868B] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]">

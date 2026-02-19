@@ -15,6 +15,18 @@ interface ActividadModalProps {
   onCerrar: () => void;
 }
 
+function calcularDiasHabiles(inicio: string, fin: string): number {
+  if (!inicio || !fin) return 0;
+  const fechaInicio = new Date(inicio + "T12:00:00");
+  const fechaFin = new Date(fin + "T12:00:00");
+  let dias = 0;
+  for (let d = new Date(fechaInicio); d <= fechaFin; d.setDate(d.getDate() + 1)) {
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) dias++;
+  }
+  return dias;
+}
+
 export function ActividadModal({ actividad, actividadesDisponibles, onGuardar, onCerrar }: ActividadModalProps) {
   const [form, setForm] = useState({
     titulo: "",
@@ -22,6 +34,7 @@ export function ActividadModal({ actividad, actividadesDisponibles, onGuardar, o
     porcentaje: 10,
     duracion_dias: 1,
     fecha_inicio_estimada: "",
+    fecha_fin_estimada: "",
     predecesoras: [] as string[],
   });
 
@@ -33,10 +46,18 @@ export function ActividadModal({ actividad, actividadesDisponibles, onGuardar, o
         porcentaje: actividad.porcentaje || 10,
         duracion_dias: actividad.duracion_dias || 1,
         fecha_inicio_estimada: actividad.fecha_inicio_estimada || "",
+        fecha_fin_estimada: actividad.fecha_fin_estimada || "",
         predecesoras: actividad.predecesoras || [],
       });
     }
   }, [actividad]);
+
+  useEffect(() => {
+    if (form.fecha_inicio_estimada && form.fecha_fin_estimada) {
+      const dias = calcularDiasHabiles(form.fecha_inicio_estimada, form.fecha_fin_estimada);
+      setForm((prev) => ({ ...prev, duracion_dias: dias }));
+    }
+  }, [form.fecha_inicio_estimada, form.fecha_fin_estimada]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,41 +99,51 @@ export function ActividadModal({ actividad, actividadesDisponibles, onGuardar, o
             />
           </div>
 
+          <div className="space-y-2">
+            <Label className="text-[13px] text-[#86868B]">% del proyecto *</Label>
+            <Input
+              type="number"
+              required
+              min="1"
+              max="100"
+              value={form.porcentaje}
+              onChange={(e) => setForm({ ...form, porcentaje: Number(e.target.value) })}
+              className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[13px] text-[#86868B]">% del proyecto *</Label>
+              <Label className="text-[13px] text-[#86868B]">Fecha inicio estimada *</Label>
               <Input
-                type="number"
+                type="date"
                 required
-                min="1"
-                max="100"
-                value={form.porcentaje}
-                onChange={(e) => setForm({ ...form, porcentaje: Number(e.target.value) })}
+                value={form.fecha_inicio_estimada}
+                onChange={(e) => setForm({ ...form, fecha_inicio_estimada: e.target.value })}
                 className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[13px] text-[#86868B]">Duracion (dias) *</Label>
+              <Label className="text-[13px] text-[#86868B]">Fecha fin estimada *</Label>
               <Input
-                type="number"
+                type="date"
                 required
-                min="1"
-                value={form.duracion_dias}
-                onChange={(e) => setForm({ ...form, duracion_dias: Number(e.target.value) })}
+                value={form.fecha_fin_estimada}
+                onChange={(e) => setForm({ ...form, fecha_fin_estimada: e.target.value })}
                 className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[13px] text-[#86868B]">Fecha inicio estimada *</Label>
+            <Label className="text-[13px] text-[#86868B]">Duracion (dias habiles)</Label>
             <Input
-              type="date"
-              required
-              value={form.fecha_inicio_estimada}
-              onChange={(e) => setForm({ ...form, fecha_inicio_estimada: e.target.value })}
-              className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+              type="number"
+              readOnly
+              value={form.duracion_dias}
+              className="h-10 rounded-xl border-[#D2D2D7] bg-[#F5F5F7] text-[14px] text-[#86868B]"
             />
+            <p className="text-[11px] text-[#86868B]">Calculado automaticamente (solo lunes a viernes)</p>
           </div>
 
           <div className="space-y-2">

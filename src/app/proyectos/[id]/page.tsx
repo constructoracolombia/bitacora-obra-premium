@@ -357,9 +357,9 @@ export default function ProyectoDetailPage() {
   async function handleGuardarActividad(data: any) {
     if (!project) return;
     try {
-      const fechaFin = data.fecha_inicio_estimada
+      const fechaFin = data.fecha_fin_estimada || (data.fecha_inicio_estimada
         ? sumarDias(data.fecha_inicio_estimada, data.duracion_dias || 1)
-        : null;
+        : null);
 
       if (actividadEditando) {
         await supabase.from("actividades_proyecto").update({
