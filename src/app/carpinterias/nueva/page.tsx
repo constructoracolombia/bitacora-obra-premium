@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface ProyectoOption {
@@ -25,9 +24,6 @@ export default function NuevaCarpinteriaPage() {
   const [form, setForm] = useState({
     proyecto_id: "",
     descripcion: "",
-    valor_madera: "",
-    valor_herrajes: "",
-    valor_mano_obra: "",
   });
 
   useEffect(() => {
@@ -59,9 +55,6 @@ export default function NuevaCarpinteriaPage() {
       const { error: insertErr } = await supabase.from("carpinterias").insert({
         proyecto_id: form.proyecto_id,
         descripcion: form.descripcion.trim(),
-        valor_madera: form.valor_madera ? Number(form.valor_madera) : null,
-        valor_herrajes: form.valor_herrajes ? Number(form.valor_herrajes) : null,
-        valor_mano_obra: form.valor_mano_obra ? Number(form.valor_mano_obra) : null,
         estado: "asignada",
         fecha_asignada: new Date().toISOString(),
       });
@@ -128,53 +121,6 @@ export default function NuevaCarpinteriaPage() {
                 rows={3}
                 className="w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600/10"
               />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6 space-y-5">
-            <div>
-              <h3 className="text-[13px] font-semibold text-[#1D1D1F]">Costos</h3>
-              <p className="mt-0.5 text-[12px] text-[#86868B]">
-                Opcional — puedes llenar al finalizar
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Valor madera</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.valor_madera}
-                  onChange={(e) => setForm((f) => ({ ...f, valor_madera: e.target.value }))}
-                  placeholder="0"
-                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Valor herrajes</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.valor_herrajes}
-                  onChange={(e) => setForm((f) => ({ ...f, valor_herrajes: e.target.value }))}
-                  placeholder="0"
-                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Valor mano de obra</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.valor_mano_obra}
-                  onChange={(e) => setForm((f) => ({ ...f, valor_mano_obra: e.target.value }))}
-                  placeholder="0"
-                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-                />
-              </div>
             </div>
           </div>
 
