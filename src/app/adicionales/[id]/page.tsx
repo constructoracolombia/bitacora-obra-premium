@@ -151,12 +151,14 @@ export default function AdicionalDetailPage() {
     if (!adicional) return;
 
     const currentIdx = getStepIndex(adicional.estado);
-    if (currentIdx >= STEPS.length - 1) {
+    if (currentIdx < 0 || currentIdx >= STEPS.length) return;
+
+    const nextStep = STEPS[currentIdx + 1];
+    if (!nextStep) {
       alert("El adicional ya esta completado");
       return;
     }
 
-    const nextStep = STEPS[currentIdx + 1];
     setActing(true);
 
     try {
@@ -179,6 +181,42 @@ export default function AdicionalDetailPage() {
     } catch (err) {
       console.error("Error avanzando:", err);
       alert("Error al avanzar paso: " + ((err as any)?.message || "desconocido"));
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function retrocederPaso(targetIdx: number) {
+    if (!adicional) return;
+
+    if (targetIdx === 0) {
+      alert("No se puede retroceder mas");
+      return;
+    }
+
+    const previousStep = STEPS[targetIdx - 1];
+    setActing(true);
+
+    try {
+      const update: any = {
+        estado: previousStep.key,
+        [STEPS[targetIdx].dateField]: null,
+      };
+
+      const { error } = await supabase
+        .from("adicionales")
+        .update(update as any)
+        .eq("id", adicional.id);
+
+      if (error) {
+        console.error("Error:", error);
+        throw error;
+      }
+
+      await fetchData();
+    } catch (err) {
+      console.error("Error retrocediendo:", err);
+      alert("Error al retroceder paso");
     } finally {
       setActing(false);
     }
@@ -276,6 +314,7 @@ export default function AdicionalDetailPage() {
               const isCompleted = currentStepIndex > idx;
               const isCurrent = currentStepIndex === idx;
               const canCheck = isCurrent;
+              const canUncheck = isCompleted;
               const stepDate =
                 adicional[step.dateField as keyof Adicional] as string | null;
 
@@ -287,9 +326,12 @@ export default function AdicionalDetailPage() {
                       <input
                         type="checkbox"
                         checked={isCompleted}
-                        disabled={!canCheck || acting}
+                        disabled={acting}
                         onChange={async () => {
-                          if (canCheck && !acting) {
+                          if (acting) return;
+                          if (isCompleted) {
+                            await retrocederPaso(idx);
+                          } else if (canCheck) {
                             await avanzarPaso();
                           }
                         }}
@@ -298,7 +340,7 @@ export default function AdicionalDetailPage() {
                       <div
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
                           isCompleted
-                            ? "bg-blue-500 border-blue-500"
+                            ? "bg-blue-500 border-blue-500 hover:bg-blue-600 cursor-pointer"
                             : canCheck
                               ? "border-blue-500 hover:bg-blue-50 cursor-pointer"
                               : "border-gray-300 bg-gray-100 cursor-not-allowed"
