@@ -32,6 +32,9 @@ interface Carpinteria {
   estado: string;
   responsable: string | null;
   costo_estimado: number | null;
+  valor_madera: number | null;
+  valor_herrajes: number | null;
+  valor_mano_obra: number | null;
   notas: string | null;
   fecha_asignada: string | null;
   fecha_toma_medidas: string | null;
@@ -128,6 +131,9 @@ export default function CarpinteriaDetallePage() {
           estado: (r.estado as string) ?? "asignada",
           responsable: (r.responsable as string) ?? null,
           costo_estimado: r.costo_estimado ? Number(r.costo_estimado) : null,
+          valor_madera: r.valor_madera ? Number(r.valor_madera) : null,
+          valor_herrajes: r.valor_herrajes ? Number(r.valor_herrajes) : null,
+          valor_mano_obra: r.valor_mano_obra ? Number(r.valor_mano_obra) : null,
           notas: (r.notas as string) ?? null,
           fecha_asignada: (r.fecha_asignada as string) ?? null,
           fecha_toma_medidas: (r.fecha_toma_medidas as string) ?? null,
@@ -327,6 +333,66 @@ export default function CarpinteriaDetallePage() {
               <p className="mt-1 text-[13px] text-[#1D1D1F]">
                 {carpinteria.notas}
               </p>
+            </div>
+          )}
+
+          {(carpinteria.valor_madera || carpinteria.valor_herrajes || carpinteria.valor_mano_obra) && (
+            <div className="mt-5 border-t border-[#D2D2D7]/40 pt-5">
+              <h3 className="mb-3 text-[13px] font-semibold text-[#1D1D1F]">
+                Costos
+              </h3>
+              <div className="space-y-2">
+                {carpinteria.valor_madera != null && carpinteria.valor_madera > 0 && (
+                  <div className="flex items-center justify-between text-[13px]">
+                    <span className="text-[#86868B]">Valor madera</span>
+                    <span className="font-medium text-[#1D1D1F]">
+                      {new Intl.NumberFormat("es-CO", {
+                        style: "currency",
+                        currency: "COP",
+                        minimumFractionDigits: 0,
+                      }).format(carpinteria.valor_madera)}
+                    </span>
+                  </div>
+                )}
+                {carpinteria.valor_herrajes != null && carpinteria.valor_herrajes > 0 && (
+                  <div className="flex items-center justify-between text-[13px]">
+                    <span className="text-[#86868B]">Valor herrajes</span>
+                    <span className="font-medium text-[#1D1D1F]">
+                      {new Intl.NumberFormat("es-CO", {
+                        style: "currency",
+                        currency: "COP",
+                        minimumFractionDigits: 0,
+                      }).format(carpinteria.valor_herrajes)}
+                    </span>
+                  </div>
+                )}
+                {carpinteria.valor_mano_obra != null && carpinteria.valor_mano_obra > 0 && (
+                  <div className="flex items-center justify-between text-[13px]">
+                    <span className="text-[#86868B]">Valor mano de obra</span>
+                    <span className="font-medium text-[#1D1D1F]">
+                      {new Intl.NumberFormat("es-CO", {
+                        style: "currency",
+                        currency: "COP",
+                        minimumFractionDigits: 0,
+                      }).format(carpinteria.valor_mano_obra)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t border-[#D2D2D7]/40 pt-2">
+                  <span className="text-[13px] font-medium text-[#86868B]">Total</span>
+                  <span className="text-[16px] font-bold text-amber-600">
+                    {new Intl.NumberFormat("es-CO", {
+                      style: "currency",
+                      currency: "COP",
+                      minimumFractionDigits: 0,
+                    }).format(
+                      (carpinteria.valor_madera || 0) +
+                      (carpinteria.valor_herrajes || 0) +
+                      (carpinteria.valor_mano_obra || 0)
+                    )}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </div>

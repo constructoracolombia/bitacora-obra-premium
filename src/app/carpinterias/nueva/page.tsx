@@ -25,14 +25,9 @@ export default function NuevaCarpinteriaPage() {
   const [form, setForm] = useState({
     proyecto_id: "",
     descripcion: "",
-    ubicacion: "",
-    tipo: "",
-    dimensiones: "",
-    material: "",
-    acabado: "",
-    responsable: "",
-    costo_estimado: "",
-    notas: "",
+    valor_madera: "",
+    valor_herrajes: "",
+    valor_mano_obra: "",
   });
 
   useEffect(() => {
@@ -64,14 +59,9 @@ export default function NuevaCarpinteriaPage() {
       const { error: insertErr } = await supabase.from("carpinterias").insert({
         proyecto_id: form.proyecto_id,
         descripcion: form.descripcion.trim(),
-        ubicacion: form.ubicacion.trim() || null,
-        tipo: form.tipo.trim() || null,
-        dimensiones: form.dimensiones.trim() || null,
-        material: form.material.trim() || null,
-        acabado: form.acabado.trim() || null,
-        responsable: form.responsable.trim() || null,
-        costo_estimado: form.costo_estimado ? Number(form.costo_estimado) : null,
-        notas: form.notas.trim() || null,
+        valor_madera: form.valor_madera ? Number(form.valor_madera) : null,
+        valor_herrajes: form.valor_herrajes ? Number(form.valor_herrajes) : null,
+        valor_mano_obra: form.valor_mano_obra ? Number(form.valor_mano_obra) : null,
         estado: "asignada",
         fecha_asignada: new Date().toISOString(),
       });
@@ -114,7 +104,7 @@ export default function NuevaCarpinteriaPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6 space-y-5">
             <div className="space-y-2">
-              <Label className="text-[13px] text-[#86868B]">Proyecto</Label>
+              <Label className="text-[13px] text-[#86868B]">Proyecto *</Label>
               <select
                 value={form.proyecto_id}
                 onChange={(e) => setForm((f) => ({ ...f, proyecto_id: e.target.value }))}
@@ -134,96 +124,57 @@ export default function NuevaCarpinteriaPage() {
               <textarea
                 value={form.descripcion}
                 onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
-                placeholder="Ej: Mueble de cocina en L"
+                placeholder="Ej: Mueble de cocina en L, closet habitación principal..."
                 rows={3}
                 className="w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600/10"
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Ubicación</Label>
-                <Input
-                  value={form.ubicacion}
-                  onChange={(e) => setForm((f) => ({ ...f, ubicacion: e.target.value }))}
-                  placeholder="Ej: Cocina"
-                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Tipo</Label>
-                <Input
-                  value={form.tipo}
-                  onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
-                  placeholder="Ej: Mueble de cocina"
-                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-                />
-              </div>
+          <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6 space-y-5">
+            <div>
+              <h3 className="text-[13px] font-semibold text-[#1D1D1F]">Costos</h3>
+              <p className="mt-0.5 text-[12px] text-[#86868B]">
+                Opcional — puedes llenar al finalizar
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Material</Label>
-                <Input
-                  value={form.material}
-                  onChange={(e) => setForm((f) => ({ ...f, material: e.target.value }))}
-                  placeholder="Ej: MDF"
-                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Acabado</Label>
-                <Input
-                  value={form.acabado}
-                  onChange={(e) => setForm((f) => ({ ...f, acabado: e.target.value }))}
-                  placeholder="Ej: Laminado blanco"
-                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[13px] text-[#86868B]">Dimensiones</Label>
-              <Input
-                value={form.dimensiones}
-                onChange={(e) => setForm((f) => ({ ...f, dimensiones: e.target.value }))}
-                placeholder="Ej: 2.40m x 0.60m x 0.90m"
-                className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Responsable</Label>
-                <Input
-                  value={form.responsable}
-                  onChange={(e) => setForm((f) => ({ ...f, responsable: e.target.value }))}
-                  placeholder="Nombre del carpintero"
-                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Costo estimado</Label>
+                <Label className="text-[13px] text-[#86868B]">Valor madera</Label>
                 <Input
                   type="number"
                   min="0"
-                  value={form.costo_estimado}
-                  onChange={(e) => setForm((f) => ({ ...f, costo_estimado: e.target.value }))}
+                  value={form.valor_madera}
+                  onChange={(e) => setForm((f) => ({ ...f, valor_madera: e.target.value }))}
                   placeholder="0"
                   className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-[13px] text-[#86868B]">Notas</Label>
-              <textarea
-                value={form.notas}
-                onChange={(e) => setForm((f) => ({ ...f, notas: e.target.value }))}
-                placeholder="Observaciones adicionales..."
-                rows={3}
-                className="w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600/10"
-              />
+              <div className="space-y-2">
+                <Label className="text-[13px] text-[#86868B]">Valor herrajes</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.valor_herrajes}
+                  onChange={(e) => setForm((f) => ({ ...f, valor_herrajes: e.target.value }))}
+                  placeholder="0"
+                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[13px] text-[#86868B]">Valor mano de obra</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.valor_mano_obra}
+                  onChange={(e) => setForm((f) => ({ ...f, valor_mano_obra: e.target.value }))}
+                  placeholder="0"
+                  className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-amber-600 focus:ring-amber-600/10"
+                />
+              </div>
             </div>
           </div>
 
@@ -231,20 +182,25 @@ export default function NuevaCarpinteriaPage() {
             <p className="rounded-xl bg-[#FF3B30]/5 px-4 py-3 text-[13px] text-[#FF3B30]">{error}</p>
           )}
 
-          <Button
-            type="submit"
-            disabled={!canSubmit || submitting}
-            className="w-full rounded-xl bg-amber-600 py-3 text-white shadow-sm hover:bg-amber-700 disabled:opacity-50"
-          >
-            {submitting ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <>
-                <Send className="size-4" />
-                Crear Carpintería
-              </>
-            )}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              type="submit"
+              disabled={!canSubmit || submitting}
+              className="flex-1 rounded-xl bg-amber-600 py-3 text-white shadow-sm hover:bg-amber-700 disabled:opacity-50"
+            >
+              {submitting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <>
+                  <Send className="size-4" />
+                  Crear Carpintería
+                </>
+              )}
+            </Button>
+            <Button variant="outline" className="rounded-xl" asChild>
+              <Link href="/carpinterias">Cancelar</Link>
+            </Button>
+          </div>
         </form>
       </main>
     </div>
