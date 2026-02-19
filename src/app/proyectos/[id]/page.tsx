@@ -18,7 +18,6 @@ import {
   X,
   Plus,
   PlusCircle,
-  Trash2,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
@@ -27,6 +26,8 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ActividadCard, type Actividad } from "./components/ActividadCard";
+import { ActividadModal } from "./components/ActividadModal";
 
 interface Proyecto {
   id: string;
@@ -42,11 +43,10 @@ interface Proyecto {
   alcance_text: string | null;
   alcance_imagen: string | null;
   proyecto_nombre: string | null;
-  margen_objetivo: number | null;
   app_origen: string | null;
 }
 
-interface Adicional {
+interface AdicionalRow {
   id: string;
   descripcion: string;
   monto: number;
@@ -55,14 +55,49 @@ interface Adicional {
   created_at: string;
 }
 
-interface ActividadKanban {
-  id: string;
-  titulo: string;
-  descripcion: string | null;
-  porcentaje: number;
-  estado: string;
-  orden: number;
+// ── CPM helpers ──
+
+function sumarDias(fecha: string, dias: number): string {
+  const d = new Date(fecha + "T12:00:00");
+  d.setDate(d.getDate() + dias);
+  return d.toISOString().split("T")[0];
 }
+
+function diffDias(a: string, b: string): number {
+  return Math.floor(
+    (new Date(a + "T12:00:00").getTime() - new Date(b + "T12:00:00").getTime()) / 86400000
+  );
+}
+
+function calcularRutaCritica(acts: Actividad[]): Actividad[] {
+  if (acts.length === 0) return acts;
+
+  // Forward pass
+  const withDates = acts.map((act) => {
+    let inicio = act.fecha_inicio_estimada;
+    if (act.predecesoras?.length > 0) {
+      const fines = act.predecesoras
+        .map((pid) => acts.find((a) => a.id === pid)?.fecha_fin_estimada)
+        .filter(Boolean) as string[];
+      if (fines.length > 0) inicio = fines.sort().reverse()[0];
+    }
+    if (!inicio) inicio = new Date().toISOString().split("T")[0];
+    const fin = sumarDias(inicio, act.duracion_dias || 1);
+    return { ...act, fecha_inicio_estimada: inicio, fecha_fin_estimada: fin };
+  });
+
+  // Project end = latest fin
+  const fines = withDates.map((a) => a.fecha_fin_estimada).filter(Boolean) as string[];
+  const proyectoFin = fines.sort().reverse()[0] || new Date().toISOString().split("T")[0];
+
+  // Backward pass: holgura = project end - task end
+  return withDates.map((act) => {
+    const holgura = act.fecha_fin_estimada ? diffDias(proyectoFin, act.fecha_fin_estimada) : 0;
+    return { ...act, holgura_dias: Math.max(holgura, 0), es_critica: holgura === 0 };
+  });
+}
+
+// ── Constants ──
 
 const TABS = [
   { id: "info", label: "Información" },
@@ -96,14 +131,16 @@ const KANBAN_COLUMNS = [
   { key: "TERMINADO", label: "Terminado", color: "border-[#34C759]/30", headerBg: "bg-[#34C759]/10", headerText: "text-[#34C759]" },
 ];
 
+// ── Component ──
+
 export default function ProyectoDetailPage() {
   const supabase = getSupabaseClient();
   const params = useParams();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<Proyecto | null>(null);
-  const [adicionales, setAdicionales] = useState<Adicional[]>([]);
-  const [actividades, setActividades] = useState<ActividadKanban[]>([]);
+  const [adicionales, setAdicionales] = useState<AdicionalRow[]>([]);
+  const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("info");
 
@@ -125,9 +162,11 @@ export default function ProyectoDetailPage() {
   const [savedAlcance, setSavedAlcance] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Kanban new task
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [addingTask, setAddingTask] = useState(false);
+  // Modal state
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [actividadEditando, setActividadEditando] = useState<Actividad | null>(null);
+
+  // ── Data loading ──
 
   const fetchData = useCallback(async () => {
     try {
@@ -139,7 +178,7 @@ export default function ProyectoDetailPage() {
 
       if (projRes.data) {
         const r = projRes.data;
-        const p: Proyecto = {
+        setProject({
           id: r.id,
           cliente_nombre: r.cliente_nombre ?? null,
           direccion: r.direccion ?? null,
@@ -153,19 +192,17 @@ export default function ProyectoDetailPage() {
           alcance_text: r.alcance_text ?? null,
           alcance_imagen: r.alcance_imagen ?? null,
           proyecto_nombre: r.proyecto_nombre ?? null,
-          margen_objetivo: r.margen_objetivo ?? null,
           app_origen: r.app_origen ?? null,
-        };
-        setProject(p);
-        setAlcance(p.alcance_text ?? "");
-        setAlcanceImagen(p.alcance_imagen);
+        });
+        setAlcance(r.alcance_text ?? "");
+        setAlcanceImagen(r.alcance_imagen ?? null);
         setEditForm({
-          cliente_nombre: p.cliente_nombre ?? "",
-          direccion: p.direccion ?? "",
-          presupuesto_total: p.presupuesto_total != null ? String(p.presupuesto_total) : "",
-          fecha_inicio: p.fecha_inicio ?? "",
-          fecha_entrega_estimada: p.fecha_entrega_estimada ?? "",
-          residente_asignado: p.residente_asignado ?? "",
+          cliente_nombre: r.cliente_nombre ?? "",
+          direccion: r.direccion ?? "",
+          presupuesto_total: r.presupuesto_total != null ? String(r.presupuesto_total) : "",
+          fecha_inicio: r.fecha_inicio ?? "",
+          fecha_entrega_estimada: r.fecha_entrega_estimada ?? "",
+          residente_asignado: r.residente_asignado ?? "",
         });
       }
 
@@ -181,14 +218,21 @@ export default function ProyectoDetailPage() {
       }
 
       if (actRes.data) {
-        setActividades(actRes.data.map((r: any) => ({
+        const raw: Actividad[] = actRes.data.map((r: any) => ({
           id: r.id,
           titulo: r.titulo,
           descripcion: r.descripcion ?? null,
           porcentaje: Number(r.porcentaje) || 0,
           estado: r.estado ?? "PENDIENTE",
           orden: r.orden ?? 0,
-        })));
+          duracion_dias: Number(r.duracion_dias) || 1,
+          fecha_inicio_estimada: r.fecha_inicio_estimada ?? null,
+          fecha_fin_estimada: r.fecha_fin_estimada ?? null,
+          es_critica: Boolean(r.es_critica),
+          holgura_dias: Number(r.holgura_dias) || 0,
+          predecesoras: r.predecesoras ?? [],
+        }));
+        setActividades(calcularRutaCritica(raw));
       }
     } catch (err) {
       console.error("Error fetching project:", err);
@@ -202,6 +246,17 @@ export default function ProyectoDetailPage() {
   }, [projectId, fetchData]);
 
   const isFromFinanzas = project?.app_origen === "FINANZAS";
+
+  // ── Computed ──
+
+  const kanbanProgress = (() => {
+    const total = actividades.length;
+    if (total === 0) return 0;
+    const done = actividades.filter((a) => a.estado === "TERMINADO").length;
+    return Math.round((done / total) * 100);
+  })();
+
+  // ── Info handlers ──
 
   async function handleSaveInfo() {
     if (!project || isFromFinanzas) return;
@@ -225,6 +280,8 @@ export default function ProyectoDetailPage() {
       setSavingInfo(false);
     }
   }
+
+  // ── Alcance handlers ──
 
   async function handleSaveAlcance() {
     if (!project) return;
@@ -262,31 +319,16 @@ export default function ProyectoDetailPage() {
     }
   }
 
-  // Kanban functions
-  async function handleAddTask() {
-    if (!newTaskTitle.trim() || !project) return;
-    setAddingTask(true);
-    try {
-      await supabase.from("actividades_proyecto").insert({
-        proyecto_id: project.id,
-        titulo: newTaskTitle.trim(),
-        estado: "PENDIENTE",
-        orden: actividades.length,
-      });
-      setNewTaskTitle("");
-      fetchData();
-    } catch (err) {
-      console.error("Error adding task:", err);
-    } finally {
-      setAddingTask(false);
-    }
-  }
+  // ── Kanban / CPM handlers ──
 
   async function handleMoveTask(taskId: string, newEstado: string) {
     try {
       await supabase.from("actividades_proyecto").update({ estado: newEstado }).eq("id", taskId);
-      const updated = actividades.map((a) => a.id === taskId ? { ...a, estado: newEstado } : a);
+      const updated = calcularRutaCritica(
+        actividades.map((a) => (a.id === taskId ? { ...a, estado: newEstado } : a))
+      );
       setActividades(updated);
+
       const total = updated.length;
       const done = updated.filter((a) => a.estado === "TERMINADO").length;
       const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -299,11 +341,60 @@ export default function ProyectoDetailPage() {
   async function handleDeleteTask(taskId: string) {
     try {
       await supabase.from("actividades_proyecto").delete().eq("id", taskId);
-      fetchData();
+      const remaining = actividades.filter((a) => a.id !== taskId);
+      const updated = calcularRutaCritica(remaining);
+      setActividades(updated);
+
+      const total = updated.length;
+      const done = updated.filter((a) => a.estado === "TERMINADO").length;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      await supabase.from("proyectos_maestro").update({ porcentaje_avance: pct }).eq("id", project?.id);
     } catch (err) {
       console.error("Error deleting task:", err);
     }
   }
+
+  async function handleGuardarActividad(data: any) {
+    if (!project) return;
+    try {
+      const fechaFin = data.fecha_inicio_estimada
+        ? sumarDias(data.fecha_inicio_estimada, data.duracion_dias || 1)
+        : null;
+
+      if (actividadEditando) {
+        await supabase.from("actividades_proyecto").update({
+          titulo: data.titulo,
+          descripcion: data.descripcion || null,
+          porcentaje: data.porcentaje,
+          duracion_dias: data.duracion_dias,
+          fecha_inicio_estimada: data.fecha_inicio_estimada || null,
+          fecha_fin_estimada: fechaFin,
+          predecesoras: data.predecesoras,
+        }).eq("id", actividadEditando.id);
+      } else {
+        await supabase.from("actividades_proyecto").insert({
+          proyecto_id: project.id,
+          titulo: data.titulo,
+          descripcion: data.descripcion || null,
+          porcentaje: data.porcentaje,
+          duracion_dias: data.duracion_dias,
+          fecha_inicio_estimada: data.fecha_inicio_estimada || null,
+          fecha_fin_estimada: fechaFin,
+          predecesoras: data.predecesoras,
+          estado: "PENDIENTE",
+          orden: actividades.length,
+        });
+      }
+
+      await fetchData();
+      setMostrarModal(false);
+      setActividadEditando(null);
+    } catch (err) {
+      console.error("Error saving activity:", err);
+    }
+  }
+
+  // ── Helpers ──
 
   function formatDate(date: string | null): string {
     if (!date) return "—";
@@ -314,12 +405,7 @@ export default function ProyectoDetailPage() {
     }
   }
 
-  const kanbanProgress = (() => {
-    const total = actividades.length;
-    if (total === 0) return 0;
-    const done = actividades.filter((a) => a.estado === "TERMINADO").length;
-    return Math.round((done / total) * 100);
-  })();
+  // ── Loading / Not found ──
 
   if (loading) {
     return (
@@ -341,6 +427,7 @@ export default function ProyectoDetailPage() {
   }
 
   const statusStyle = STATUS_STYLES[project.estado ?? "ACTIVO"] ?? STATUS_STYLES.ACTIVO;
+  const criticalCount = actividades.filter((a) => a.es_critica && a.estado !== "TERMINADO").length;
 
   return (
     <div className="min-h-screen bg-white">
@@ -348,9 +435,7 @@ export default function ProyectoDetailPage() {
       <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-8 py-4">
           <Button variant="ghost" size="icon" className="size-8 text-[#86868B] hover:bg-[#F5F5F7]" asChild>
-            <Link href="/proyectos">
-              <ArrowLeft className="size-4" />
-            </Link>
+            <Link href="/proyectos"><ArrowLeft className="size-4" /></Link>
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold tracking-tight text-[#1D1D1F]">
@@ -382,15 +467,18 @@ export default function ProyectoDetailPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   "relative whitespace-nowrap px-4 pb-3 pt-1 text-[13px] font-medium transition-colors",
-                  activeTab === tab.id
-                    ? "text-[#007AFF]"
-                    : "text-[#86868B] hover:text-[#1D1D1F]"
+                  activeTab === tab.id ? "text-[#007AFF]" : "text-[#86868B] hover:text-[#1D1D1F]"
                 )}
               >
                 {tab.label}
                 {tab.id === "adicionales" && adicionales.length > 0 && (
                   <span className="ml-1.5 rounded-full bg-[#007AFF]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#007AFF]">
                     {adicionales.length}
+                  </span>
+                )}
+                {tab.id === "programacion" && criticalCount > 0 && (
+                  <span className="ml-1.5 rounded-full bg-[#FF3B30]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#FF3B30]">
+                    {criticalCount}
                   </span>
                 )}
                 {activeTab === tab.id && (
@@ -494,29 +582,19 @@ export default function ProyectoDetailPage() {
               />
             </div>
 
-            {/* Image upload */}
             <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
               <Label className="text-[13px] text-[#86868B]">Imagen de alcance</Label>
               {alcanceImagen ? (
                 <div className="relative mt-3">
                   <img src={alcanceImagen} alt="Alcance" className="max-h-80 w-full rounded-xl object-contain border border-[#D2D2D7]/40" />
-                  <button
-                    onClick={() => setAlcanceImagen(null)}
-                    className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
-                  >
+                  <button onClick={() => setAlcanceImagen(null)} className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70">
                     <X className="size-4" />
                   </button>
                 </div>
               ) : (
                 <label className="mt-3 flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed border-[#D2D2D7] p-8 transition-colors hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5">
-                  {uploadingImage ? (
-                    <Loader2 className="size-8 animate-spin text-[#007AFF]" />
-                  ) : (
-                    <ImagePlus className="size-8 text-[#D2D2D7]" />
-                  )}
-                  <span className="text-[13px] text-[#86868B]">
-                    {uploadingImage ? "Subiendo..." : "Click para subir imagen del alcance"}
-                  </span>
+                  {uploadingImage ? <Loader2 className="size-8 animate-spin text-[#007AFF]" /> : <ImagePlus className="size-8 text-[#D2D2D7]" />}
+                  <span className="text-[13px] text-[#86868B]">{uploadingImage ? "Subiendo..." : "Click para subir imagen del alcance"}</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
                 </label>
               )}
@@ -538,10 +616,7 @@ export default function ProyectoDetailPage() {
             <div className="flex items-center justify-between">
               <p className="text-[13px] text-[#86868B]">{adicionales.length} adicional{adicionales.length !== 1 ? "es" : ""}</p>
               <Button asChild className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
-                <Link href="/adicionales/nuevo">
-                  <Plus className="size-4" />
-                  Nuevo Adicional
-                </Link>
+                <Link href="/adicionales/nuevo"><Plus className="size-4" />Nuevo Adicional</Link>
               </Button>
             </div>
 
@@ -559,18 +634,14 @@ export default function ProyectoDetailPage() {
                     <article className="group rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:shadow-md">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-[14px] font-medium text-[#1D1D1F] group-hover:text-[#007AFF] transition-colors">
-                            {ad.descripcion}
-                          </h3>
+                          <h3 className="text-[14px] font-medium text-[#1D1D1F] group-hover:text-[#007AFF] transition-colors">{ad.descripcion}</h3>
                           <div className="mt-2 flex items-center gap-3 text-[12px] text-[#86868B]">
                             <span className="font-medium text-[#1D1D1F]">${ad.monto.toLocaleString("es-CO")}</span>
                             {ad.solicitado_por && <span>por {ad.solicitado_por}</span>}
                             <span>{format(new Date(ad.created_at), "d MMM yyyy", { locale: es })}</span>
                           </div>
                         </div>
-                        <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold", st.bg, st.text)}>
-                          {st.label}
-                        </span>
+                        <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold", st.bg, st.text)}>{st.label}</span>
                       </div>
                     </article>
                   </Link>
@@ -580,7 +651,7 @@ export default function ProyectoDetailPage() {
           </div>
         )}
 
-        {/* ─── TAB: Programación (Kanban) ─── */}
+        {/* ─── TAB: Programación (Kanban + CPM) ─── */}
         {activeTab === "programacion" && (
           <div className="space-y-6">
             {/* Progress bar */}
@@ -592,23 +663,26 @@ export default function ProyectoDetailPage() {
               <div className="h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
                 <div className="h-full rounded-full bg-[#34C759] transition-all duration-500" style={{ width: `${kanbanProgress}%` }} />
               </div>
-              <p className="mt-2 text-[12px] text-[#86868B]">
-                {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades completadas
-              </p>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-[12px] text-[#86868B]">
+                  {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades
+                </p>
+                {criticalCount > 0 && (
+                  <p className="text-[12px] font-medium text-[#FF3B30]">
+                    {criticalCount} en ruta critica
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Add new task */}
-            <div className="flex gap-3">
-              <Input
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="Nueva actividad..."
-                onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
-                className="h-10 flex-1 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
-              />
-              <Button onClick={handleAddTask} disabled={addingTask || !newTaskTitle.trim()} className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
-                {addingTask ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-                Agregar
+            {/* Add new task button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={() => { setActividadEditando(null); setMostrarModal(true); }}
+                className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
+              >
+                <Plus className="size-4" />
+                Nueva Actividad
               </Button>
             </div>
 
@@ -626,27 +700,15 @@ export default function ProyectoDetailPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="min-h-[120px] space-y-2 p-3">
+                    <div className="min-h-[120px] space-y-3 p-3">
                       {tasks.map((task) => (
-                        <div key={task.id} className="group rounded-xl border border-[#D2D2D7]/60 bg-white p-3 shadow-sm transition-all hover:shadow-md">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-[13px] font-medium text-[#1D1D1F]">{task.titulo}</p>
-                            <button onClick={() => handleDeleteTask(task.id)} className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-[#FF3B30] hover:text-[#FF3B30]/80">
-                              <Trash2 className="size-3.5" />
-                            </button>
-                          </div>
-                          <div className="mt-2 flex gap-1">
-                            {KANBAN_COLUMNS.filter((c) => c.key !== col.key).map((target) => (
-                              <button
-                                key={target.key}
-                                onClick={() => handleMoveTask(task.id, target.key)}
-                                className={cn("rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors", target.headerBg, target.headerText, "hover:opacity-80")}
-                              >
-                                → {target.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                        <ActividadCard
+                          key={task.id}
+                          actividad={task}
+                          onMoverEstado={handleMoveTask}
+                          onEditar={(act) => { setActividadEditando(act); setMostrarModal(true); }}
+                          onEliminar={handleDeleteTask}
+                        />
                       ))}
                       {tasks.length === 0 && (
                         <p className="py-6 text-center text-[12px] text-[#C7C7CC]">Sin actividades</p>
@@ -659,9 +721,21 @@ export default function ProyectoDetailPage() {
           </div>
         )}
       </main>
+
+      {/* Modal */}
+      {mostrarModal && (
+        <ActividadModal
+          actividad={actividadEditando}
+          actividadesDisponibles={actividades.filter((a) => a.id !== actividadEditando?.id)}
+          onGuardar={handleGuardarActividad}
+          onCerrar={() => { setMostrarModal(false); setActividadEditando(null); }}
+        />
+      )}
     </div>
   );
 }
+
+// ── InfoCard helper ──
 
 function InfoCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
