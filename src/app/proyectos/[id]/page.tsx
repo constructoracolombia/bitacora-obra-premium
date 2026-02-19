@@ -18,6 +18,7 @@ import {
   X,
   Plus,
   PlusCircle,
+  Trash2,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
@@ -155,6 +156,7 @@ export default function ProyectoDetailPage() {
 
   const [alcance, setAlcance] = useState("");
   const [alcanceImagen, setAlcanceImagen] = useState<string | null>(null);
+  const [historialAlcance, setHistorialAlcance] = useState<any[]>([]);
 
   const [savingInfo, setSavingInfo] = useState(false);
   const [savedInfo, setSavedInfo] = useState(false);
@@ -283,21 +285,48 @@ export default function ProyectoDetailPage() {
 
   // ── Alcance handlers ──
 
+  async function cargarHistorialAlcance() {
+    if (!projectId) return;
+    const { data } = await supabase
+      .from("alcance_historial")
+      .select("*")
+      .eq("proyecto_id", projectId)
+      .order("created_at", { ascending: false });
+    setHistorialAlcance(data || []);
+  }
+
+  useEffect(() => {
+    if (activeTab === "alcance" && projectId) {
+      cargarHistorialAlcance();
+    }
+  }, [activeTab, projectId]);
+
   async function handleSaveAlcance() {
-    if (!project) return;
+    if (!project || !alcance.trim()) return;
     setSavingAlcance(true);
     setSavedAlcance(false);
     try {
-      await supabase.from("proyectos_maestro").update({
-        alcance_text: alcance,
-        alcance_imagen: alcanceImagen,
-      }).eq("id", project.id);
+      await supabase.from("alcance_historial").insert({
+        proyecto_id: project.id,
+        texto: alcance.trim(),
+      });
+      setAlcance("");
       setSavedAlcance(true);
       setTimeout(() => setSavedAlcance(false), 2000);
+      await cargarHistorialAlcance();
     } catch (err) {
       console.error("Error saving alcance:", err);
     } finally {
       setSavingAlcance(false);
+    }
+  }
+
+  async function handleDeleteHistorial(id: string) {
+    try {
+      await supabase.from("alcance_historial").delete().eq("id", id);
+      setHistorialAlcance((prev) => prev.filter((h) => h.id !== id));
+    } catch (err) {
+      console.error("Error deleting historial:", err);
     }
   }
 
@@ -598,30 +627,64 @@ export default function ProyectoDetailPage() {
         {/* ─── TAB: Alcance ─── */}
         {activeTab === "alcance" && (
           <div className="space-y-6">
+            {/* New entry */}
             <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
               <Label className="text-[13px] text-[#86868B]">Alcance del proyecto</Label>
               <textarea
                 value={alcance}
                 onChange={(e) => setAlcance(e.target.value)}
                 placeholder="Describe el alcance del proyecto: actividades incluidas, entregables, especificaciones técnicas..."
-                rows={10}
+                rows={6}
                 className="mt-2 w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-[14px] leading-relaxed text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
               />
+              <div className="mt-4 flex items-center gap-3">
+                <Button onClick={handleSaveAlcance} disabled={savingAlcance || !alcance.trim()} className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
+                  {savingAlcance ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                  Guardar texto
+                </Button>
+                {savedAlcance && <span className="flex items-center gap-1.5 text-[13px] text-[#34C759]"><CheckCircle2 className="size-4" />Guardado</span>}
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button onClick={handleSaveAlcance} disabled={savingAlcance} className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
-                {savingAlcance ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                Guardar texto
-              </Button>
-              {savedAlcance && <span className="flex items-center gap-1.5 text-[13px] text-[#34C759]"><CheckCircle2 className="size-4" />Guardado</span>}
-            </div>
+            {/* Historial */}
+            {historialAlcance.length > 0 && (
+              <div>
+                <h3 className="mb-3 text-[13px] font-medium text-[#86868B]">
+                  Historial de alcance ({historialAlcance.length})
+                </h3>
+                <div className="space-y-3">
+                  {historialAlcance.map((registro) => (
+                    <div key={registro.id} className="rounded-2xl border border-[#D2D2D7]/60 bg-[#F5F5F7]/50 p-5">
+                      <div className="mb-2 flex items-start justify-between">
+                        <span className="text-[11px] text-[#86868B]">
+                          {new Date(registro.created_at).toLocaleString("es-CO", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteHistorial(registro.id)}
+                          className="rounded-md p-1 text-[#86868B] hover:bg-[#FF3B30]/10 hover:text-[#FF3B30]"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                      <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-[#1D1D1F]">
+                        {registro.texto}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            {/* Image */}
             <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
               <Label className="text-[13px] text-[#86868B]">Imagen de alcance</Label>
-
               <input type="file" accept="image/*" className="hidden" id="alcance-upload" onChange={handleImageUpload} disabled={uploadingImage} />
-
               {alcanceImagen ? (
                 <div className="relative mt-3 overflow-hidden rounded-xl border border-[#D2D2D7]/40">
                   {uploadingImage && (
@@ -629,14 +692,7 @@ export default function ProyectoDetailPage() {
                       <Loader2 className="size-8 animate-spin text-[#007AFF]" />
                     </div>
                   )}
-                  <img
-                    src={alcanceImagen}
-                    alt="Alcance del proyecto"
-                    className="w-full"
-                    onError={(e) => {
-                      console.error("Error loading image:", alcanceImagen);
-                    }}
-                  />
+                  <img src={alcanceImagen} alt="Alcance del proyecto" className="w-full" />
                   <div className="absolute right-2 top-2 flex gap-2">
                     <label htmlFor="alcance-upload" className="flex size-8 cursor-pointer items-center justify-center rounded-full bg-[#007AFF] text-white shadow-md hover:bg-[#0051D5]">
                       <ImagePlus className="size-4" />
