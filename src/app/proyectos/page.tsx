@@ -161,10 +161,6 @@ export default function ProyectosPage() {
                       {new Date(proyecto.fecha_inicio).toLocaleDateString('es-CO')}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Margen objetivo</span>
-                    <span className="text-sm text-gray-900">{proyecto.margen_objetivo}%</span>
-                  </div>
                 </div>
 
                 {proyecto.app_origen === 'FINANZAS' && (
