@@ -13,12 +13,10 @@ import {
   Calendar,
   Save,
   CheckCircle2,
-  Percent,
   Lock,
   ImagePlus,
   X,
   Plus,
-  GripVertical,
   PlusCircle,
   Trash2,
 } from "lucide-react";
@@ -115,7 +113,6 @@ export default function ProyectoDetailPage() {
     presupuesto_total: "",
     fecha_inicio: "",
     fecha_entrega_estimada: "",
-    margen_objetivo: "",
     residente_asignado: "",
   });
 
@@ -168,7 +165,6 @@ export default function ProyectoDetailPage() {
           presupuesto_total: p.presupuesto_total != null ? String(p.presupuesto_total) : "",
           fecha_inicio: p.fecha_inicio ?? "",
           fecha_entrega_estimada: p.fecha_entrega_estimada ?? "",
-          margen_objetivo: p.margen_objetivo != null ? String(p.margen_objetivo) : "20",
           residente_asignado: p.residente_asignado ?? "",
         });
       }
@@ -218,7 +214,6 @@ export default function ProyectoDetailPage() {
         presupuesto_total: Number(editForm.presupuesto_total) || null,
         fecha_inicio: editForm.fecha_inicio || null,
         fecha_entrega_estimada: editForm.fecha_entrega_estimada || null,
-        margen_objetivo: Number(editForm.margen_objetivo) || 20,
         residente_asignado: editForm.residente_asignado.trim() || null,
       }).eq("id", project.id);
       setSavedInfo(true);
@@ -290,9 +285,8 @@ export default function ProyectoDetailPage() {
   async function handleMoveTask(taskId: string, newEstado: string) {
     try {
       await supabase.from("actividades_proyecto").update({ estado: newEstado }).eq("id", taskId);
-      setActividades((prev) => prev.map((a) => a.id === taskId ? { ...a, estado: newEstado } : a));
-      // Recalculate project progress
       const updated = actividades.map((a) => a.id === taskId ? { ...a, estado: newEstado } : a);
+      setActividades(updated);
       const total = updated.length;
       const done = updated.filter((a) => a.estado === "TERMINADO").length;
       const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -415,11 +409,16 @@ export default function ProyectoDetailPage() {
             <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-[13px] font-medium text-[#86868B]">Avance general</span>
-                <span className="text-2xl font-semibold text-[#1D1D1F]">{project.porcentaje_avance}%</span>
+                <span className="text-2xl font-semibold text-[#1D1D1F]">{kanbanProgress}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
-                <div className="h-full rounded-full bg-[#007AFF] transition-all duration-500" style={{ width: `${Math.min(project.porcentaje_avance, 100)}%` }} />
+                <div className="h-full rounded-full bg-[#007AFF] transition-all duration-500" style={{ width: `${kanbanProgress}%` }} />
               </div>
+              {actividades.length > 0 && (
+                <p className="mt-2 text-[12px] text-[#86868B]">
+                  {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades completadas
+                </p>
+              )}
             </div>
 
             {isFromFinanzas && (
@@ -437,7 +436,6 @@ export default function ProyectoDetailPage() {
                 <InfoCard icon={User} label="Cliente" value={project.cliente_nombre || "—"} />
                 <InfoCard icon={MapPin} label="Dirección" value={project.direccion || "—"} />
                 <InfoCard icon={DollarSign} label="Presupuesto" value={project.presupuesto_total ? `$${project.presupuesto_total.toLocaleString("es-CO")}` : "—"} />
-                <InfoCard icon={Percent} label="Margen objetivo" value={project.margen_objetivo != null ? `${project.margen_objetivo}%` : "—"} />
                 <InfoCard icon={Calendar} label="Fecha inicio" value={formatDate(project.fecha_inicio)} />
                 <InfoCard icon={Calendar} label="Fecha entrega" value={formatDate(project.fecha_entrega_estimada)} />
                 <InfoCard icon={User} label="Residente" value={project.residente_asignado || "—"} />
@@ -456,10 +454,6 @@ export default function ProyectoDetailPage() {
                   <div className="space-y-2">
                     <Label className="text-[13px] text-[#86868B]">Presupuesto (COP)</Label>
                     <Input type="number" min="0" value={editForm.presupuesto_total} onChange={(e) => setEditForm((f) => ({ ...f, presupuesto_total: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Margen objetivo (%)</Label>
-                    <Input type="number" min="0" max="100" value={editForm.margen_objetivo} onChange={(e) => setEditForm((f) => ({ ...f, margen_objetivo: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[13px] text-[#86868B]">Fecha inicio</Label>
