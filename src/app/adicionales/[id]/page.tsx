@@ -34,11 +34,11 @@ interface Adicional {
   solicitado_por: string | null;
   notas: string | null;
   fecha_solicitud: string | null;
-  fecha_aprobacion: string | null;
-  fecha_primer_pago: string | null;
-  fecha_inicio_trabajo: string | null;
-  fecha_fin_trabajo: string | null;
-  fecha_pago_final: string | null;
+  fecha_pendiente_aprobacion: string | null;
+  fecha_pendiente_pago_50: string | null;
+  fecha_iniciar_trabajos: string | null;
+  fecha_revision_final: string | null;
+  fecha_entregado: string | null;
   created_at: string;
 }
 
@@ -48,42 +48,36 @@ const STEPS = [
     label: "Solicitud del cliente",
     description: "El cliente solicita el adicional",
     dateField: "fecha_solicitud",
-    action: null,
   },
   {
-    key: "aprobado_gerencia",
-    label: "Aprobado por gerencia",
-    description: "Gerencia aprueba el adicional",
-    dateField: "fecha_aprobacion",
-    action: "Aprobar",
+    key: "pendiente_aprobacion",
+    label: "Pendiente aprobación",
+    description: "En espera de aprobación",
+    dateField: "fecha_pendiente_aprobacion",
   },
   {
-    key: "pago_50",
-    label: "Cliente pagó 50%",
-    description: "Primer pago recibido",
-    dateField: "fecha_primer_pago",
-    action: "Registrar pago 50%",
+    key: "pendiente_pago_50",
+    label: "Pendiente pago 50%",
+    description: "En espera del primer pago",
+    dateField: "fecha_pendiente_pago_50",
   },
   {
-    key: "trabajo_iniciado",
-    label: "Trabajo iniciado",
-    description: "Inicio de trabajos",
-    dateField: "fecha_inicio_trabajo",
-    action: "Iniciar trabajo",
+    key: "iniciar_trabajos",
+    label: "Iniciar trabajos adicional",
+    description: "Trabajos iniciados",
+    dateField: "fecha_iniciar_trabajos",
   },
   {
-    key: "trabajo_finalizado",
-    label: "Trabajo finalizado",
-    description: "Trabajos completados",
-    dateField: "fecha_fin_trabajo",
-    action: "Marcar finalizado",
+    key: "revision_final",
+    label: "Revisión final adicional",
+    description: "Revisión de trabajos",
+    dateField: "fecha_revision_final",
   },
   {
-    key: "pagado",
-    label: "Pagó segundo 50%",
-    description: "Pago final recibido",
-    dateField: "fecha_pago_final",
-    action: "Registrar pago final",
+    key: "entregado",
+    label: "Entregado",
+    description: "Adicional completado y entregado",
+    dateField: "fecha_entregado",
   },
 ];
 
@@ -131,11 +125,11 @@ export default function AdicionalDetailPage() {
           solicitado_por: (r.solicitado_por as string) ?? null,
           notas: (r.notas as string) ?? null,
           fecha_solicitud: (r.fecha_solicitud as string) ?? null,
-          fecha_aprobacion: (r.fecha_aprobacion as string) ?? null,
-          fecha_primer_pago: (r.fecha_primer_pago as string) ?? null,
-          fecha_inicio_trabajo: (r.fecha_inicio_trabajo as string) ?? null,
-          fecha_fin_trabajo: (r.fecha_fin_trabajo as string) ?? null,
-          fecha_pago_final: (r.fecha_pago_final as string) ?? null,
+          fecha_pendiente_aprobacion: (r.fecha_pendiente_aprobacion as string) ?? null,
+          fecha_pendiente_pago_50: (r.fecha_pendiente_pago_50 as string) ?? null,
+          fecha_iniciar_trabajos: (r.fecha_iniciar_trabajos as string) ?? null,
+          fecha_revision_final: (r.fecha_revision_final as string) ?? null,
+          fecha_entregado: (r.fecha_entregado as string) ?? null,
           created_at: (r.created_at as string) ?? "",
         };
         setAdicional(ad);
@@ -628,12 +622,12 @@ export default function AdicionalDetailPage() {
         </div>
 
         {/* Final state */}
-        {currentStepIndex >= STEPS.length - 1 && (
-          <div className="rounded-2xl border border-[#34C759]/30 bg-[#34C759]/5 p-5 text-center">
-            <CheckCircle2 className="mx-auto size-8 text-[#34C759]" />
-            <p className="mt-2 text-[14px] font-medium text-[#34C759]">
-              Adicional completado
-            </p>
+        {currentStepIndex === STEPS.length - 1 && (
+          <div className="mt-6 rounded-lg bg-green-50 p-4 text-center">
+            <svg className="mx-auto h-12 w-12 text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="font-semibold text-green-700">Adicional entregado</p>
           </div>
         )}
       </main>

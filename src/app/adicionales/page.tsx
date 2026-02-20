@@ -26,19 +26,23 @@ interface ProyectoOption {
 }
 
 const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  solicitado: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Solicitud" },
-  aprobado_gerencia: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Aprobado" },
-  pago_50: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "50% Pagado" },
-  trabajo_iniciado: { bg: "bg-[#007AFF]/10", text: "text-[#007AFF]", label: "En ejecución" },
-  trabajo_finalizado: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Finalizado" },
-  pagado: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Pagado" },
-  SOLICITUD_CLIENTE: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Solicitud" },
-  APROBADO_GERENCIA: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Aprobado" },
-  PAGO_50_CONFIRMADO: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "50% Pagado" },
-  EN_EJECUCION: { bg: "bg-[#007AFF]/10", text: "text-[#007AFF]", label: "En ejecución" },
-  FINALIZADO: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Finalizado" },
-  SALDO_PENDIENTE: { bg: "bg-[#FF3B30]/10", text: "text-[#FF3B30]", label: "Saldo pendiente" },
+  solicitado: { bg: "bg-gray-100", text: "text-gray-700", label: "Solicitud del cliente" },
+  pendiente_aprobacion: { bg: "bg-yellow-100", text: "text-yellow-700", label: "Pendiente aprobación" },
+  pendiente_pago_50: { bg: "bg-orange-100", text: "text-orange-700", label: "Pendiente pago 50%" },
+  iniciar_trabajos: { bg: "bg-blue-100", text: "text-blue-700", label: "Iniciar trabajos" },
+  revision_final: { bg: "bg-purple-100", text: "text-purple-700", label: "Revisión final" },
+  entregado: { bg: "bg-green-100", text: "text-green-700", label: "Entregado" },
 };
+
+const FILTROS_ESTADO = [
+  { key: "TODOS", label: "Todos" },
+  { key: "solicitado", label: "Solicitudes" },
+  { key: "pendiente_aprobacion", label: "Por aprobar" },
+  { key: "pendiente_pago_50", label: "Por pagar" },
+  { key: "iniciar_trabajos", label: "En trabajo" },
+  { key: "revision_final", label: "En revisión" },
+  { key: "entregado", label: "Entregados" },
+];
 
 export default function AdicionalesPage() {
   const supabase = getSupabaseClient();
@@ -46,6 +50,7 @@ export default function AdicionalesPage() {
   const [proyectos, setProyectos] = useState<ProyectoOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterProyecto, setFilterProyecto] = useState("TODOS");
+  const [filtroEstado, setFiltroEstado] = useState("TODOS");
 
   useEffect(() => {
     async function fetch() {
@@ -75,7 +80,7 @@ export default function AdicionalesPage() {
               proyecto_id: r.proyecto_id as string,
               descripcion: r.descripcion as string,
               monto: Number(r.monto) || 0,
-              estado: (r.estado as string) ?? "SOLICITUD_CLIENTE",
+              estado: (r.estado as string) ?? "solicitado",
               solicitado_por: (r.solicitado_por as string) ?? null,
               created_at: (r.created_at as string) ?? "",
               proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "—",
@@ -91,10 +96,11 @@ export default function AdicionalesPage() {
     fetch();
   }, []);
 
-  const filtered =
-    filterProyecto === "TODOS"
-      ? adicionales
-      : adicionales.filter((a) => a.proyecto_id === filterProyecto);
+  const filtered = adicionales.filter((a) => {
+    if (filterProyecto !== "TODOS" && a.proyecto_id !== filterProyecto) return false;
+    if (filtroEstado !== "TODOS" && a.estado !== filtroEstado) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -131,6 +137,24 @@ export default function AdicionalesPage() {
 
       {/* Content */}
       <main className="mx-auto max-w-5xl px-8 py-8">
+        {/* Filtros por estado */}
+        <div className="mb-6 flex gap-2 overflow-x-auto">
+          {FILTROS_ESTADO.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFiltroEstado(f.key)}
+              className={cn(
+                "whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                filtroEstado === f.key
+                  ? "bg-[#007AFF] text-white"
+                  : "border border-[#D2D2D7] bg-white text-[#1D1D1F] hover:bg-[#F5F5F7]"
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="flex min-h-[400px] items-center justify-center">
             <Loader2 className="size-8 animate-spin text-[#007AFF]" />
@@ -150,7 +174,7 @@ export default function AdicionalesPage() {
         ) : (
           <div className="space-y-3">
             {filtered.map((ad) => {
-              const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.SOLICITUD_CLIENTE;
+              const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.solicitado;
               return (
                 <Link key={ad.id} href={`/adicionales/${ad.id}`}>
                   <article className="group rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:border-[#D2D2D7] hover:shadow-md">
