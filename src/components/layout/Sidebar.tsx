@@ -13,6 +13,7 @@ import {
   PlusCircle,
   Package,
   Hammer,
+  Calendar,
   LogOut,
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/adicionales", icon: PlusCircle, label: "Adicionales" },
   { href: "/requisiciones", icon: Package, label: "Requisiciones" },
   { href: "/carpinterias", icon: Hammer, label: "Carpintería" },
+  { href: "/calendario", icon: Calendar, label: "Calendario" },
 ];
 
 export function Sidebar() {
