@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -12,9 +12,16 @@ import {
   User,
   Calendar,
   CheckCircle2,
+  Pencil,
+  Trash2,
+  X,
+  Save,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -90,12 +97,19 @@ function getStepIndex(estado: string): number {
 export default function AdicionalDetailPage() {
   const supabase = getSupabaseClient();
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [adicional, setAdicional] = useState<Adicional | null>(null);
   const [proyectoNombre, setProyectoNombre] = useState<string>("—");
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [formEdit, setFormEdit] = useState({
+    descripcion: "",
+    monto: "",
+    solicitado_por: "",
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -146,6 +160,55 @@ export default function AdicionalDetailPage() {
   useEffect(() => {
     if (id) fetchData();
   }, [id, fetchData]);
+
+  useEffect(() => {
+    if (adicional) {
+      setFormEdit({
+        descripcion: adicional.descripcion || "",
+        monto: adicional.monto?.toString() || "",
+        solicitado_por: adicional.solicitado_por || "",
+      });
+    }
+  }, [adicional]);
+
+  async function guardarCambios() {
+    if (!adicional) return;
+    setActing(true);
+    try {
+      const { error } = await supabase
+        .from("adicionales")
+        .update({
+          descripcion: formEdit.descripcion,
+          monto: formEdit.monto ? Number(formEdit.monto) : null,
+          solicitado_por: formEdit.solicitado_por || null,
+        } as any)
+        .eq("id", adicional.id);
+      if (error) throw error;
+      await fetchData();
+      setEditando(false);
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al guardar cambios");
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function eliminarAdicional() {
+    if (!adicional) return;
+    if (!confirm("¿Estás seguro de eliminar este adicional? Esta acción no se puede deshacer.")) return;
+    try {
+      const { error } = await supabase
+        .from("adicionales")
+        .delete()
+        .eq("id", adicional.id);
+      if (error) throw error;
+      router.push("/adicionales");
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al eliminar adicional");
+    }
+  }
 
   async function avanzarPaso() {
     if (!adicional) return;
@@ -257,51 +320,186 @@ export default function AdicionalDetailPage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center gap-4 px-8 py-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-[#86868B] hover:bg-[#F5F5F7]"
-            asChild
-          >
-            <Link href="/adicionales">
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
-          <h1 className="truncate text-lg font-semibold tracking-tight text-[#1D1D1F]">
-            Detalle Adicional
-          </h1>
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-8 py-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-[#86868B] hover:bg-[#F5F5F7]"
+              asChild
+            >
+              <Link href="/adicionales">
+                <ArrowLeft className="size-4" />
+              </Link>
+            </Button>
+            <h1 className="truncate text-lg font-semibold tracking-tight text-[#1D1D1F]">
+              Detalle Adicional
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (editando) {
+                  setEditando(false);
+                  if (adicional) {
+                    setFormEdit({
+                      descripcion: adicional.descripcion || "",
+                      monto: adicional.monto?.toString() || "",
+                      solicitado_por: adicional.solicitado_por || "",
+                    });
+                  }
+                } else {
+                  setEditando(true);
+                }
+              }}
+              className={cn(
+                "rounded-lg text-[13px]",
+                editando
+                  ? "text-[#86868B] hover:bg-[#F5F5F7]"
+                  : "text-[#007AFF] hover:bg-[#007AFF]/5"
+              )}
+            >
+              {editando ? (
+                <>
+                  <X className="size-3.5" />
+                  Cancelar
+                </>
+              ) : (
+                <>
+                  <Pencil className="size-3.5" />
+                  Editar
+                </>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={eliminarAdicional}
+              className="rounded-lg text-[13px] text-[#FF3B30] hover:bg-[#FF3B30]/5"
+            >
+              <Trash2 className="size-3.5" />
+              Eliminar
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl space-y-6 px-8 py-8">
         {/* Info card */}
         <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
-          <h2 className="text-[16px] font-semibold text-[#1D1D1F]">
-            {adicional.descripcion}
-          </h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-              <Building2 className="size-4" />
-              <span>{proyectoNombre}</span>
-            </div>
-            <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-              <DollarSign className="size-4" />
-              <span className="font-medium text-[#1D1D1F]">
-                ${adicional.monto.toLocaleString("es-CO")}
-              </span>
-            </div>
-            {adicional.solicitado_por && (
-              <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-                <User className="size-4" />
-                <span>{adicional.solicitado_por}</span>
-              </div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-[16px] font-semibold text-[#1D1D1F]">
+              Información
+            </h2>
+            {editando && (
+              <Button
+                onClick={guardarCambios}
+                disabled={acting}
+                size="sm"
+                className="rounded-lg bg-[#007AFF] text-[13px] text-white hover:bg-[#0066DD]"
+              >
+                <Save className="size-3.5" />
+                {acting ? "Guardando..." : "Guardar"}
+              </Button>
             )}
-            <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-              <Calendar className="size-4" />
-              <span>{fmtDate(adicional.created_at)}</span>
-            </div>
           </div>
+
+          {editando ? (
+            <div className="space-y-4">
+              <div>
+                <Label className="mb-1 text-[13px] text-[#86868B]">
+                  Descripción *
+                </Label>
+                <textarea
+                  value={formEdit.descripcion}
+                  onChange={(e) =>
+                    setFormEdit({ ...formEdit, descripcion: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-[#D2D2D7] px-3 py-2 text-[14px] text-[#1D1D1F] transition-colors focus:border-[#007AFF] focus:outline-none focus:ring-1 focus:ring-[#007AFF]"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label className="mb-1 text-[13px] text-[#86868B]">
+                  Monto *
+                </Label>
+                <Input
+                  type="number"
+                  value={formEdit.monto}
+                  onChange={(e) =>
+                    setFormEdit({ ...formEdit, monto: e.target.value })
+                  }
+                  placeholder="0"
+                  className="border-[#D2D2D7] text-[14px] focus-visible:ring-[#007AFF]"
+                />
+              </div>
+
+              <div>
+                <Label className="mb-1 text-[13px] text-[#86868B]">
+                  Solicitado por
+                </Label>
+                <Input
+                  value={formEdit.solicitado_por}
+                  onChange={(e) =>
+                    setFormEdit({ ...formEdit, solicitado_por: e.target.value })
+                  }
+                  placeholder="Nombre de quien solicita"
+                  className="border-[#D2D2D7] text-[14px] focus-visible:ring-[#007AFF]"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <span className="text-[13px] text-[#86868B]">Proyecto</span>
+                <p className="text-[14px] font-medium text-[#1D1D1F]">
+                  {proyectoNombre}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-[13px] text-[#86868B]">Descripción</span>
+                <p className="text-[14px] font-medium text-[#1D1D1F]">
+                  {adicional.descripcion}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-[13px] text-[#86868B]">Monto</span>
+                <p className="text-lg font-bold text-[#007AFF]">
+                  {new Intl.NumberFormat("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    minimumFractionDigits: 0,
+                  }).format(adicional.monto)}
+                </p>
+              </div>
+
+              {adicional.solicitado_por && (
+                <div>
+                  <span className="text-[13px] text-[#86868B]">
+                    Solicitado por
+                  </span>
+                  <p className="text-[14px] font-medium text-[#1D1D1F]">
+                    {adicional.solicitado_por}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <span className="text-[13px] text-[#86868B]">
+                  Fecha de creación
+                </span>
+                <p className="text-[13px] text-[#1D1D1F]">
+                  {fmtDate(adicional.created_at)}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Timeline */}
