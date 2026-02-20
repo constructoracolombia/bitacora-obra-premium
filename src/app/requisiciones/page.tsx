@@ -22,9 +22,10 @@ interface Requisicion {
   created_at: string;
   proyecto_nombre?: string;
   fecha_solicitada: string | null;
-  fecha_aprobada: string | null;
-  fecha_comprada: string | null;
-  fecha_recibida: string | null;
+  fecha_por_aprobar: string | null;
+  fecha_en_compras: string | null;
+  fecha_recepcion_obra: string | null;
+  fecha_asignado_proyecto: string | null;
 }
 
 interface ProyectoOption {
@@ -34,13 +35,10 @@ interface ProyectoOption {
 
 const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   solicitada: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Solicitada" },
-  aprobada: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Aprobada" },
-  comprada: { bg: "bg-[#007AFF]/10", text: "text-[#007AFF]", label: "Comprada" },
-  recibida: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Recibida" },
-  SOLICITADO: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Solicitado" },
-  APROBADO_COMPRA: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Aprobado" },
-  COMPRADO: { bg: "bg-[#007AFF]/10", text: "text-[#007AFF]", label: "Comprado" },
-  RECIBIDO: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Recibido" },
+  por_aprobar: { bg: "bg-[#FF9500]/10", text: "text-[#FF9500]", label: "Por Aprobar" },
+  en_compras: { bg: "bg-[#007AFF]/10", text: "text-[#007AFF]", label: "En Compras" },
+  recepcion_obra: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Recepción obra" },
+  asignado_proyecto: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Asignado" },
 };
 
 type FilterEstado = "TODOS" | string;
@@ -89,9 +87,10 @@ export default function RequisicionesPage() {
               created_at: (r.created_at as string) ?? "",
               proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "—",
               fecha_solicitada: (r.fecha_solicitada as string) ?? null,
-              fecha_aprobada: (r.fecha_aprobada as string) ?? null,
-              fecha_comprada: (r.fecha_comprada as string) ?? null,
-              fecha_recibida: (r.fecha_recibida as string) ?? null,
+              fecha_por_aprobar: (r.fecha_por_aprobar as string) ?? null,
+              fecha_en_compras: (r.fecha_en_compras as string) ?? null,
+              fecha_recepcion_obra: (r.fecha_recepcion_obra as string) ?? null,
+              fecha_asignado_proyecto: (r.fecha_asignado_proyecto as string) ?? null,
             }))
           );
         }
@@ -111,9 +110,10 @@ export default function RequisicionesPage() {
   const estadoFilters: { value: FilterEstado; label: string }[] = [
     { value: "TODOS", label: "Todos" },
     { value: "solicitada", label: "Solicitadas" },
-    { value: "aprobada", label: "Aprobadas" },
-    { value: "comprada", label: "Compradas" },
-    { value: "recibida", label: "Recibidas" },
+    { value: "por_aprobar", label: "Por Aprobar" },
+    { value: "en_compras", label: "En Compras" },
+    { value: "recepcion_obra", label: "Recepción" },
+    { value: "asignado_proyecto", label: "Asignadas" },
   ];
 
   return (
@@ -224,9 +224,10 @@ export default function RequisicionesPage() {
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#86868B]">
                       {req.fecha_solicitada && <span>Solicitada: {new Date(req.fecha_solicitada).toLocaleDateString("es-CO")}</span>}
-                      {req.fecha_aprobada && <span>Aprobada: {new Date(req.fecha_aprobada).toLocaleDateString("es-CO")}</span>}
-                      {req.fecha_comprada && <span>Comprada: {new Date(req.fecha_comprada).toLocaleDateString("es-CO")}</span>}
-                      {req.fecha_recibida && <span>Recibida: {new Date(req.fecha_recibida).toLocaleDateString("es-CO")}</span>}
+                      {req.fecha_por_aprobar && <span>Por aprobar: {new Date(req.fecha_por_aprobar).toLocaleDateString("es-CO")}</span>}
+                      {req.fecha_en_compras && <span>En compras: {new Date(req.fecha_en_compras).toLocaleDateString("es-CO")}</span>}
+                      {req.fecha_recepcion_obra && <span>Recepción: {new Date(req.fecha_recepcion_obra).toLocaleDateString("es-CO")}</span>}
+                      {req.fecha_asignado_proyecto && <span>Asignada: {new Date(req.fecha_asignado_proyecto).toLocaleDateString("es-CO")}</span>}
                     </div>
                   </article>
                 </Link>
