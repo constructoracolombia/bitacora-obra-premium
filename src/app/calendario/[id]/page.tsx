@@ -123,9 +123,22 @@ export default function CalendarioDetallePage() {
     }
   }
 
-  function calcularDuracion(inicio: string, fin: string) {
-    const diff = new Date(fin).getTime() - new Date(inicio).getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  function calcularDuracionHabiles(inicio: string, fin: string): number {
+    const fechaInicio = new Date(inicio);
+    const fechaFin = new Date(fin);
+    let diasHabiles = 0;
+
+    const current = new Date(fechaInicio);
+
+    while (current <= fechaFin) {
+      const diaSemana = current.getDay();
+      if (diaSemana !== 0 && diaSemana !== 6) {
+        diasHabiles++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    return diasHabiles;
   }
 
   function calcularProgreso(inicio: string, fin: string) {
@@ -167,7 +180,7 @@ export default function CalendarioDetallePage() {
     );
   }
 
-  const duracion = calcularDuracion(
+  const duracion = calcularDuracionHabiles(
     calendario.fecha_acta_inicio,
     calendario.fecha_entrega_programada
   );
@@ -411,7 +424,7 @@ export default function CalendarioDetallePage() {
                 <div>
                   <span className="text-[13px] text-[#86868B]">Duración</span>
                   <p className="text-[14px] font-medium text-[#1D1D1F]">
-                    {duracion} días
+                    {duracion} días hábiles
                   </p>
                 </div>
 

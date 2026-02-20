@@ -34,9 +34,12 @@ export default function CalendarioPage() {
   const [loading, setLoading] = useState(true);
   const [fechaInicio, setFechaInicio] = useState(new Date());
   const [rangoVista, setRangoVista] = useState<"semana" | "mes" | "trimestre">(
-    "mes"
+    "trimestre"
   );
   const [filtroEstado, setFiltroEstado] = useState<string>("TODOS");
+  const [ordenamiento, setOrdenamiento] = useState<
+    "nombre" | "fecha_inicio" | "fecha_fin"
+  >("fecha_fin");
 
   useEffect(() => {
     cargarProyectos();
@@ -177,10 +180,28 @@ export default function CalendarioPage() {
 
   const columnasFechas = generarColumnasFechas();
 
-  const proyectosFiltrados = proyectos.filter((p) => {
-    if (filtroEstado === "TODOS") return true;
-    return p.proyecto.estado === filtroEstado;
-  });
+  const proyectosFiltrados = proyectos
+    .filter((p) => {
+      if (filtroEstado === "TODOS") return true;
+      return p.proyecto.estado === filtroEstado;
+    })
+    .sort((a, b) => {
+      if (ordenamiento === "fecha_fin") {
+        return (
+          new Date(a.fecha_entrega_programada).getTime() -
+          new Date(b.fecha_entrega_programada).getTime()
+        );
+      } else if (ordenamiento === "fecha_inicio") {
+        return (
+          new Date(a.fecha_acta_inicio).getTime() -
+          new Date(b.fecha_acta_inicio).getTime()
+        );
+      } else {
+        return a.proyecto.cliente_nombre.localeCompare(
+          b.proyecto.cliente_nombre
+        );
+      }
+    });
 
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
@@ -289,6 +310,24 @@ export default function CalendarioPage() {
                   : estado.charAt(0) + estado.slice(1).toLowerCase()}
               </button>
             ))}
+
+            {/* Ordenamiento */}
+            <div className="ml-4 flex items-center gap-2 border-l border-[#D2D2D7] pl-4">
+              <span className="text-[13px] text-[#86868B]">Ordenar:</span>
+              <select
+                value={ordenamiento}
+                onChange={(e) =>
+                  setOrdenamiento(
+                    e.target.value as "nombre" | "fecha_inicio" | "fecha_fin"
+                  )
+                }
+                className="rounded-lg border border-[#D2D2D7] px-3 py-1.5 text-[13px] text-[#1D1D1F] transition-colors focus:border-[#007AFF] focus:outline-none focus:ring-1 focus:ring-[#007AFF]"
+              >
+                <option value="fecha_fin">Fecha entrega (próxima primero)</option>
+                <option value="fecha_inicio">Fecha inicio</option>
+                <option value="nombre">Nombre</option>
+              </select>
+            </div>
           </div>
         </div>
 
