@@ -19,6 +19,7 @@ import {
   Plus,
   PlusCircle,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
@@ -163,6 +164,23 @@ export default function ProyectoDetailPage() {
   const [alcance, setAlcance] = useState("");
   const [alcanceImagen, setAlcanceImagen] = useState<string | null>(null);
   const [historialAlcance, setHistorialAlcance] = useState<any[]>([]);
+
+  const [referencias, setReferencias] = useState<any>(null);
+  const [editandoReferencias, setEditandoReferencias] = useState(false);
+  const [guardandoReferencias, setGuardandoReferencias] = useState(false);
+  const [formReferencias, setFormReferencias] = useState({
+    enchape_piso_general: "",
+    enchape_banos_piso: "",
+    enchape_muros_banos: "",
+    enchape_dilatacion_banos: "",
+    enchape_zona_humeda: "",
+    enchape_salpicadero: "",
+    demolicion_muro_zona_humeda: "",
+    poyos_cocina_closets: "",
+    ubicacion_poyo_closet_principal: "",
+    color_meson_barra: "",
+    color_carpinteria: "",
+  });
 
   const [savingInfo, setSavingInfo] = useState(false);
   const [savedInfo, setSavedInfo] = useState(false);
@@ -317,8 +335,8 @@ export default function ProyectoDetailPage() {
 
   useEffect(() => {
     if (activeTab === "alcance" && projectId) {
-      console.log("🔄 Tab Alcance abierto, cargando historial...");
       cargarHistorialAlcance();
+      cargarReferencias();
     }
   }, [activeTab, projectId]);
 
@@ -427,6 +445,69 @@ export default function ProyectoDetailPage() {
     setAlcanceImagen(null);
     setProject((prev) => prev ? { ...prev, alcance_imagen: null } : prev);
     await supabase.from("proyectos_maestro").update({ alcance_imagen: null }).eq("id", project.id);
+  }
+
+  // ── Referencias handlers ──
+
+  async function cargarReferencias() {
+    if (!projectId) return;
+    try {
+      const { data, error } = await supabase
+        .from("referencias_proyecto")
+        .select("*")
+        .eq("proyecto_id", projectId)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error cargando referencias:", error);
+        return;
+      }
+
+      if (data) {
+        setReferencias(data);
+        setFormReferencias({
+          enchape_piso_general: data.enchape_piso_general || "",
+          enchape_banos_piso: data.enchape_banos_piso || "",
+          enchape_muros_banos: data.enchape_muros_banos || "",
+          enchape_dilatacion_banos: data.enchape_dilatacion_banos || "",
+          enchape_zona_humeda: data.enchape_zona_humeda || "",
+          enchape_salpicadero: data.enchape_salpicadero || "",
+          demolicion_muro_zona_humeda: data.demolicion_muro_zona_humeda || "",
+          poyos_cocina_closets: data.poyos_cocina_closets || "",
+          ubicacion_poyo_closet_principal: data.ubicacion_poyo_closet_principal || "",
+          color_meson_barra: data.color_meson_barra || "",
+          color_carpinteria: data.color_carpinteria || "",
+        });
+      }
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  }
+
+  async function guardarReferencias() {
+    if (!project) return;
+    setGuardandoReferencias(true);
+    try {
+      if (referencias) {
+        const { error } = await supabase
+          .from("referencias_proyecto")
+          .update(formReferencias as any)
+          .eq("proyecto_id", project.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("referencias_proyecto")
+          .insert({ proyecto_id: project.id, ...formReferencias } as any);
+        if (error) throw error;
+      }
+      await cargarReferencias();
+      setEditandoReferencias(false);
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al guardar referencias");
+    } finally {
+      setGuardandoReferencias(false);
+    }
   }
 
   // ── Kanban / CPM handlers ──
@@ -791,6 +872,159 @@ export default function ProyectoDetailPage() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Referencias de enchapes y otros */}
+            <div className="mt-8 rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <h3 className="text-[14px] font-semibold text-[#1D1D1F]">Referencias</h3>
+                <div className="flex gap-2">
+                  {editandoReferencias ? (
+                    <>
+                      <Button
+                        onClick={guardarReferencias}
+                        disabled={guardandoReferencias}
+                        className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
+                      >
+                        {guardandoReferencias ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                        Guardar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="rounded-xl text-[#86868B]"
+                        onClick={() => {
+                          setEditandoReferencias(false);
+                          if (referencias) {
+                            setFormReferencias({
+                              enchape_piso_general: referencias.enchape_piso_general || "",
+                              enchape_banos_piso: referencias.enchape_banos_piso || "",
+                              enchape_muros_banos: referencias.enchape_muros_banos || "",
+                              enchape_dilatacion_banos: referencias.enchape_dilatacion_banos || "",
+                              enchape_zona_humeda: referencias.enchape_zona_humeda || "",
+                              enchape_salpicadero: referencias.enchape_salpicadero || "",
+                              demolicion_muro_zona_humeda: referencias.demolicion_muro_zona_humeda || "",
+                              poyos_cocina_closets: referencias.poyos_cocina_closets || "",
+                              ubicacion_poyo_closet_principal: referencias.ubicacion_poyo_closet_principal || "",
+                              color_meson_barra: referencias.color_meson_barra || "",
+                              color_carpinteria: referencias.color_carpinteria || "",
+                            });
+                          }
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditandoReferencias(true)}
+                      className="rounded-lg text-[13px] text-[#007AFF] hover:bg-[#007AFF]/5"
+                    >
+                      <Pencil className="size-3.5" />
+                      {referencias ? "Editar" : "Agregar referencias"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {editandoReferencias ? (
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="mb-3 text-[13px] font-semibold text-[#1D1D1F]">Enchapes</h4>
+                    <div className="space-y-4">
+                      {[
+                        { key: "enchape_piso_general", label: "Enchape de piso general", placeholder: "Ej: Porcelanato Gris 60x60" },
+                        { key: "enchape_banos_piso", label: "Enchape baños piso", placeholder: "Ej: Porcelanato Blanco 40x40" },
+                        { key: "enchape_muros_banos", label: "Enchape muros baños", placeholder: "Ej: Cerámica Beige 30x60" },
+                        { key: "enchape_dilatacion_banos", label: "Enchape dilatación baños", placeholder: "Ej: Porcelanato Negro 20x120" },
+                        { key: "enchape_zona_humeda", label: "Enchape zona húmeda", placeholder: "Ej: Porcelanato Gris 30x60" },
+                        { key: "enchape_salpicadero", label: "Enchape salpicadero", placeholder: "Ej: Porcelanato Blanco 60x60" },
+                      ].map((field) => (
+                        <div key={field.key} className="space-y-1.5">
+                          <Label className="text-[13px] text-[#86868B]">{field.label}</Label>
+                          <Input
+                            value={(formReferencias as any)[field.key]}
+                            onChange={(e) => setFormReferencias((f) => ({ ...f, [field.key]: e.target.value }))}
+                            placeholder={field.placeholder}
+                            className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-[#D2D2D7]/40 pt-5">
+                    <h4 className="mb-3 text-[13px] font-semibold text-[#1D1D1F]">Otros</h4>
+                    <div className="space-y-4">
+                      {[
+                        { key: "demolicion_muro_zona_humeda", label: "Demolición muro zona húmeda", placeholder: "Ej: Sí / No" },
+                        { key: "poyos_cocina_closets", label: "Poyos cocina y closets", placeholder: "Ej: MDF con cubierta en granito" },
+                        { key: "ubicacion_poyo_closet_principal", label: "Ubicación poyo closet habitación principal", placeholder: "Ej: Pared lateral izquierda" },
+                        { key: "color_meson_barra", label: "Color de mesón y barra (si aplica)", placeholder: "Ej: Gris Oxford" },
+                        { key: "color_carpinteria", label: "Color carpintería seleccionado (si aplica)", placeholder: "Ej: Blanco mate" },
+                      ].map((field) => (
+                        <div key={field.key} className="space-y-1.5">
+                          <Label className="text-[13px] text-[#86868B]">{field.label}</Label>
+                          <Input
+                            value={(formReferencias as any)[field.key]}
+                            onChange={(e) => setFormReferencias((f) => ({ ...f, [field.key]: e.target.value }))}
+                            placeholder={field.placeholder}
+                            className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : referencias ? (
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="mb-3 text-[13px] font-semibold text-[#1D1D1F]">Enchapes</h4>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {[
+                        { key: "enchape_piso_general", label: "Piso general" },
+                        { key: "enchape_banos_piso", label: "Baños piso" },
+                        { key: "enchape_muros_banos", label: "Muros baños" },
+                        { key: "enchape_dilatacion_banos", label: "Dilatación baños" },
+                        { key: "enchape_zona_humeda", label: "Zona húmeda" },
+                        { key: "enchape_salpicadero", label: "Salpicadero" },
+                      ].map((field) =>
+                        referencias[field.key] ? (
+                          <div key={field.key}>
+                            <p className="text-[12px] text-[#86868B]">{field.label}</p>
+                            <p className="text-[14px] font-medium text-[#1D1D1F]">{referencias[field.key]}</p>
+                          </div>
+                        ) : null
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-[#D2D2D7]/40 pt-5">
+                    <h4 className="mb-3 text-[13px] font-semibold text-[#1D1D1F]">Otros</h4>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {[
+                        { key: "demolicion_muro_zona_humeda", label: "Demolición muro zona húmeda" },
+                        { key: "poyos_cocina_closets", label: "Poyos cocina y closets" },
+                        { key: "ubicacion_poyo_closet_principal", label: "Ubicación poyo closet principal" },
+                        { key: "color_meson_barra", label: "Color mesón y barra" },
+                        { key: "color_carpinteria", label: "Color carpintería" },
+                      ].map((field) =>
+                        referencias[field.key] ? (
+                          <div key={field.key}>
+                            <p className="text-[12px] text-[#86868B]">{field.label}</p>
+                            <p className="text-[14px] font-medium text-[#1D1D1F]">{referencias[field.key]}</p>
+                          </div>
+                        ) : null
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-[13px] text-[#86868B]">
+                  No hay referencias registradas
                 </div>
               )}
             </div>
