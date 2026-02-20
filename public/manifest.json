@@ -2,10 +2,10 @@
   "name": "Bitácora Obra Premium",
   "short_name": "Bitácora Obra",
   "description": "Sistema de gestión de proyectos de construcción",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0C0C0C",
-  "theme_color": "#FFB800",
+  "background_color": "#ffffff",
+  "theme_color": "#007AFF",
   "orientation": "portrait-primary",
   "icons": [
     {

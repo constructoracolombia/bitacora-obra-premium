@@ -27,6 +27,11 @@ export const metadata: Metadata = {
     "Sistema profesional de bitácora de obra para gestión de proyectos de construcción.",
   authors: [{ name: "Bitácora Obra Premium" }],
   creator: "Bitácora Obra Premium",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Bitácora Obra",
+  },
   other: {
     "Cache-Control": "no-cache, no-store, must-revalidate",
     Pragma: "no-cache",
