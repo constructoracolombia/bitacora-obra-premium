@@ -13,6 +13,7 @@ import {
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { esFestivo, calcularDiasHabiles } from "@/lib/festivos-colombia";
 
 interface ProyectoCalendario {
   id: string;
@@ -351,49 +352,70 @@ export default function CalendarioPage() {
 
                   {/* Columnas de fechas */}
                   <div className="flex flex-1">
-                    {columnasFechas.map((fecha, idx) => (
-                      <div
-                        key={idx}
-                        className={cn(
-                          "flex-1 border-r border-[#D2D2D7]/20 p-2 text-center",
-                          idx === columnaHoy && "bg-[#007AFF]/5"
-                        )}
-                      >
-                        <div className="text-[11px] font-medium text-[#86868B]">
-                          {rangoVista === "semana" && (
-                            <>
-                              <div>
-                                {fecha.toLocaleDateString("es-CO", {
-                                  weekday: "short",
-                                })}
-                              </div>
-                              <div className="text-lg font-bold text-[#1D1D1F]">
+                    {columnasFechas.map((fecha, idx) => {
+                      const esFinDeSemana =
+                        fecha.getDay() === 0 || fecha.getDay() === 6;
+                      const esDiaFestivo = esFestivo(fecha);
+
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "flex-1 border-r border-[#D2D2D7]/20 p-2 text-center",
+                            idx === columnaHoy
+                              ? "bg-[#007AFF]/5"
+                              : esDiaFestivo
+                                ? "bg-[#FF3B30]/5"
+                                : esFinDeSemana
+                                  ? "bg-[#F5F5F7]/60"
+                                  : ""
+                          )}
+                        >
+                          <div className="text-[11px] font-medium text-[#86868B]">
+                            {rangoVista === "semana" && (
+                              <>
+                                <div>
+                                  {fecha.toLocaleDateString("es-CO", {
+                                    weekday: "short",
+                                  })}
+                                </div>
+                                <div
+                                  className={cn(
+                                    "text-lg font-bold",
+                                    esDiaFestivo
+                                      ? "text-[#FF3B30]"
+                                      : "text-[#1D1D1F]"
+                                  )}
+                                >
+                                  {fecha.getDate()}
+                                </div>
+                              </>
+                            )}
+                            {rangoVista === "mes" && (
+                              <div
+                                className={cn(
+                                  esDiaFestivo
+                                    ? "text-[#FF3B30] font-bold"
+                                    : esFinDeSemana
+                                      ? "text-[#D2D2D7]"
+                                      : ""
+                                )}
+                              >
                                 {fecha.getDate()}
                               </div>
-                            </>
-                          )}
-                          {rangoVista === "mes" && (
-                            <div
-                              className={cn(
-                                (fecha.getDay() === 0 ||
-                                  fecha.getDay() === 6) &&
-                                  "text-[#D2D2D7]"
-                              )}
-                            >
-                              {fecha.getDate()}
-                            </div>
-                          )}
-                          {rangoVista === "trimestre" &&
-                            fecha.getDate() === 1 && (
-                              <div className="font-bold text-[#1D1D1F]">
-                                {fecha.toLocaleDateString("es-CO", {
-                                  month: "short",
-                                })}
-                              </div>
                             )}
+                            {rangoVista === "trimestre" &&
+                              fecha.getDate() === 1 && (
+                                <div className="font-bold text-[#1D1D1F]">
+                                  {fecha.toLocaleDateString("es-CO", {
+                                    month: "short",
+                                  })}
+                                </div>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -521,17 +543,29 @@ export default function CalendarioPage() {
                                 day: "2-digit",
                                 month: "short",
                               })}
+                              {" · "}
+                              {calcularDiasHabiles(
+                                proyecto.fecha_acta_inicio,
+                                proyecto.fecha_entrega_programada
+                              )}
+                              d háb
                             </div>
                           </div>
 
                           {/* Grid de fondo */}
                           <div className="absolute inset-0 flex">
-                            {columnasFechas.map((_, idx) => (
+                            {columnasFechas.map((f, idx) => (
                               <div
                                 key={idx}
                                 className={cn(
                                   "flex-1 border-r border-[#D2D2D7]/10",
-                                  idx === columnaHoy && "bg-[#007AFF]/[0.03]"
+                                  idx === columnaHoy
+                                    ? "bg-[#007AFF]/[0.03]"
+                                    : esFestivo(f)
+                                      ? "bg-[#FF3B30]/[0.03]"
+                                      : (f.getDay() === 0 ||
+                                            f.getDay() === 6) &&
+                                          "bg-[#F5F5F7]/40"
                                 )}
                               />
                             ))}
@@ -569,6 +603,10 @@ export default function CalendarioPage() {
               <div className="h-full w-1/2 bg-black/20" />
             </div>
             <span>Progreso</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="size-3 rounded-sm bg-[#FF3B30]/10 ring-1 ring-[#FF3B30]/20" />
+            <span>Festivo</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-5 w-0.5 bg-[#007AFF]" />

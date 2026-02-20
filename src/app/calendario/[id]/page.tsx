@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { calcularDiasHabiles } from "@/lib/festivos-colombia";
 
 export default function CalendarioDetallePage() {
   const supabase = getSupabaseClient();
@@ -123,24 +124,6 @@ export default function CalendarioDetallePage() {
     }
   }
 
-  function calcularDuracionHabiles(inicio: string, fin: string): number {
-    const fechaInicio = new Date(inicio);
-    const fechaFin = new Date(fin);
-    let diasHabiles = 0;
-
-    const current = new Date(fechaInicio);
-
-    while (current <= fechaFin) {
-      const diaSemana = current.getDay();
-      if (diaSemana !== 0 && diaSemana !== 6) {
-        diasHabiles++;
-      }
-      current.setDate(current.getDate() + 1);
-    }
-
-    return diasHabiles;
-  }
-
   function calcularProgreso(inicio: string, fin: string) {
     const hoy = new Date();
     const fechaInicio = new Date(inicio);
@@ -180,7 +163,7 @@ export default function CalendarioDetallePage() {
     );
   }
 
-  const duracion = calcularDuracionHabiles(
+  const duracion = calcularDiasHabiles(
     calendario.fecha_acta_inicio,
     calendario.fecha_entrega_programada
   );
