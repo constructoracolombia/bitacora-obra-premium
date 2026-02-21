@@ -81,7 +81,9 @@ export function calcularDiasHabiles(inicio: string, fin: string): number {
   const fechaFin = new Date(fin);
   let diasHabiles = 0;
 
+  // El día del acta de inicio no se cuenta; el primer día de trabajo es el siguiente
   const current = new Date(fechaInicio);
+  current.setDate(current.getDate() + 1);
 
   while (current <= fechaFin) {
     const diaSemana = current.getDay();
