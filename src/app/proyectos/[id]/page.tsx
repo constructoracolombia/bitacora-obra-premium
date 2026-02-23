@@ -20,6 +20,7 @@ import {
   PlusCircle,
   Trash2,
   Pencil,
+  HardHat,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
@@ -198,8 +199,8 @@ export default function ProyectoDetailPage() {
     fecha_reprogramada_final: "",
   });
 
-  const [savingInfo, setSavingInfo] = useState(false);
-  const [savedInfo, setSavedInfo] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [guardando, setGuardando] = useState(false);
   const [savingAlcance, setSavingAlcance] = useState(false);
   const [savedAlcance, setSavedAlcance] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -312,24 +313,29 @@ export default function ProyectoDetailPage() {
 
   // ── Info handlers ──
 
-  async function handleSaveInfo() {
-    if (!project || isFromFinanzas) return;
-    setSavingInfo(true);
-    setSavedInfo(false);
+  async function guardarCambios() {
+    if (!project) return;
+    setGuardando(true);
     try {
-      await supabase.from("proyectos_maestro").update({
-        cliente_nombre: editForm.cliente_nombre.trim() || null,
-        residente: editForm.residente.trim() || null,
-        presupuesto_total: editForm.presupuesto_total ? Number(editForm.presupuesto_total) : null,
-        estado: editForm.estado,
-      } as any).eq("id", project.id);
-      setSavedInfo(true);
-      setTimeout(() => setSavedInfo(false), 2000);
-      fetchData();
+      const { error } = await supabase
+        .from("proyectos_maestro")
+        .update({
+          cliente_nombre: editForm.cliente_nombre,
+          residente: editForm.residente || null,
+          presupuesto_total: editForm.presupuesto_total ? Number(editForm.presupuesto_total) : null,
+          estado: editForm.estado,
+        } as any)
+        .eq("id", project.id);
+
+      if (error) throw error;
+
+      await fetchData();
+      setEditando(false);
     } catch (err) {
-      console.error("Error saving info:", err);
+      console.error("Error:", err);
+      alert("Error al guardar cambios");
     } finally {
-      setSavingInfo(false);
+      setGuardando(false);
     }
   }
 
@@ -759,85 +765,173 @@ export default function ProyectoDetailPage() {
         {/* ─── TAB: Info ─── */}
         {activeTab === "info" && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-[13px] font-medium text-[#86868B]">Avance general</span>
-                <span className="text-2xl font-semibold text-[#1D1D1F]">{kanbanProgress}%</span>
+            {/* Avance general */}
+            <div className="rounded-lg border bg-white p-6">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm text-gray-600">Avance general</span>
+                <span className="text-2xl font-bold">{kanbanProgress}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
-                <div className="h-full rounded-full bg-[#007AFF] transition-all duration-500" style={{ width: `${kanbanProgress}%` }} />
+              <div className="h-3 w-full rounded-full bg-gray-200">
+                <div
+                  className="h-3 rounded-full bg-blue-500 transition-all"
+                  style={{ width: `${kanbanProgress}%` }}
+                />
               </div>
-              {actividades.length > 0 && (
-                <p className="mt-2 text-[12px] text-[#86868B]">
-                  {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades completadas
-                </p>
-              )}
+              <p className="mt-2 text-sm text-gray-600">
+                {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades completadas
+              </p>
             </div>
 
-            {isFromFinanzas && (
-              <div className="flex items-start gap-3 rounded-2xl border border-[#007AFF]/20 bg-[#007AFF]/5 p-4">
-                <Lock className="mt-0.5 size-4 shrink-0 text-[#007AFF]" />
-                <div>
-                  <p className="text-[13px] font-medium text-[#1D1D1F]">Proyecto gestionado desde Finanzas</p>
-                  <p className="mt-0.5 text-[12px] text-[#86868B]">Los datos principales son de solo lectura.</p>
-                </div>
+            {/* Información del proyecto */}
+            <div className="rounded-lg border bg-white p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">
+                  {isFromFinanzas
+                    ? "Proyecto gestionado desde Finanzas"
+                    : "Información del Proyecto"}
+                </h3>
+                {!isFromFinanzas && (
+                  <Button
+                    onClick={() => setEditando(!editando)}
+                    variant="outline"
+                    className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                  >
+                    {editando ? "Cancelar" : "Editar"}
+                  </Button>
+                )}
               </div>
-            )}
 
-            {isFromFinanzas ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <InfoCard icon={User} label="Cliente" value={project.cliente_nombre || "—"} />
-                <InfoCard icon={MapPin} label="Dirección" value={project.direccion || "—"} />
-                <InfoCard icon={DollarSign} label="Presupuesto" value={project.presupuesto_total ? `$${project.presupuesto_total.toLocaleString("es-CO")}` : "—"} />
-                <InfoCard icon={Calendar} label="Fecha inicio" value={formatDate(project.fecha_inicio)} />
-                <InfoCard icon={Calendar} label="Fecha entrega" value={formatDate(project.fecha_entrega_estimada)} />
-                <InfoCard icon={User} label="Residente" value={project.residente_asignado || "—"} />
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6 space-y-5">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Nombre del proyecto</Label>
-                    <Input value={editForm.cliente_nombre} onChange={(e) => setEditForm((f) => ({ ...f, cliente_nombre: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
+              {isFromFinanzas && (
+                <div className="mb-4 rounded-lg bg-blue-50 p-4 text-sm text-blue-700 border border-blue-200">
+                  🔒 Los datos principales son de solo lectura.
+                </div>
+              )}
+
+              {editando && !isFromFinanzas ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre del proyecto *
+                    </label>
+                    <input
+                      value={editForm.cliente_nombre}
+                      onChange={(e) => setEditForm({ ...editForm, cliente_nombre: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Residente</Label>
-                    <Input value={editForm.residente} onChange={(e) => setEditForm((f) => ({ ...f, residente: e.target.value }))} placeholder="Nombre del residente de obra" className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Residente
+                    </label>
+                    <input
+                      value={editForm.residente}
+                      onChange={(e) => setEditForm({ ...editForm, residente: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2"
+                      placeholder="Nombre del residente de obra"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Presupuesto total</Label>
-                    <Input type="number" min="0" value={editForm.presupuesto_total} onChange={(e) => setEditForm((f) => ({ ...f, presupuesto_total: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Presupuesto total
+                    </label>
+                    <input
+                      type="number"
+                      value={editForm.presupuesto_total}
+                      onChange={(e) => setEditForm({ ...editForm, presupuesto_total: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Estado</Label>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Estado
+                    </label>
                     <select
                       value={editForm.estado}
-                      onChange={(e) => setEditForm((f) => ({ ...f, estado: e.target.value as any }))}
-                      className="h-10 w-full rounded-xl border border-[#D2D2D7] px-3 text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10 focus:outline-none"
+                      onChange={(e) => setEditForm({ ...editForm, estado: e.target.value as any })}
+                      className="w-full rounded-lg border px-3 py-2"
                     >
                       <option value="ACTIVO">Activo</option>
                       <option value="PAUSADO">Pausado</option>
                       <option value="FINALIZADO">Finalizado</option>
                     </select>
                   </div>
-                </div>
 
-                {project.residente && !editForm.residente && (
-                  <div className="rounded-xl bg-[#F5F5F7] p-4">
-                    <span className="text-[12px] text-[#86868B]">Residente</span>
-                    <p className="text-[14px] font-medium text-[#1D1D1F]">{project.residente}</p>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 border-t border-[#F5F5F7] pt-5">
-                  <Button onClick={handleSaveInfo} disabled={savingInfo} className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
-                    {savingInfo ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                    Guardar cambios
+                  <Button
+                    onClick={guardarCambios}
+                    disabled={guardando}
+                    className="w-full bg-blue-500 hover:bg-blue-600"
+                  >
+                    {guardando ? "Guardando..." : "Guardar cambios"}
                   </Button>
-                  {savedInfo && <span className="flex items-center gap-1.5 text-[13px] text-[#34C759]"><CheckCircle2 className="size-4" />Guardado</span>}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <User className="h-5 w-5 text-gray-400 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600">Cliente</p>
+                        <p className="font-semibold text-gray-900">{project.cliente_nombre}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <DollarSign className="h-5 w-5 text-gray-400 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600">Presupuesto</p>
+                        <p className="font-semibold text-gray-900">
+                          {project.presupuesto_total
+                            ? new Intl.NumberFormat("es-CO", {
+                                style: "currency",
+                                currency: "COP",
+                                minimumFractionDigits: 0,
+                              }).format(project.presupuesto_total)
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600">Fecha inicio</p>
+                        <p className="font-semibold text-gray-900">
+                          {project.fecha_inicio
+                            ? new Date(project.fecha_inicio + "T12:00:00").toLocaleDateString("es-CO", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <HardHat className="h-5 w-5 text-gray-400 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600">Residente</p>
+                        {!isFromFinanzas && !project.residente ? (
+                          <button
+                            onClick={() => setEditando(true)}
+                            className="text-sm text-blue-600 hover:underline"
+                          >
+                            Agregar residente
+                          </button>
+                        ) : (
+                          <p className="font-semibold text-gray-900">{project.residente || "—"}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
