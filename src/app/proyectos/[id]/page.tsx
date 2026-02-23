@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { esFestivo } from "@/lib/festivos-colombia";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ActividadCard, type Actividad } from "./components/ActividadCard";
@@ -39,6 +40,7 @@ interface Proyecto {
   porcentaje_avance: number;
   estado: string | null;
   residente_asignado: string | null;
+  residente: string | null;
   fecha_inicio: string | null;
   fecha_entrega_estimada: string | null;
   conjunto: string | null;
@@ -46,6 +48,12 @@ interface Proyecto {
   alcance_imagen: string | null;
   proyecto_nombre: string | null;
   app_origen: string | null;
+  link_contrato: string | null;
+  link_acta_inicio: string | null;
+  fecha_acta_inicio: string | null;
+  dias_contractuales: number | null;
+  fecha_entrega_contractual: string | null;
+  fecha_reprogramada_final: string | null;
 }
 
 interface AdicionalRow {
@@ -154,11 +162,9 @@ export default function ProyectoDetailPage() {
 
   const [editForm, setEditForm] = useState({
     cliente_nombre: "",
-    direccion: "",
+    residente: "",
     presupuesto_total: "",
-    fecha_inicio: "",
-    fecha_entrega_estimada: "",
-    residente_asignado: "",
+    estado: "ACTIVO" as "ACTIVO" | "PAUSADO" | "FINALIZADO",
   });
 
   const [alcance, setAlcance] = useState("");
@@ -180,6 +186,16 @@ export default function ProyectoDetailPage() {
     ubicacion_poyo_closet_principal: "",
     color_meson_barra: "",
     color_carpinteria: "",
+  });
+
+  const [editandoContrato, setEditandoContrato] = useState(false);
+  const [guardandoContrato, setGuardandoContrato] = useState(false);
+  const [formContrato, setFormContrato] = useState({
+    link_contrato: "",
+    link_acta_inicio: "",
+    fecha_acta_inicio: "",
+    dias_contractuales: "",
+    fecha_reprogramada_final: "",
   });
 
   const [savingInfo, setSavingInfo] = useState(false);
@@ -212,6 +228,7 @@ export default function ProyectoDetailPage() {
           porcentaje_avance: Number(r.porcentaje_avance) || 0,
           estado: r.estado ?? null,
           residente_asignado: r.residente_asignado ?? null,
+          residente: r.residente ?? null,
           fecha_inicio: r.fecha_inicio ?? null,
           fecha_entrega_estimada: r.fecha_entrega_estimada ?? null,
           conjunto: r.conjunto ?? null,
@@ -219,16 +236,27 @@ export default function ProyectoDetailPage() {
           alcance_imagen: r.alcance_imagen ?? null,
           proyecto_nombre: r.proyecto_nombre ?? null,
           app_origen: r.app_origen ?? null,
+          link_contrato: r.link_contrato ?? null,
+          link_acta_inicio: r.link_acta_inicio ?? null,
+          fecha_acta_inicio: r.fecha_acta_inicio ?? null,
+          dias_contractuales: r.dias_contractuales != null ? Number(r.dias_contractuales) : null,
+          fecha_entrega_contractual: r.fecha_entrega_contractual ?? null,
+          fecha_reprogramada_final: r.fecha_reprogramada_final ?? null,
         });
         setAlcance(r.alcance_text ?? "");
         setAlcanceImagen(r.alcance_imagen ?? null);
         setEditForm({
           cliente_nombre: r.cliente_nombre ?? "",
-          direccion: r.direccion ?? "",
+          residente: r.residente ?? "",
           presupuesto_total: r.presupuesto_total != null ? String(r.presupuesto_total) : "",
-          fecha_inicio: r.fecha_inicio ?? "",
-          fecha_entrega_estimada: r.fecha_entrega_estimada ?? "",
-          residente_asignado: r.residente_asignado ?? "",
+          estado: (r.estado as any) ?? "ACTIVO",
+        });
+        setFormContrato({
+          link_contrato: r.link_contrato ?? "",
+          link_acta_inicio: r.link_acta_inicio ?? "",
+          fecha_acta_inicio: r.fecha_acta_inicio ?? "",
+          dias_contractuales: r.dias_contractuales != null ? String(r.dias_contractuales) : "",
+          fecha_reprogramada_final: r.fecha_reprogramada_final ?? "",
         });
       }
 
@@ -291,12 +319,10 @@ export default function ProyectoDetailPage() {
     try {
       await supabase.from("proyectos_maestro").update({
         cliente_nombre: editForm.cliente_nombre.trim() || null,
-        direccion: editForm.direccion.trim() || null,
-        presupuesto_total: Number(editForm.presupuesto_total) || null,
-        fecha_inicio: editForm.fecha_inicio || null,
-        fecha_entrega_estimada: editForm.fecha_entrega_estimada || null,
-        residente_asignado: editForm.residente_asignado.trim() || null,
-      }).eq("id", project.id);
+        residente: editForm.residente.trim() || null,
+        presupuesto_total: editForm.presupuesto_total ? Number(editForm.presupuesto_total) : null,
+        estado: editForm.estado,
+      } as any).eq("id", project.id);
       setSavedInfo(true);
       setTimeout(() => setSavedInfo(false), 2000);
       fetchData();
@@ -510,6 +536,60 @@ export default function ProyectoDetailPage() {
     }
   }
 
+  // ── Contract helpers ──
+
+  function calcularFechaEntrega(fechaInicio: string, diasHabiles: number): string {
+    const inicio = new Date(fechaInicio);
+    let diasContados = 0;
+    const current = new Date(inicio);
+    current.setDate(current.getDate() + 1);
+
+    while (diasContados < diasHabiles) {
+      const diaSemana = current.getDay();
+      if (diaSemana !== 0 && diaSemana !== 6 && !esFestivo(current)) {
+        diasContados++;
+      }
+      if (diasContados < diasHabiles) {
+        current.setDate(current.getDate() + 1);
+      }
+    }
+
+    return current.toISOString().split("T")[0];
+  }
+
+  async function guardarDatosContractuales() {
+    if (!project) return;
+    setGuardandoContrato(true);
+    try {
+      const fechaEntrega =
+        formContrato.fecha_acta_inicio && formContrato.dias_contractuales
+          ? calcularFechaEntrega(formContrato.fecha_acta_inicio, parseInt(formContrato.dias_contractuales))
+          : null;
+
+      const { error } = await supabase
+        .from("proyectos_maestro")
+        .update({
+          link_contrato: formContrato.link_contrato || null,
+          link_acta_inicio: formContrato.link_acta_inicio || null,
+          fecha_acta_inicio: formContrato.fecha_acta_inicio || null,
+          dias_contractuales: formContrato.dias_contractuales ? parseInt(formContrato.dias_contractuales) : null,
+          fecha_entrega_contractual: fechaEntrega,
+          fecha_reprogramada_final: formContrato.fecha_reprogramada_final || null,
+        } as any)
+        .eq("id", project.id);
+
+      if (error) throw error;
+
+      await fetchData();
+      setEditandoContrato(false);
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al guardar datos contractuales");
+    } finally {
+      setGuardandoContrato(false);
+    }
+  }
+
   // ── Kanban / CPM handlers ──
 
   async function handleMoveTask(taskId: string, newEstado: string) {
@@ -717,30 +797,38 @@ export default function ProyectoDetailPage() {
               <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6 space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Cliente</Label>
+                    <Label className="text-[13px] text-[#86868B]">Nombre del proyecto</Label>
                     <Input value={editForm.cliente_nombre} onChange={(e) => setEditForm((f) => ({ ...f, cliente_nombre: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Dirección</Label>
-                    <Input value={editForm.direccion} onChange={(e) => setEditForm((f) => ({ ...f, direccion: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
+                    <Label className="text-[13px] text-[#86868B]">Residente</Label>
+                    <Input value={editForm.residente} onChange={(e) => setEditForm((f) => ({ ...f, residente: e.target.value }))} placeholder="Nombre del residente de obra" className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Presupuesto (COP)</Label>
+                    <Label className="text-[13px] text-[#86868B]">Presupuesto total</Label>
                     <Input type="number" min="0" value={editForm.presupuesto_total} onChange={(e) => setEditForm((f) => ({ ...f, presupuesto_total: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Fecha inicio</Label>
-                    <Input type="date" value={editForm.fecha_inicio} onChange={(e) => setEditForm((f) => ({ ...f, fecha_inicio: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[13px] text-[#86868B]">Fecha entrega</Label>
-                    <Input type="date" value={editForm.fecha_entrega_estimada} onChange={(e) => setEditForm((f) => ({ ...f, fecha_entrega_estimada: e.target.value }))} className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label className="text-[13px] text-[#86868B]">Residente asignado</Label>
-                    <Input value={editForm.residente_asignado} onChange={(e) => setEditForm((f) => ({ ...f, residente_asignado: e.target.value }))} placeholder="Nombre del residente" className="h-10 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10" />
+                    <Label className="text-[13px] text-[#86868B]">Estado</Label>
+                    <select
+                      value={editForm.estado}
+                      onChange={(e) => setEditForm((f) => ({ ...f, estado: e.target.value as any }))}
+                      className="h-10 w-full rounded-xl border border-[#D2D2D7] px-3 text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10 focus:outline-none"
+                    >
+                      <option value="ACTIVO">Activo</option>
+                      <option value="PAUSADO">Pausado</option>
+                      <option value="FINALIZADO">Finalizado</option>
+                    </select>
                   </div>
                 </div>
+
+                {project.residente && !editForm.residente && (
+                  <div className="rounded-xl bg-[#F5F5F7] p-4">
+                    <span className="text-[12px] text-[#86868B]">Residente</span>
+                    <p className="text-[14px] font-medium text-[#1D1D1F]">{project.residente}</p>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3 border-t border-[#F5F5F7] pt-5">
                   <Button onClick={handleSaveInfo} disabled={savingInfo} className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
                     {savingInfo ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
@@ -822,6 +910,275 @@ export default function ProyectoDetailPage() {
                       </p>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* Datos contractuales */}
+            <div className="mt-8 rounded-lg border bg-white p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Contrato</h3>
+                <div className="flex gap-2">
+                  {editandoContrato ? (
+                    <>
+                      <Button
+                        onClick={guardarDatosContractuales}
+                        disabled={guardandoContrato}
+                        className="bg-blue-500 hover:bg-blue-600"
+                      >
+                        {guardandoContrato ? "Guardando..." : "Guardar"}
+                      </Button>
+                      <Button
+                        onClick={() => setEditandoContrato(false)}
+                        variant="outline"
+                      >
+                        Cancelar
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={() => setEditandoContrato(true)}
+                      variant="outline"
+                      className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                    >
+                      Editar
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {editandoContrato ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Link del contrato
+                    </label>
+                    <input
+                      type="url"
+                      value={formContrato.link_contrato}
+                      onChange={(e) => setFormContrato({ ...formContrato, link_contrato: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2"
+                      placeholder="https://drive.google.com/..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Link del acta de inicio
+                    </label>
+                    <input
+                      type="url"
+                      value={formContrato.link_acta_inicio}
+                      onChange={(e) => setFormContrato({ ...formContrato, link_acta_inicio: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2"
+                      placeholder="https://drive.google.com/..."
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {formContrato.link_contrato && (
+                    <div>
+                      <span className="text-sm text-gray-600">Contrato</span>
+                      <p>
+                        <a
+                          href={formContrato.link_contrato}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          Ver contrato
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </p>
+                    </div>
+                  )}
+
+                  {formContrato.link_acta_inicio && (
+                    <div>
+                      <span className="text-sm text-gray-600">Acta de inicio</span>
+                      <p>
+                        <a
+                          href={formContrato.link_acta_inicio}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          Ver acta de inicio
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </p>
+                    </div>
+                  )}
+
+                  {!formContrato.link_contrato && !formContrato.link_acta_inicio && (
+                    <p className="text-sm text-gray-500">No hay enlaces registrados</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Flujo contractual */}
+            <div className="mt-6 rounded-lg border bg-white p-6">
+              <h3 className="text-lg font-semibold mb-4">Programación Contractual</h3>
+
+              {editandoContrato ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Fecha acta de inicio
+                      </label>
+                      <input
+                        type="date"
+                        value={formContrato.fecha_acta_inicio}
+                        onChange={(e) => setFormContrato({ ...formContrato, fecha_acta_inicio: e.target.value })}
+                        className="w-full rounded-lg border px-3 py-2"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Días hábiles contractuales
+                      </label>
+                      <input
+                        type="number"
+                        value={formContrato.dias_contractuales}
+                        onChange={(e) => setFormContrato({ ...formContrato, dias_contractuales: e.target.value })}
+                        className="w-full rounded-lg border px-3 py-2"
+                        placeholder="90"
+                      />
+                    </div>
+                  </div>
+
+                  {formContrato.fecha_acta_inicio && formContrato.dias_contractuales && (
+                    <div className="rounded-lg bg-blue-50 p-4">
+                      <p className="text-sm text-gray-600">Fecha entrega contractual (calculada)</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {new Date(calcularFechaEntrega(
+                          formContrato.fecha_acta_inicio,
+                          parseInt(formContrato.dias_contractuales)
+                        ) + "T12:00:00").toLocaleDateString("es-CO", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha reprogramada final (opcional)
+                    </label>
+                    <input
+                      type="date"
+                      value={formContrato.fecha_reprogramada_final}
+                      onChange={(e) => setFormContrato({ ...formContrato, fecha_reprogramada_final: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Si el proyecto se reprogramó, indica la nueva fecha de entrega
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {project.fecha_acta_inicio ? (
+                    <>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="rounded-lg bg-gray-50 p-4">
+                          <p className="text-xs text-gray-600 mb-1">Fecha acta de inicio</p>
+                          <p className="font-semibold">
+                            {new Date(project.fecha_acta_inicio + "T12:00:00").toLocaleDateString("es-CO")}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-gray-50 p-4">
+                          <p className="text-xs text-gray-600 mb-1">Tiempo contractual</p>
+                          <p className="font-semibold">{project.dias_contractuales || 0} días hábiles</p>
+                        </div>
+
+                        <div className="rounded-lg bg-blue-50 p-4">
+                          <p className="text-xs text-gray-600 mb-1">Fecha entrega contractual</p>
+                          <p className="font-semibold text-blue-600">
+                            {project.fecha_entrega_contractual
+                              ? new Date(project.fecha_entrega_contractual + "T12:00:00").toLocaleDateString("es-CO")
+                              : "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {project.fecha_reprogramada_final && (
+                        <div className="rounded-lg bg-orange-50 p-4 border-l-4 border-orange-500">
+                          <p className="text-xs text-gray-600 mb-1">⚠️ Fecha reprogramada final</p>
+                          <p className="font-semibold text-orange-700">
+                            {new Date(project.fecha_reprogramada_final + "T12:00:00").toLocaleDateString("es-CO", {
+                              weekday: "long",
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Flujo visual */}
+                      <div className="flex items-center gap-2 mt-6">
+                        <div className="flex-1 text-center">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-green-500 text-white flex items-center justify-center font-bold mb-2">
+                            1
+                          </div>
+                          <p className="text-xs text-gray-600">Acta inicio</p>
+                          <p className="text-sm font-medium">
+                            {new Date(project.fecha_acta_inicio + "T12:00:00").toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
+                          </p>
+                        </div>
+
+                        <div className="flex-1 h-1 bg-gray-300 relative">
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2 text-xs text-gray-600 whitespace-nowrap">
+                            {project.dias_contractuales} días hábiles
+                          </div>
+                        </div>
+
+                        <div className="flex-1 text-center">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mb-2">
+                            2
+                          </div>
+                          <p className="text-xs text-gray-600">Entrega contractual</p>
+                          <p className="text-sm font-medium">
+                            {project.fecha_entrega_contractual
+                              ? new Date(project.fecha_entrega_contractual + "T12:00:00").toLocaleDateString("es-CO", { day: "2-digit", month: "short" })
+                              : "—"}
+                          </p>
+                        </div>
+
+                        {project.fecha_reprogramada_final && (
+                          <>
+                            <div className="flex-1 h-1 bg-orange-300" />
+                            <div className="flex-1 text-center">
+                              <div className="w-12 h-12 mx-auto rounded-full bg-orange-500 text-white flex items-center justify-center font-bold mb-2">
+                                3
+                              </div>
+                              <p className="text-xs text-gray-600">Reprogramada</p>
+                              <p className="text-sm font-medium">
+                                {new Date(project.fecha_reprogramada_final + "T12:00:00").toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-8">
+                      No hay datos contractuales registrados
+                    </p>
+                  )}
                 </div>
               )}
             </div>
