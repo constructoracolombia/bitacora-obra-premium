@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Pencil,
   Trash2,
+  Share2,
   X,
   Save,
 } from "lucide-react";
@@ -332,6 +333,24 @@ export default function AdicionalDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {adicional.estado === "pendiente_pago_50" && (
+              <Button
+                onClick={async () => {
+                  try {
+                    const url = `${window.location.origin}/adicionales/publico/${adicional.id}`;
+                    await navigator.clipboard.writeText(url);
+                    alert("✅ Link copiado al portapapeles. Compártelo con el cliente.");
+                  } catch (err) {
+                    console.error("Error copiando link:", err);
+                    alert("No se pudo copiar el link");
+                  }
+                }}
+                className="rounded-lg bg-green-600 text-[13px] text-white hover:bg-green-700"
+              >
+                <Share2 className="size-3.5" />
+                Compartir con cliente
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
