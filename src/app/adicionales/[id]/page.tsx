@@ -205,6 +205,47 @@ export default function AdicionalDetailPage() {
     }
   }
 
+  function generarToken(): string {
+    return (
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15) +
+      Date.now().toString(36)
+    );
+  }
+
+  async function generarLinkTemporal() {
+    if (!adicional) return;
+
+    setActing(true);
+    try {
+      const token = generarToken();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const { error } = await supabase.from("adicionales_compartidos").insert({
+        adicional_id: adicional.id,
+        token,
+        expires_at: expiresAt.toISOString(),
+      } as any);
+
+      if (error) throw error;
+
+      const url = `${window.location.origin}/ver-adicional/${token}`;
+      await navigator.clipboard.writeText(url);
+
+      alert(`✅ Link temporal creado (válido por 7 días)
+
+${url}
+
+El link ha sido copiado al portapapeles.`);
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al generar link");
+    } finally {
+      setActing(false);
+    }
+  }
+
   async function avanzarPaso() {
     if (!adicional) return;
 
@@ -335,20 +376,12 @@ export default function AdicionalDetailPage() {
           <div className="flex items-center gap-2">
             {adicional.estado === "pendiente_pago_50" && (
               <Button
-                onClick={async () => {
-                  try {
-                    const url = `${window.location.origin}/adicional/${adicional.id}`;
-                    await navigator.clipboard.writeText(url);
-                    alert("✅ Link copiado al portapapeles. Compártelo con el cliente.");
-                  } catch (err) {
-                    console.error("Error copiando link:", err);
-                    alert("No se pudo copiar el link");
-                  }
-                }}
+                onClick={generarLinkTemporal}
+                disabled={acting}
                 className="rounded-lg bg-green-600 text-[13px] text-white hover:bg-green-700"
               >
-                <Share2 className="size-3.5" />
-                Compartir con cliente
+                <Share2 className="mr-2 h-4 w-4" />
+                {acting ? "Generando..." : "Generar link para cliente"}
               </Button>
             )}
             <Button
