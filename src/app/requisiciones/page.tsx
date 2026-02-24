@@ -18,6 +18,7 @@ interface Requisicion {
   cantidad: number;
   unidad: string;
   estado: string;
+  urgencia: string | null;
   solicitado_por: string | null;
   created_at: string;
   proyecto_nombre?: string;
@@ -83,6 +84,7 @@ export default function RequisicionesPage() {
               cantidad: Number(r.cantidad) || 0,
               unidad: (r.unidad as string) ?? "und",
               estado: (r.estado as string) ?? "solicitada",
+              urgencia: (r.urgencia as string) ?? "normal",
               solicitado_por: (r.solicitado_por as string) ?? null,
               created_at: (r.created_at as string) ?? "",
               proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "—",
@@ -195,11 +197,34 @@ export default function RequisicionesPage() {
                   <article className="group rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:border-[#D2D2D7] hover:shadow-md">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
+                        <div className="mb-3 flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 group-hover:text-[#007AFF] transition-colors">
+                              {req.descripcion}
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-600">
+                              {req.proyecto_nombre}
+                            </p>
+                          </div>
+
+                          {req.urgencia === "alta" && (
+                            <span className="ml-2 flex-shrink-0 rounded-full border-2 border-red-300 bg-red-100 px-3 py-1 text-xs font-bold text-red-700 animate-pulse">
+                              🚨 URGENTE
+                            </span>
+                          )}
+                          {req.urgencia === "baja" && (
+                            <span className="ml-2 flex-shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                              Baja
+                            </span>
+                          )}
+                          {req.urgencia === "normal" && (
+                            <span className="ml-2 flex-shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                              Normal
+                            </span>
+                          )}
+                        </div>
+
                         <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#86868B]">
-                          <span className="flex items-center gap-1">
-                            <Building2 className="size-3" />
-                            {req.proyecto_nombre}
-                          </span>
                           <span className="flex items-center gap-1">
                             <Home className="size-3" />
                             {req.apartamento}
@@ -209,9 +234,6 @@ export default function RequisicionesPage() {
                             {req.tipo_material}
                           </span>
                         </div>
-                        <h3 className="mt-1.5 text-[14px] font-medium text-[#1D1D1F] group-hover:text-[#007AFF] transition-colors">
-                          {req.descripcion}
-                        </h3>
                       </div>
                       <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold", st.bg, st.text)}>
                         {st.label}
