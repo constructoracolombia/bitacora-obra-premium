@@ -88,10 +88,10 @@ function getStepIndex(estado: string): number {
   return idx >= 0 ? idx : 0;
 }
 
-const URGENCIA_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  baja: { bg: "bg-[#86868B]/10", text: "text-[#86868B]", label: "Baja" },
-  normal: { bg: "bg-[#007AFF]/10", text: "text-[#007AFF]", label: "Normal" },
-  alta: { bg: "bg-[#FF3B30]/10", text: "text-[#FF3B30]", label: "Alta" },
+const urgenciaColors: Record<string, string> = {
+  baja: "bg-gray-100 text-gray-700",
+  normal: "bg-blue-100 text-blue-700",
+  alta: "bg-red-100 text-red-700",
 };
 
 export default function RequisicionDetailPage() {
@@ -411,7 +411,6 @@ export default function RequisicionDetailPage() {
   }
 
   const currentStepIndex = getStepIndex(requisicion.estado);
-  const urg = URGENCIA_STYLES[requisicion.urgencia || "normal"] ?? URGENCIA_STYLES.normal;
 
   return (
     <div className="min-h-screen bg-white">
@@ -486,26 +485,46 @@ export default function RequisicionDetailPage() {
       </header>
 
       <main className="mx-auto max-w-3xl space-y-6 px-8 py-8">
-        {/* Info card */}
-        <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
+        <div className="rounded-lg border bg-white p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Información</h2>
+            {editando && (
+              <Button
+                onClick={guardarCambios}
+                disabled={acting}
+                className="bg-blue-500 hover:bg-blue-600"
+              >
+                {acting ? "Guardando..." : "Guardar"}
+              </Button>
+            )}
+          </div>
+
           {editando ? (
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Descripción *</Label>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Descripción *
+                </label>
                 <textarea
                   value={formEdit.descripcion}
-                  onChange={(e) => setFormEdit((f) => ({ ...f, descripcion: e.target.value }))}
+                  onChange={(e) =>
+                    setFormEdit({ ...formEdit, descripcion: e.target.value })
+                  }
+                  className="w-full rounded-lg border px-3 py-2"
                   rows={3}
-                  className="w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-[14px] text-[#1D1D1F] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Urgencia</Label>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Urgencia
+                </label>
                 <select
                   value={formEdit.urgencia}
-                  onChange={(e) => setFormEdit((f) => ({ ...f, urgencia: e.target.value }))}
-                  className="h-11 w-full rounded-xl border border-[#D2D2D7] bg-white px-4 text-[14px] text-[#1D1D1F] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
+                  onChange={(e) =>
+                    setFormEdit({ ...formEdit, urgencia: e.target.value as any })
+                  }
+                  className="w-full rounded-lg border px-3 py-2"
                 >
                   <option value="baja">Baja</option>
                   <option value="normal">Normal</option>
@@ -513,298 +532,218 @@ export default function RequisicionDetailPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[13px] text-[#86868B]">Cantidad</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formEdit.cantidad}
-                    onChange={(e) => setFormEdit((f) => ({ ...f, cantidad: e.target.value }))}
-                    className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[13px] text-[#86868B]">Unidad</Label>
-                  <Input
-                    value={formEdit.unidad}
-                    onChange={(e) => setFormEdit((f) => ({ ...f, unidad: e.target.value }))}
-                    placeholder="m², kg, unidades..."
-                    className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
-                  />
-                </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Notas generales
+                </label>
+                <textarea
+                  value={formEdit.notas}
+                  onChange={(e) =>
+                    setFormEdit({ ...formEdit, notas: e.target.value })
+                  }
+                  className="w-full rounded-lg border px-3 py-2"
+                  rows={2}
+                  placeholder="Observaciones adicionales sobre la requisición..."
+                />
               </div>
-
-              {/* Items de la requisición */}
-              <div className="mt-6 rounded-lg border bg-white p-6">
-                <h3 className="mb-4 text-lg font-semibold">Items de la requisición</h3>
-
-                <div className="mb-6 rounded-lg bg-gray-50 p-4">
-                  <h4 className="mb-3 text-sm font-medium text-gray-700">
-                    Agregar nuevo item
-                  </h4>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-                    <div className="md:col-span-6">
-                      <input
-                        value={nuevoItem.descripcion}
-                        onChange={(e) =>
-                          setNuevoItem({
-                            ...nuevoItem,
-                            descripcion: e.target.value,
-                          })
-                        }
-                        className="w-full rounded-lg border px-3 py-2 text-sm"
-                        placeholder="Descripción del item *"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !agregandoItem) {
-                            agregarItem();
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <input
-                        type="number"
-                        value={nuevoItem.cantidad}
-                        onChange={(e) =>
-                          setNuevoItem({ ...nuevoItem, cantidad: e.target.value })
-                        }
-                        className="w-full rounded-lg border px-3 py-2 text-sm"
-                        placeholder="Cantidad"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <input
-                        value={nuevoItem.unidad}
-                        onChange={(e) =>
-                          setNuevoItem({ ...nuevoItem, unidad: e.target.value })
-                        }
-                        className="w-full rounded-lg border px-3 py-2 text-sm"
-                        placeholder="Unidad"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Button
-                        onClick={agregarItem}
-                        disabled={agregandoItem || !nuevoItem.descripcion.trim()}
-                        className="w-full bg-blue-500 hover:bg-blue-600"
-                      >
-                        {agregandoItem ? "..." : "Agregar"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {items.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-gray-500">
-                    No hay items registrados. Agrega el primer item arriba.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-12 gap-2 border-b pb-2 text-xs font-medium text-gray-600">
-                      <div className="col-span-5">Descripción</div>
-                      <div className="col-span-2 text-center">Cantidad</div>
-                      <div className="col-span-2 text-center">Comprado</div>
-                      <div className="col-span-2 text-center">Recibido</div>
-                      <div className="col-span-1"></div>
-                    </div>
-
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="grid grid-cols-12 items-center gap-2 border-b py-3 hover:bg-gray-50"
-                      >
-                        <div className="col-span-5">
-                          <p className="font-medium text-gray-900">
-                            {item.descripcion}
-                          </p>
-                        </div>
-
-                        <div className="col-span-2 text-center text-sm text-gray-600">
-                          {item.cantidad && (
-                            <span>
-                              {item.cantidad} {item.unidad || ""}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="col-span-2 flex justify-center">
-                          <label className="relative inline-flex cursor-pointer items-center">
-                            <input
-                              type="checkbox"
-                              checked={item.comprado}
-                              onChange={() =>
-                                toggleCheckbox(
-                                  item.id,
-                                  "comprado",
-                                  Boolean(item.comprado),
-                                )
-                              }
-                              className="peer sr-only"
-                            />
-                            <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300" />
-                          </label>
-                        </div>
-
-                        <div className="col-span-2 flex justify-center">
-                          <label className="relative inline-flex cursor-pointer items-center">
-                            <input
-                              type="checkbox"
-                              checked={item.recibido}
-                              onChange={() =>
-                                toggleCheckbox(
-                                  item.id,
-                                  "recibido",
-                                  Boolean(item.recibido),
-                                )
-                              }
-                              className="peer sr-only"
-                            />
-                            <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-green-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300" />
-                          </label>
-                        </div>
-
-                        <div className="col-span-1 flex justify-end">
-                          <button
-                            onClick={() => eliminarItem(item.id)}
-                            className="p-1 text-red-500 hover:text-red-700"
-                          >
-                            <svg
-                              className="h-5 w-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {items.length > 0 && (
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    <div className="rounded-lg bg-gray-50 p-3 text-center">
-                      <p className="text-2xl font-bold text-gray-900">
-                        {items.length}
-                      </p>
-                      <p className="text-xs text-gray-600">Total items</p>
-                    </div>
-                    <div className="rounded-lg bg-blue-50 p-3 text-center">
-                      <p className="text-2xl font-bold text-blue-600">
-                        {items.filter((i) => i.comprado).length}
-                      </p>
-                      <p className="text-xs text-gray-600">Comprados</p>
-                    </div>
-                    <div className="rounded-lg bg-green-50 p-3 text-center">
-                      <p className="text-2xl font-bold text-green-600">
-                        {items.filter((i) => i.recibido).length}
-                      </p>
-                      <p className="text-xs text-gray-600">Recibidos</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {editando && (
-                <div className="mt-4">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Notas generales
-                  </label>
-                  <textarea
-                    value={formEdit.notas}
-                    onChange={(e) =>
-                      setFormEdit((f) => ({ ...f, notas: e.target.value }))
-                    }
-                    className="w-full rounded-lg border px-3 py-2"
-                    rows={2}
-                    placeholder="Observaciones adicionales sobre la requisición..."
-                  />
-                </div>
-              )}
-
-              <Button
-                onClick={guardarCambios}
-                disabled={acting || !formEdit.descripcion.trim()}
-                className="w-full rounded-xl bg-[#007AFF] py-3 text-white shadow-sm hover:bg-[#0051D5] disabled:opacity-50"
-              >
-                {acting ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <>
-                    <Save className="size-4" />
-                    Guardar cambios
-                  </>
-                )}
-              </Button>
             </div>
           ) : (
-            <>
-              <h2 className="text-[16px] font-semibold text-[#1D1D1F]">
-                {requisicion.descripcion}
-              </h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-                  <Building2 className="size-4" />
-                  <span>{proyectoNombre}</span>
-                </div>
-                <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-                  <Home className="size-4" />
-                  <span>{requisicion.apartamento}</span>
-                </div>
-                <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-                  <Tag className="size-4" />
-                  <span>{requisicion.tipo_material}</span>
-                </div>
-                <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-                  <Package className="size-4" />
-                  <span className="font-medium text-[#1D1D1F]">
-                    {requisicion.cantidad} {requisicion.unidad}
-                  </span>
-                </div>
-                {requisicion.solicitado_por && (
-                  <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-                    <User className="size-4" />
-                    <span>{requisicion.solicitado_por}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-[13px] text-[#86868B]">
-                  <Calendar className="size-4" />
-                  <span>{fmtDate(requisicion.created_at)}</span>
-                </div>
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm text-gray-600">Descripción</span>
+                <p className="font-medium">{requisicion.descripcion}</p>
               </div>
 
-              {requisicion.urgencia && (
-                <div className="mt-3">
+              <div>
+                <span className="text-sm text-gray-600">Urgencia</span>
+                <p>
                   <span
-                    className={cn(
-                      "inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
-                      urg.bg,
-                      urg.text
-                    )}
+                    className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
+                      urgenciaColors[requisicion.urgencia || "normal"]
+                    }`}
                   >
-                    Urgencia: {urg.label}
+                    {(requisicion.urgencia || "normal")
+                      .charAt(0)
+                      .toUpperCase() + (requisicion.urgencia || "normal").slice(1)}
                   </span>
-                </div>
-              )}
+                </p>
+              </div>
 
               {requisicion.notas && (
-                <div className="mt-4 rounded-xl bg-[#F5F5F7]/60 p-4">
-                  <p className="text-[12px] font-medium text-[#86868B]">Notas</p>
-                  <p className="mt-1 text-[13px] leading-relaxed text-[#1D1D1F]">
-                    {requisicion.notas}
-                  </p>
+                <div>
+                  <span className="text-sm text-gray-600">Notas</span>
+                  <p className="text-sm">{requisicion.notas}</p>
                 </div>
               )}
-            </>
+            </div>
+          )}
+        </div>
+
+        {/* Items de la requisición - SIEMPRE VISIBLE */}
+        <div className="rounded-lg border bg-white p-6">
+          <h3 className="mb-4 text-lg font-semibold">Items de la requisición</h3>
+
+          {/* Formulario para agregar item */}
+          <div className="mb-6 rounded-lg bg-gray-50 p-4">
+            <h4 className="mb-3 text-sm font-medium text-gray-700">
+              Agregar nuevo item
+            </h4>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+              <div className="md:col-span-6">
+                <input
+                  value={nuevoItem.descripcion}
+                  onChange={(e) =>
+                    setNuevoItem({ ...nuevoItem, descripcion: e.target.value })
+                  }
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  placeholder="Descripción del item *"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !agregandoItem) {
+                      agregarItem();
+                    }
+                  }}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <input
+                  type="number"
+                  value={nuevoItem.cantidad}
+                  onChange={(e) =>
+                    setNuevoItem({ ...nuevoItem, cantidad: e.target.value })
+                  }
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  placeholder="Cantidad"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <input
+                  value={nuevoItem.unidad}
+                  onChange={(e) =>
+                    setNuevoItem({ ...nuevoItem, unidad: e.target.value })
+                  }
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  placeholder="Unidad"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Button
+                  onClick={agregarItem}
+                  disabled={agregandoItem || !nuevoItem.descripcion.trim()}
+                  className="w-full bg-blue-500 hover:bg-blue-600"
+                >
+                  {agregandoItem ? "..." : "Agregar"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de items */}
+          {items.length === 0 ? (
+            <p className="py-8 text-center text-sm text-gray-500">
+              No hay items registrados. Agrega el primer item arriba.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {/* Header */}
+              <div className="grid grid-cols-12 gap-2 border-b pb-2 text-xs font-medium text-gray-600">
+                <div className="col-span-5">Descripción</div>
+                <div className="col-span-2 text-center">Cantidad</div>
+                <div className="col-span-2 text-center">Comprado</div>
+                <div className="col-span-2 text-center">Recibido</div>
+                <div className="col-span-1"></div>
+              </div>
+
+              {/* Items */}
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="grid grid-cols-12 items-center gap-2 border-b py-3 hover:bg-gray-50"
+                >
+                  <div className="col-span-5">
+                    <p className="font-medium text-gray-900">{item.descripcion}</p>
+                  </div>
+
+                  <div className="col-span-2 text-center text-sm text-gray-600">
+                    {item.cantidad && (
+                      <span>
+                        {item.cantidad} {item.unidad || ""}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="col-span-2 flex justify-center">
+                    <label className="relative inline-flex cursor-pointer items-center">
+                      <input
+                        type="checkbox"
+                        checked={item.comprado}
+                        onChange={() =>
+                          toggleCheckbox(item.id, "comprado", item.comprado)
+                        }
+                        className="peer sr-only"
+                      />
+                      <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300" />
+                    </label>
+                  </div>
+
+                  <div className="col-span-2 flex justify-center">
+                    <label className="relative inline-flex cursor-pointer items-center">
+                      <input
+                        type="checkbox"
+                        checked={item.recibido}
+                        onChange={() =>
+                          toggleCheckbox(item.id, "recibido", item.recibido)
+                        }
+                        className="peer sr-only"
+                      />
+                      <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-green-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300" />
+                    </label>
+                  </div>
+
+                  <div className="col-span-1 flex justify-end">
+                    <button
+                      onClick={() => eliminarItem(item.id)}
+                      className="p-1 text-red-500 hover:text-red-700"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Estadísticas */}
+          {items.length > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              <div className="rounded-lg bg-gray-50 p-3 text-center">
+                <p className="text-2xl font-bold text-gray-900">{items.length}</p>
+                <p className="text-xs text-gray-600">Total items</p>
+              </div>
+              <div className="rounded-lg bg-blue-50 p-3 text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {items.filter((i) => i.comprado).length}
+                </p>
+                <p className="text-xs text-gray-600">Comprados</p>
+              </div>
+              <div className="rounded-lg bg-green-50 p-3 text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  {items.filter((i) => i.recibido).length}
+                </p>
+                <p className="text-xs text-gray-600">Recibidos</p>
+              </div>
+            </div>
           )}
         </div>
 
