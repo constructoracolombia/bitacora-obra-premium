@@ -337,7 +337,7 @@ export default function AdicionalDetailPage() {
               <Button
                 onClick={async () => {
                   try {
-                    const url = `${window.location.origin}/adicionales/publico/${adicional.id}`;
+                    const url = `${window.location.origin}/adicional/${adicional.id}`;
                     await navigator.clipboard.writeText(url);
                     alert("✅ Link copiado al portapapeles. Compártelo con el cliente.");
                   } catch (err) {
