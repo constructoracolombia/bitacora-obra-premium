@@ -112,6 +112,13 @@ export default function RequisicionDetailPage() {
     unidad: "",
     notas: "",
   });
+  const [items, setItems] = useState<any[]>([]);
+  const [nuevoItem, setNuevoItem] = useState({
+    descripcion: "",
+    cantidad: "",
+    unidad: "",
+  });
+  const [agregandoItem, setAgregandoItem] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -169,6 +176,7 @@ export default function RequisicionDetailPage() {
 
   useEffect(() => {
     if (requisicion) {
+      cargarItems();
       setFormEdit({
         descripcion: requisicion.descripcion || "",
         urgencia: requisicion.urgencia || "normal",
@@ -178,6 +186,89 @@ export default function RequisicionDetailPage() {
       });
     }
   }, [requisicion]);
+
+  async function cargarItems() {
+    if (!requisicion) return;
+    try {
+      const { data, error } = await supabase
+        .from("requisicion_items")
+        .select("*")
+        .eq("requisicion_id", requisicion.id)
+        .order("orden", { ascending: true });
+
+      if (error) throw error;
+      setItems(data || []);
+    } catch (err) {
+      console.error("Error cargando items:", err);
+    }
+  }
+
+  async function agregarItem() {
+    if (!requisicion) return;
+    if (!nuevoItem.descripcion.trim()) {
+      alert("Escribe una descripción del item");
+      return;
+    }
+
+    setAgregandoItem(true);
+    try {
+      const { error } = await supabase.from("requisicion_items").insert({
+        requisicion_id: requisicion.id,
+        descripcion: nuevoItem.descripcion,
+        cantidad: nuevoItem.cantidad ? Number(nuevoItem.cantidad) : null,
+        unidad: nuevoItem.unidad || null,
+        orden: items.length,
+      } as any);
+
+      if (error) throw error;
+
+      setNuevoItem({ descripcion: "", cantidad: "", unidad: "" });
+      await cargarItems();
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al agregar item");
+    } finally {
+      setAgregandoItem(false);
+    }
+  }
+
+  async function toggleCheckbox(
+    itemId: string,
+    campo: "comprado" | "recibido",
+    valorActual: boolean,
+  ) {
+    try {
+      const { error } = await supabase
+        .from("requisicion_items")
+        .update({ [campo]: !valorActual } as any)
+        .eq("id", itemId);
+
+      if (error) throw error;
+
+      await cargarItems();
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al actualizar");
+    }
+  }
+
+  async function eliminarItem(itemId: string) {
+    if (!confirm("¿Eliminar este item?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("requisicion_items")
+        .delete()
+        .eq("id", itemId);
+
+      if (error) throw error;
+
+      await cargarItems();
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Error al eliminar");
+    }
+  }
 
   async function guardarCambios() {
     if (!requisicion) return;
@@ -445,16 +536,200 @@ export default function RequisicionDetailPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[13px] text-[#86868B]">Notas</Label>
-                <textarea
-                  value={formEdit.notas}
-                  onChange={(e) => setFormEdit((f) => ({ ...f, notas: e.target.value }))}
-                  rows={3}
-                  placeholder="Notas adicionales..."
-                  className="w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
-                />
+              {/* Items de la requisición */}
+              <div className="mt-6 rounded-lg border bg-white p-6">
+                <h3 className="mb-4 text-lg font-semibold">Items de la requisición</h3>
+
+                <div className="mb-6 rounded-lg bg-gray-50 p-4">
+                  <h4 className="mb-3 text-sm font-medium text-gray-700">
+                    Agregar nuevo item
+                  </h4>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+                    <div className="md:col-span-6">
+                      <input
+                        value={nuevoItem.descripcion}
+                        onChange={(e) =>
+                          setNuevoItem({
+                            ...nuevoItem,
+                            descripcion: e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg border px-3 py-2 text-sm"
+                        placeholder="Descripción del item *"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !agregandoItem) {
+                            agregarItem();
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <input
+                        type="number"
+                        value={nuevoItem.cantidad}
+                        onChange={(e) =>
+                          setNuevoItem({ ...nuevoItem, cantidad: e.target.value })
+                        }
+                        className="w-full rounded-lg border px-3 py-2 text-sm"
+                        placeholder="Cantidad"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <input
+                        value={nuevoItem.unidad}
+                        onChange={(e) =>
+                          setNuevoItem({ ...nuevoItem, unidad: e.target.value })
+                        }
+                        className="w-full rounded-lg border px-3 py-2 text-sm"
+                        placeholder="Unidad"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Button
+                        onClick={agregarItem}
+                        disabled={agregandoItem || !nuevoItem.descripcion.trim()}
+                        className="w-full bg-blue-500 hover:bg-blue-600"
+                      >
+                        {agregandoItem ? "..." : "Agregar"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {items.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-gray-500">
+                    No hay items registrados. Agrega el primer item arriba.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-12 gap-2 border-b pb-2 text-xs font-medium text-gray-600">
+                      <div className="col-span-5">Descripción</div>
+                      <div className="col-span-2 text-center">Cantidad</div>
+                      <div className="col-span-2 text-center">Comprado</div>
+                      <div className="col-span-2 text-center">Recibido</div>
+                      <div className="col-span-1"></div>
+                    </div>
+
+                    {items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-12 items-center gap-2 border-b py-3 hover:bg-gray-50"
+                      >
+                        <div className="col-span-5">
+                          <p className="font-medium text-gray-900">
+                            {item.descripcion}
+                          </p>
+                        </div>
+
+                        <div className="col-span-2 text-center text-sm text-gray-600">
+                          {item.cantidad && (
+                            <span>
+                              {item.cantidad} {item.unidad || ""}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="col-span-2 flex justify-center">
+                          <label className="relative inline-flex cursor-pointer items-center">
+                            <input
+                              type="checkbox"
+                              checked={item.comprado}
+                              onChange={() =>
+                                toggleCheckbox(
+                                  item.id,
+                                  "comprado",
+                                  Boolean(item.comprado),
+                                )
+                              }
+                              className="peer sr-only"
+                            />
+                            <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300" />
+                          </label>
+                        </div>
+
+                        <div className="col-span-2 flex justify-center">
+                          <label className="relative inline-flex cursor-pointer items-center">
+                            <input
+                              type="checkbox"
+                              checked={item.recibido}
+                              onChange={() =>
+                                toggleCheckbox(
+                                  item.id,
+                                  "recibido",
+                                  Boolean(item.recibido),
+                                )
+                              }
+                              className="peer sr-only"
+                            />
+                            <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-green-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300" />
+                          </label>
+                        </div>
+
+                        <div className="col-span-1 flex justify-end">
+                          <button
+                            onClick={() => eliminarItem(item.id)}
+                            className="p-1 text-red-500 hover:text-red-700"
+                          >
+                            <svg
+                              className="h-5 w-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {items.length > 0 && (
+                  <div className="mt-4 grid grid-cols-3 gap-4">
+                    <div className="rounded-lg bg-gray-50 p-3 text-center">
+                      <p className="text-2xl font-bold text-gray-900">
+                        {items.length}
+                      </p>
+                      <p className="text-xs text-gray-600">Total items</p>
+                    </div>
+                    <div className="rounded-lg bg-blue-50 p-3 text-center">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {items.filter((i) => i.comprado).length}
+                      </p>
+                      <p className="text-xs text-gray-600">Comprados</p>
+                    </div>
+                    <div className="rounded-lg bg-green-50 p-3 text-center">
+                      <p className="text-2xl font-bold text-green-600">
+                        {items.filter((i) => i.recibido).length}
+                      </p>
+                      <p className="text-xs text-gray-600">Recibidos</p>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {editando && (
+                <div className="mt-4">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Notas generales
+                  </label>
+                  <textarea
+                    value={formEdit.notas}
+                    onChange={(e) =>
+                      setFormEdit((f) => ({ ...f, notas: e.target.value }))
+                    }
+                    className="w-full rounded-lg border px-3 py-2"
+                    rows={2}
+                    placeholder="Observaciones adicionales sobre la requisición..."
+                  />
+                </div>
+              )}
 
               <Button
                 onClick={guardarCambios}
