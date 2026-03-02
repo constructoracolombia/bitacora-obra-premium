@@ -205,57 +205,167 @@ export default function AdicionalDetailPage() {
     }
   }
 
-  function generarToken(): string {
-    return (
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15) +
-      Date.now().toString(36)
+  async function generarPDFAdicional(): Promise<Blob> {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 18;
+    let y = 22;
+
+    // Header azul
+    doc.setFillColor(0, 102, 204);
+    doc.rect(0, 0, pageWidth, 32, "F");
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("Adicional de Obra", margin, 14);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Constructora Colombia — Diseño, remodelaciones y construcción", margin, 22);
+    y = 44;
+
+    // Nombre proyecto
+    doc.setFontSize(11);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont("helvetica", "bold");
+    doc.text("Proyecto", margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 30, 30);
+    const projLines = doc.splitTextToSize(proyectoNombre, pageWidth - margin * 2 - 30);
+    doc.text(projLines, margin + 28, y);
+    y += 12;
+
+    // Descripción
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(10);
+    doc.text("Descripción", margin, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 30, 30);
+    const descLines = doc.splitTextToSize(adicional!.descripcion, pageWidth - margin * 2);
+    doc.text(descLines, margin, y);
+    y += descLines.length * 5 + 10;
+
+    // Monto destacado
+    doc.setFillColor(240, 247, 255);
+    doc.roundedRect(margin, y - 4, pageWidth - margin * 2, 24, 3, 3, "F");
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 102, 204);
+    doc.text("Valor del adicional:", margin + 4, y + 5);
+    doc.setFontSize(16);
+    doc.text(
+      new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(adicional!.monto),
+      margin + 4, y + 15
     );
+    y += 32;
+
+    // Pago 50% si aplica
+    const estadoKeys = ["solicitado","pendiente_aprobacion","pendiente_pago_50","iniciar_trabajos","revision_final","entregado"];
+    const estadoIdx = estadoKeys.indexOf(adicional!.estado);
+    if (estadoIdx >= 2) {
+      doc.setFillColor(255, 247, 237);
+      doc.roundedRect(margin, y - 4, pageWidth - margin * 2, 24, 3, 3, "F");
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(180, 80, 0);
+      doc.text("⚠ Pago requerido (50%):", margin + 4, y + 5);
+      doc.setFontSize(16);
+      doc.text(
+        new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(adicional!.monto * 0.5),
+        margin + 4, y + 15
+      );
+      y += 32;
+    }
+
+    // Timeline
+    y += 4;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 30, 30);
+    doc.text("Proceso del adicional", margin, y);
+    y += 10;
+
+    const steps = [
+      { key: "solicitado", label: "Solicitud del cliente", dateField: "fecha_solicitud" },
+      { key: "pendiente_aprobacion", label: "Pendiente aprobación", dateField: "fecha_pendiente_aprobacion" },
+      { key: "pendiente_pago_50", label: "Pendiente pago 50%", dateField: "fecha_pendiente_pago_50" },
+      { key: "iniciar_trabajos", label: "Iniciar trabajos adicional", dateField: "fecha_iniciar_trabajos" },
+      { key: "revision_final", label: "Revisión final adicional", dateField: "fecha_revision_final" },
+      { key: "entregado", label: "Entregado", dateField: "fecha_entregado" },
+    ];
+
+    steps.forEach((step, idx) => {
+      const isCompleted = estadoIdx > idx;
+      const isCurrent = estadoIdx === idx;
+      const stepDate = (adicional as any)[step.dateField];
+
+      if (isCompleted) doc.setFillColor(34, 197, 94);
+      else if (isCurrent) doc.setFillColor(0, 122, 255);
+      else doc.setFillColor(200, 200, 200);
+      doc.circle(margin + 3, y, 3, "F");
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", isCompleted || isCurrent ? "bold" : "normal");
+      if (isCompleted) doc.setTextColor(30, 120, 30);
+      else if (isCurrent) doc.setTextColor(0, 102, 204);
+      else doc.setTextColor(150, 150, 150);
+      doc.text(`${idx + 1}. ${step.label}`, margin + 9, y + 1);
+
+      if (stepDate) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text(
+          new Date(stepDate).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }),
+          margin + 9, y + 7
+        );
+        y += 7;
+      }
+      y += 10;
+    });
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFillColor(240, 240, 240);
+    doc.rect(0, pageHeight - 14, pageWidth, 14, "F");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.setFont("helvetica", "normal");
+    doc.text("Constructora Colombia © 2026 — Si tienes preguntas, contacta a tu residente de obra.", margin, pageHeight - 5);
+
+    return doc.output("blob");
   }
 
   async function generarLinkTemporal() {
     if (!adicional) return;
-
     setActing(true);
     try {
-      const token = generarToken();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
+      const pdfBlob = await generarPDFAdicional();
+      const fileName = `adicional-${adicional.id}-${Date.now()}.pdf`;
 
-      console.log("🔑 Generando link:", {
-        token,
-        expiresAt: expiresAt.toISOString(),
-        adicional_id: adicional.id,
-      });
+      const { error: uploadError } = await supabase.storage
+        .from("adicionales-pdfs")
+        .upload(fileName, pdfBlob, { contentType: "application/pdf", upsert: true });
 
-      const { data, error } = await supabase
-        .from("adicionales_compartidos")
-        .insert({
-          adicional_id: adicional.id,
-          token: token,
-          expires_at: expiresAt.toISOString(),
-        } as any)
-        .select()
-        .single();
+      if (uploadError) throw uploadError;
 
-      console.log("📤 Resultado insert:", { data, error });
+      const { data: urlData } = supabase.storage
+        .from("adicionales-pdfs")
+        .getPublicUrl(fileName);
 
-      if (error) {
-        console.error("❌ Error al insertar:", error);
-        throw error;
+      const publicUrl = urlData.publicUrl;
+      await navigator.clipboard.writeText(publicUrl);
+
+      alert(`✅ PDF generado y link copiado al portapapeles:\n\n${publicUrl}`);
+    } catch (err: any) {
+      console.error("Error:", err);
+      if (err?.message?.includes("Bucket not found") || err?.statusCode === 404) {
+        alert("⚠️ Crea el bucket 'adicionales-pdfs' en Supabase Storage (público) y vuelve a intentarlo.");
+      } else {
+        alert("Error al generar el PDF: " + err?.message);
       }
-
-      const url = `${window.location.origin}/ver-adicional/${token}`;
-      await navigator.clipboard.writeText(url);
-
-      alert(`✅ Link temporal creado (válido por 7 días)
-
-${url}
-
-El link ha sido copiado al portapapeles.`);
-    } catch (err) {
-      console.error("💥 Error:", err);
-      alert("Error al generar link: " + (err as any).message);
     } finally {
       setActing(false);
     }
