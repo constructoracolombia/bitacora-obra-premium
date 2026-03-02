@@ -222,13 +222,28 @@ export default function AdicionalDetailPage() {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      const { error } = await supabase.from("adicionales_compartidos").insert({
-        adicional_id: adicional.id,
+      console.log("🔑 Generando link:", {
         token,
-        expires_at: expiresAt.toISOString(),
-      } as any);
+        expiresAt: expiresAt.toISOString(),
+        adicional_id: adicional.id,
+      });
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from("adicionales_compartidos")
+        .insert({
+          adicional_id: adicional.id,
+          token: token,
+          expires_at: expiresAt.toISOString(),
+        } as any)
+        .select()
+        .single();
+
+      console.log("📤 Resultado insert:", { data, error });
+
+      if (error) {
+        console.error("❌ Error al insertar:", error);
+        throw error;
+      }
 
       const url = `${window.location.origin}/ver-adicional/${token}`;
       await navigator.clipboard.writeText(url);
@@ -239,8 +254,8 @@ ${url}
 
 El link ha sido copiado al portapapeles.`);
     } catch (err) {
-      console.error("Error:", err);
-      alert("Error al generar link");
+      console.error("💥 Error:", err);
+      alert("Error al generar link: " + (err as any).message);
     } finally {
       setActing(false);
     }

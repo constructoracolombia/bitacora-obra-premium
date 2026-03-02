@@ -72,20 +72,33 @@ export default function VerAdicionalPage() {
 
   async function cargarAdicional() {
     try {
+      console.log("🔍 Buscando token:", token);
+
       const { data: compartido, error: errorToken } = await supabase
         .from("adicionales_compartidos")
-        .select("adicional_id, expires_at, visto")
+        .select("adicional_id, expires_at, visto, created_at")
         .eq("token", token)
         .single();
 
+      console.log("📦 Resultado búsqueda:", { compartido, errorToken });
+
       if (errorToken || !compartido) {
+        console.error("❌ Error token:", errorToken);
         setError("Link inválido o expirado");
         setLoading(false);
         return;
       }
 
       const expira = new Date(compartido.expires_at);
-      if (expira < new Date()) {
+      const ahora = new Date();
+
+      console.log("⏰ Fechas:", {
+        expira: expira.toISOString(),
+        ahora: ahora.toISOString(),
+        expirado: expira < ahora,
+      });
+
+      if (expira < ahora) {
         setError("Este link ha expirado. Solicita uno nuevo a tu residente.");
         setLoading(false);
         return;
@@ -101,6 +114,8 @@ export default function VerAdicionalPage() {
           .eq("token", token);
       }
 
+      console.log("✅ Cargando adicional:", compartido.adicional_id);
+
       const { data: adicionalData, error: errorAdicional } = await supabase
         .from("adicionales")
         .select(
@@ -112,11 +127,13 @@ export default function VerAdicionalPage() {
         .eq("id", compartido.adicional_id)
         .single();
 
+      console.log("📋 Adicional cargado:", adicionalData);
+
       if (errorAdicional) throw errorAdicional;
 
       setAdicional(adicionalData);
     } catch (err) {
-      console.error("Error:", err);
+      console.error("💥 Error general:", err);
       setError("Error al cargar el adicional");
     } finally {
       setLoading(false);
