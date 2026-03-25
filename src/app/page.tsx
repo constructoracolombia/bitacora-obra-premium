@@ -13,7 +13,6 @@ import {
   Circle,
   ChevronDown,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface Pendiente {
   id: string;
@@ -248,23 +247,8 @@ export default function DashboardPage() {
           })}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-5">
-          <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Accesos Rápidos</h3>
-            <div className="flex flex-col gap-3">
-              <Button onClick={() => router.push('/proyectos/nuevo')} variant="outline" className="justify-start">
-                <FolderKanban className="mr-2 h-4 w-4" />Nuevo Proyecto
-              </Button>
-              <Button onClick={() => router.push('/adicionales/nuevo')} variant="outline" className="justify-start">
-                <PlusCircle className="mr-2 h-4 w-4" />Nuevo Adicional
-              </Button>
-              <Button onClick={() => router.push('/requisiciones/nueva')} variant="outline" className="justify-start">
-                <Package className="mr-2 h-4 w-4" />Nueva Requisición
-              </Button>
-            </div>
-          </div>
-
-          <div className="lg:col-span-3 rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="mt-6">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6">
             <div className="mb-5 flex items-center gap-2">
               <h3 className="text-lg font-semibold text-gray-900">Pendientes</h3>
               {pendientesActivos.length > 0 && (
