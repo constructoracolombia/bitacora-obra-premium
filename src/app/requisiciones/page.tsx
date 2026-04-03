@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Package, Building2, Home, Tag } from "lucide-react";
+import { Loader2, Plus, Package, Home, Tag, ChevronDown, ChevronRight, Archive } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,69 @@ const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }>
 
 type FilterEstado = "TODOS" | string;
 
+function ReqCard({ req, dimmed = false }: { req: Requisicion; dimmed?: boolean }) {
+  const st = ESTADO_STYLES[req.estado] ?? ESTADO_STYLES.solicitada;
+  return (
+    <Link href={`/requisiciones/${req.id}`}>
+      <article className={cn(
+        "group rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:border-[#D2D2D7] hover:shadow-md",
+        dimmed && "opacity-60"
+      )}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="mb-3 flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 group-hover:text-[#007AFF] transition-colors">
+                  {req.descripcion}
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">{req.proyecto_nombre}</p>
+              </div>
+              {req.urgencia === "alta" && (
+                <span className="ml-2 flex-shrink-0 rounded-full border-2 border-red-300 bg-red-100 px-3 py-1 text-xs font-bold text-red-700 animate-pulse">
+                  🚨 URGENTE
+                </span>
+              )}
+              {req.urgencia === "baja" && (
+                <span className="ml-2 flex-shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                  Baja
+                </span>
+              )}
+              {req.urgencia === "normal" && (
+                <span className="ml-2 flex-shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                  Normal
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#86868B]">
+              <span className="flex items-center gap-1">
+                <Home className="size-3" />{req.apartamento}
+              </span>
+              <span className="flex items-center gap-1">
+                <Tag className="size-3" />{req.tipo_material}
+              </span>
+            </div>
+          </div>
+          <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold", st.bg, st.text)}>
+            {st.label}
+          </span>
+        </div>
+        <div className="mt-3 flex items-center gap-4 text-[12px] text-[#86868B]">
+          <span>{req.cantidad} {req.unidad}</span>
+          <span>{format(new Date(req.created_at), "d MMM yyyy", { locale: es })}</span>
+          {req.solicitado_por && <span>por {req.solicitado_por}</span>}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#86868B]">
+          {req.fecha_solicitada && <span>Solicitada: {new Date(req.fecha_solicitada).toLocaleDateString("es-CO")}</span>}
+          {req.fecha_por_aprobar && <span>Por aprobar: {new Date(req.fecha_por_aprobar).toLocaleDateString("es-CO")}</span>}
+          {req.fecha_en_compras && <span>En compras: {new Date(req.fecha_en_compras).toLocaleDateString("es-CO")}</span>}
+          {req.fecha_recepcion_obra && <span>Recepción: {new Date(req.fecha_recepcion_obra).toLocaleDateString("es-CO")}</span>}
+          {req.fecha_asignado_proyecto && <span>Asignada: {new Date(req.fecha_asignado_proyecto).toLocaleDateString("es-CO")}</span>}
+        </div>
+      </article>
+    </Link>
+  );
+}
+
 export default function RequisicionesPage() {
   const supabase = getSupabaseClient();
   const [requisiciones, setRequisiciones] = useState<Requisicion[]>([]);
@@ -51,6 +114,7 @@ export default function RequisicionesPage() {
   const [loading, setLoading] = useState(true);
   const [filterProyecto, setFilterProyecto] = useState("TODOS");
   const [filterEstado, setFilterEstado] = useState<FilterEstado>("TODOS");
+  const [mostrarArchivadas, setMostrarArchivadas] = useState(false);
 
   useEffect(() => {
     async function fetch() {
@@ -105,9 +169,19 @@ export default function RequisicionesPage() {
     fetch();
   }, []);
 
+  const porProyecto = (r: Requisicion) =>
+    filterProyecto === "TODOS" || r.proyecto_id === filterProyecto;
+
+  // Activas: todo menos asignado_proyecto
   const filtered = requisiciones
-    .filter((r) => filterProyecto === "TODOS" || r.proyecto_id === filterProyecto)
+    .filter(porProyecto)
+    .filter((r) => r.estado !== "asignado_proyecto")
     .filter((r) => filterEstado === "TODOS" || r.estado === filterEstado);
+
+  // Archivadas: solo asignado_proyecto
+  const archivadas = requisiciones
+    .filter(porProyecto)
+    .filter((r) => r.estado === "asignado_proyecto");
 
   const estadoFilters: { value: FilterEstado; label: string }[] = [
     { value: "TODOS", label: "Todos" },
@@ -115,7 +189,6 @@ export default function RequisicionesPage() {
     { value: "por_aprobar", label: "Por Aprobar" },
     { value: "en_compras", label: "En Compras" },
     { value: "recepcion_obra", label: "Recepción" },
-    { value: "asignado_proyecto", label: "Asignadas" },
   ];
 
   return (
@@ -190,71 +263,37 @@ export default function RequisicionesPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map((req) => {
-              const st = ESTADO_STYLES[req.estado] ?? ESTADO_STYLES.SOLICITADO;
-              return (
-                <Link key={req.id} href={`/requisiciones/${req.id}`}>
-                  <article className="group rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:border-[#D2D2D7] hover:shadow-md">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-3 flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 group-hover:text-[#007AFF] transition-colors">
-                              {req.descripcion}
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-600">
-                              {req.proyecto_nombre}
-                            </p>
-                          </div>
+            {filtered.map((req) => (
+              <ReqCard key={req.id} req={req} />
+            ))}
 
-                          {req.urgencia === "alta" && (
-                            <span className="ml-2 flex-shrink-0 rounded-full border-2 border-red-300 bg-red-100 px-3 py-1 text-xs font-bold text-red-700 animate-pulse">
-                              🚨 URGENTE
-                            </span>
-                          )}
-                          {req.urgencia === "baja" && (
-                            <span className="ml-2 flex-shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-                              Baja
-                            </span>
-                          )}
-                          {req.urgencia === "normal" && (
-                            <span className="ml-2 flex-shrink-0 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
-                              Normal
-                            </span>
-                          )}
-                        </div>
+            {filtered.length === 0 && (
+              <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 text-center">
+                <Package className="size-10 text-[#D2D2D7]" />
+                <p className="text-[15px] text-[#1D1D1F]">Sin requisiciones en este estado</p>
+              </div>
+            )}
 
-                        <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#86868B]">
-                          <span className="flex items-center gap-1">
-                            <Home className="size-3" />
-                            {req.apartamento}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Tag className="size-3" />
-                            {req.tipo_material}
-                          </span>
-                        </div>
-                      </div>
-                      <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold", st.bg, st.text)}>
-                        {st.label}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex items-center gap-4 text-[12px] text-[#86868B]">
-                      <span>{req.cantidad} {req.unidad}</span>
-                      <span>{format(new Date(req.created_at), "d MMM yyyy", { locale: es })}</span>
-                      {req.solicitado_por && <span>por {req.solicitado_por}</span>}
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#86868B]">
-                      {req.fecha_solicitada && <span>Solicitada: {new Date(req.fecha_solicitada).toLocaleDateString("es-CO")}</span>}
-                      {req.fecha_por_aprobar && <span>Por aprobar: {new Date(req.fecha_por_aprobar).toLocaleDateString("es-CO")}</span>}
-                      {req.fecha_en_compras && <span>En compras: {new Date(req.fecha_en_compras).toLocaleDateString("es-CO")}</span>}
-                      {req.fecha_recepcion_obra && <span>Recepción: {new Date(req.fecha_recepcion_obra).toLocaleDateString("es-CO")}</span>}
-                      {req.fecha_asignado_proyecto && <span>Asignada: {new Date(req.fecha_asignado_proyecto).toLocaleDateString("es-CO")}</span>}
-                    </div>
-                  </article>
-                </Link>
-              );
-            })}
+            {/* Archivadas */}
+            {archivadas.length > 0 && (
+              <div className="pt-4">
+                <button
+                  onClick={() => setMostrarArchivadas((v) => !v)}
+                  className="flex w-full items-center gap-2 rounded-xl border border-[#D2D2D7]/60 bg-[#F5F5F7] px-4 py-3 text-sm font-medium text-[#86868B] hover:text-[#1D1D1F] transition-colors"
+                >
+                  {mostrarArchivadas ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                  <Archive className="size-4" />
+                  Archivadas — llegaron al proyecto ({archivadas.length})
+                </button>
+                {mostrarArchivadas && (
+                  <div className="mt-2 space-y-2">
+                    {archivadas.map((req) => (
+                      <ReqCard key={req.id} req={req} dimmed />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>
