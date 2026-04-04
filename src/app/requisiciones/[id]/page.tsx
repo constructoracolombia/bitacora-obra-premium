@@ -8,21 +8,18 @@ import {
   ArrowLeft,
   Loader2,
   CheckCircle2,
-  Building2,
-  Home,
-  Tag,
-  Package,
-  User,
-  Calendar,
   Pencil,
   Trash2,
   X,
-  Save,
+  PackageCheck,
+  Truck,
+  ShoppingCart,
+  Clock,
+  CheckCheck,
+  CalendarClock,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -45,40 +42,28 @@ interface Requisicion {
   fecha_en_compras: string | null;
   fecha_recepcion_obra: string | null;
   fecha_asignado_proyecto: string | null;
+  fecha_estimada_entrega: string | null;
   created_at: string;
 }
 
+interface RequisicionItem {
+  id: string;
+  descripcion: string;
+  cantidad: number | null;
+  unidad: string | null;
+  comprado: boolean;
+  recibido: boolean;
+  orden: number;
+  proveedor: string | null;
+  precio: number | null;
+}
+
 const STEPS = [
-  {
-    key: "solicitada",
-    label: "Solicitada",
-    description: "Requisición creada",
-    dateField: "fecha_solicitada",
-  },
-  {
-    key: "por_aprobar",
-    label: "Por Aprobar",
-    description: "Pendiente de aprobación",
-    dateField: "fecha_por_aprobar",
-  },
-  {
-    key: "en_compras",
-    label: "En Compras",
-    description: "En proceso de compra",
-    dateField: "fecha_en_compras",
-  },
-  {
-    key: "recepcion_obra",
-    label: "Recepción por obra",
-    description: "Materiales en obra",
-    dateField: "fecha_recepcion_obra",
-  },
-  {
-    key: "asignado_proyecto",
-    label: "Asignado a proyecto",
-    description: "Completado",
-    dateField: "fecha_asignado_proyecto",
-  },
+  { key: "solicitada", label: "Solicitada", description: "Requisición creada", dateField: "fecha_solicitada" },
+  { key: "por_aprobar", label: "Por Aprobar", description: "Pendiente de aprobación", dateField: "fecha_por_aprobar" },
+  { key: "en_compras", label: "En Compras", description: "En proceso de compra", dateField: "fecha_en_compras" },
+  { key: "recepcion_obra", label: "Recepción obra", description: "Materiales en obra", dateField: "fecha_recepcion_obra" },
+  { key: "asignado_proyecto", label: "Asignado", description: "Completado", dateField: "fecha_asignado_proyecto" },
 ];
 
 const STEP_KEYS = STEPS.map((s) => s.key);
@@ -88,11 +73,53 @@ function getStepIndex(estado: string): number {
   return idx >= 0 ? idx : 0;
 }
 
-const urgenciaColors: Record<string, string> = {
-  baja: "bg-gray-100 text-gray-700",
-  normal: "bg-blue-100 text-blue-700",
-  alta: "bg-red-100 text-red-700",
+function itemStatus(item: RequisicionItem): "recibido" | "transito" | "pendiente" {
+  if (item.recibido) return "recibido";
+  if (item.comprado) return "transito";
+  return "pendiente";
+}
+
+const STATUS_ROW: Record<string, string> = {
+  recibido: "bg-green-50 border-green-200",
+  transito: "bg-amber-50 border-amber-200",
+  pendiente: "bg-white border-gray-100",
 };
+
+const STATUS_BADGE: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
+  recibido: {
+    label: "Recibido",
+    className: "bg-green-100 text-green-700",
+    icon: <PackageCheck className="size-3" />,
+  },
+  transito: {
+    label: "En tránsito",
+    className: "bg-amber-100 text-amber-700",
+    icon: <Truck className="size-3" />,
+  },
+  pendiente: {
+    label: "Pendiente",
+    className: "bg-gray-100 text-gray-500",
+    icon: <Clock className="size-3" />,
+  },
+};
+
+function ProgressBar({ value, total, color }: { value: number; total: number; color: string }) {
+  const pct = total === 0 ? 0 : Math.round((value / total) * 100);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between text-xs">
+        <span className="font-semibold">{value}/{total}</span>
+        <span className="text-gray-400">{pct}%</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+        <div
+          className={cn("h-full rounded-full transition-all duration-500", color)}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function RequisicionDetailPage() {
   const supabase = getSupabaseClient();
@@ -111,14 +138,12 @@ export default function RequisicionDetailPage() {
     cantidad: "",
     unidad: "",
     notas: "",
+    fecha_estimada_entrega: "",
   });
-  const [items, setItems] = useState<any[]>([]);
-  const [nuevoItem, setNuevoItem] = useState({
-    descripcion: "",
-    cantidad: "",
-    unidad: "",
-  });
+  const [items, setItems] = useState<RequisicionItem[]>([]);
+  const [nuevoItem, setNuevoItem] = useState({ descripcion: "", cantidad: "", unidad: "" });
   const [agregandoItem, setAgregandoItem] = useState(false);
+  const [marcandoTodo, setMarcandoTodo] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -149,6 +174,7 @@ export default function RequisicionDetailPage() {
           fecha_en_compras: (r.fecha_en_compras as string) ?? null,
           fecha_recepcion_obra: (r.fecha_recepcion_obra as string) ?? null,
           fecha_asignado_proyecto: (r.fecha_asignado_proyecto as string) ?? null,
+          fecha_estimada_entrega: (r.fecha_estimada_entrega as string) ?? null,
           created_at: (r.created_at as string) ?? "",
         };
         setRequisicion(req);
@@ -159,9 +185,7 @@ export default function RequisicionDetailPage() {
           .eq("id", req.proyecto_id)
           .single();
         if (proj)
-          setProyectoNombre(
-            ((proj as Record<string, unknown>).cliente_nombre as string) ?? "—"
-          );
+          setProyectoNombre(((proj as Record<string, unknown>).cliente_nombre as string) ?? "—");
       }
     } catch (err) {
       console.error("Error:", err);
@@ -183,6 +207,7 @@ export default function RequisicionDetailPage() {
         cantidad: requisicion.cantidad?.toString() || "",
         unidad: requisicion.unidad || "",
         notas: requisicion.notas || "",
+        fecha_estimada_entrega: requisicion.fecha_estimada_entrega || "",
       });
     }
   }, [requisicion]);
@@ -197,19 +222,26 @@ export default function RequisicionDetailPage() {
         .order("orden", { ascending: true });
 
       if (error) throw error;
-      setItems(data || []);
+      setItems(
+        (data || []).map((d) => ({
+          id: d.id,
+          descripcion: d.descripcion,
+          cantidad: d.cantidad ?? null,
+          unidad: d.unidad ?? null,
+          comprado: d.comprado ?? false,
+          recibido: d.recibido ?? false,
+          orden: d.orden ?? 0,
+          proveedor: d.proveedor ?? null,
+          precio: d.precio ?? null,
+        }))
+      );
     } catch (err) {
       console.error("Error cargando items:", err);
     }
   }
 
   async function agregarItem() {
-    if (!requisicion) return;
-    if (!nuevoItem.descripcion.trim()) {
-      alert("Escribe una descripción del item");
-      return;
-    }
-
+    if (!requisicion || !nuevoItem.descripcion.trim()) return;
     setAgregandoItem(true);
     try {
       const { error } = await supabase.from("requisicion_items").insert({
@@ -219,60 +251,74 @@ export default function RequisicionDetailPage() {
         unidad: nuevoItem.unidad || null,
         orden: items.length,
       } as any);
-
       if (error) throw error;
-
       setNuevoItem({ descripcion: "", cantidad: "", unidad: "" });
       await cargarItems();
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al agregar item");
     } finally {
       setAgregandoItem(false);
     }
   }
 
-  async function toggleCheckbox(
-    itemId: string,
-    campo: "comprado" | "recibido",
-    valorActual: boolean,
-  ) {
+  async function toggleCheckbox(itemId: string, campo: "comprado" | "recibido", valorActual: boolean) {
     try {
       const { error } = await supabase
         .from("requisicion_items")
         .update({ [campo]: !valorActual } as any)
         .eq("id", itemId);
-
       if (error) throw error;
-
       await cargarItems();
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al actualizar");
+    }
+  }
+
+  async function updateItemField(itemId: string, campo: string, valor: string | number | null) {
+    try {
+      await supabase
+        .from("requisicion_items")
+        .update({ [campo]: valor } as any)
+        .eq("id", itemId);
+    } catch (err) {
+      console.error("Error actualizando campo:", err);
+    }
+  }
+
+  async function marcarTodoRecibido() {
+    const pendientes = items.filter((i) => !i.recibido);
+    if (pendientes.length === 0) return;
+    setMarcandoTodo(true);
+    try {
+      await Promise.all(
+        pendientes.map((i) =>
+          supabase
+            .from("requisicion_items")
+            .update({ recibido: true, comprado: true } as any)
+            .eq("id", i.id)
+        )
+      );
+      await cargarItems();
+    } catch (err) {
+      console.error("Error:", err);
+    } finally {
+      setMarcandoTodo(false);
     }
   }
 
   async function eliminarItem(itemId: string) {
     if (!confirm("¿Eliminar este item?")) return;
-
     try {
-      const { error } = await supabase
-        .from("requisicion_items")
-        .delete()
-        .eq("id", itemId);
-
+      const { error } = await supabase.from("requisicion_items").delete().eq("id", itemId);
       if (error) throw error;
-
       await cargarItems();
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al eliminar");
     }
   }
 
   async function guardarCambios() {
     if (!requisicion) return;
-
     setActing(true);
     try {
       const { error } = await supabase
@@ -283,16 +329,14 @@ export default function RequisicionDetailPage() {
           cantidad: formEdit.cantidad ? Number(formEdit.cantidad) : null,
           unidad: formEdit.unidad || null,
           notas: formEdit.notas || null,
+          fecha_estimada_entrega: formEdit.fecha_estimada_entrega || null,
         } as any)
         .eq("id", requisicion.id);
-
       if (error) throw error;
-
       await fetchData();
       setEditando(false);
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al guardar cambios");
     } finally {
       setActing(false);
     }
@@ -300,94 +344,51 @@ export default function RequisicionDetailPage() {
 
   async function eliminarRequisicion() {
     if (!requisicion) return;
-    if (!confirm("¿Estás seguro de eliminar esta requisición? Esta acción no se puede deshacer.")) return;
-
+    if (!confirm("¿Eliminar esta requisición? Esta acción no se puede deshacer.")) return;
     try {
-      const { error } = await supabase
-        .from("requisiciones")
-        .delete()
-        .eq("id", requisicion.id);
-
+      const { error } = await supabase.from("requisiciones").delete().eq("id", requisicion.id);
       if (error) throw error;
       router.push("/requisiciones");
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al eliminar requisición");
     }
   }
 
   async function avanzarPaso() {
     if (!requisicion) return;
-
     const currentIdx = getStepIndex(requisicion.estado);
-
-    if (currentIdx + 1 >= STEPS.length) {
-      alert("La requisición ya está completada");
-      return;
-    }
-
+    if (currentIdx + 1 >= STEPS.length) return;
     const nextStep = STEPS[currentIdx + 1];
     setActing(true);
-
     try {
-      const update: any = {
-        estado: nextStep.key,
-        [nextStep.dateField]: new Date().toISOString(),
-      };
-
       const { error } = await supabase
         .from("requisiciones")
-        .update(update as any)
+        .update({ estado: nextStep.key, [nextStep.dateField]: new Date().toISOString() } as any)
         .eq("id", requisicion.id);
-
       if (error) throw error;
       await fetchData();
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al avanzar paso");
     } finally {
       setActing(false);
     }
   }
 
   async function retrocederPaso(targetIdx: number) {
-    if (!requisicion) return;
-
-    if (targetIdx === 0) {
-      alert("No se puede retroceder más");
-      return;
-    }
-
+    if (!requisicion || targetIdx === 0) return;
     const previousStep = STEPS[targetIdx - 1];
     setActing(true);
-
     try {
-      const update: any = {
-        estado: previousStep.key,
-        [STEPS[targetIdx].dateField]: null,
-      };
-
       const { error } = await supabase
         .from("requisiciones")
-        .update(update as any)
+        .update({ estado: previousStep.key, [STEPS[targetIdx].dateField]: null } as any)
         .eq("id", requisicion.id);
-
       if (error) throw error;
       await fetchData();
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al retroceder paso");
     } finally {
       setActing(false);
-    }
-  }
-
-  function fmtDate(date: string | null): string {
-    if (!date) return "";
-    try {
-      return format(new Date(date), "d MMM yyyy, HH:mm", { locale: es });
-    } catch {
-      return date;
     }
   }
 
@@ -411,65 +412,55 @@ export default function RequisicionDetailPage() {
   }
 
   const currentStepIndex = getStepIndex(requisicion.estado);
+  const totalItems = items.length;
+  const comprados = items.filter((i) => i.comprado).length;
+  const recibidos = items.filter((i) => i.recibido).length;
+  const enTransito = items.filter((i) => i.comprado && !i.recibido).length;
+  const isCompleted = currentStepIndex >= STEPS.length - 1;
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-8 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-[#86868B] hover:bg-[#F5F5F7]"
-              asChild
-            >
+    <div className="min-h-screen bg-[#F5F5F7]">
+      {/* Header */}
+      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 sm:px-8">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="size-8 text-[#86868B] hover:bg-[#F5F5F7]" asChild>
               <Link href="/requisiciones">
                 <ArrowLeft className="size-4" />
               </Link>
             </Button>
-            <h1 className="truncate text-lg font-semibold tracking-tight text-[#1D1D1F]">
-              Detalle Requisición
-            </h1>
+            <div>
+              <h1 className="truncate text-[15px] font-semibold text-[#1D1D1F] leading-tight">
+                {requisicion.descripcion}
+              </h1>
+              <p className="text-[12px] text-[#86868B]">{proyectoNombre} · {requisicion.apartamento}</p>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 if (editando) {
                   setEditando(false);
-                  if (requisicion) {
-                    setFormEdit({
-                      descripcion: requisicion.descripcion || "",
-                      urgencia: requisicion.urgencia || "normal",
-                      cantidad: requisicion.cantidad?.toString() || "",
-                      unidad: requisicion.unidad || "",
-                      notas: requisicion.notas || "",
-                    });
-                  }
+                  setFormEdit({
+                    descripcion: requisicion.descripcion || "",
+                    urgencia: requisicion.urgencia || "normal",
+                    cantidad: requisicion.cantidad?.toString() || "",
+                    unidad: requisicion.unidad || "",
+                    notas: requisicion.notas || "",
+                    fecha_estimada_entrega: requisicion.fecha_estimada_entrega || "",
+                  });
                 } else {
                   setEditando(true);
                 }
               }}
               className={cn(
                 "rounded-lg text-[13px]",
-                editando
-                  ? "text-[#86868B] hover:bg-[#F5F5F7]"
-                  : "text-[#007AFF] hover:bg-[#007AFF]/5"
+                editando ? "text-[#86868B]" : "text-[#007AFF] hover:bg-[#007AFF]/5"
               )}
             >
-              {editando ? (
-                <>
-                  <X className="size-3.5" />
-                  Cancelar
-                </>
-              ) : (
-                <>
-                  <Pencil className="size-3.5" />
-                  Editar
-                </>
-              )}
+              {editando ? <><X className="size-3.5" /> Cancelar</> : <><Pencil className="size-3.5" /> Editar</>}
             </Button>
             <Button
               variant="ghost"
@@ -478,293 +469,368 @@ export default function RequisicionDetailPage() {
               className="rounded-lg text-[13px] text-[#FF3B30] hover:bg-[#FF3B30]/5"
             >
               <Trash2 className="size-3.5" />
-              Eliminar
             </Button>
+          </div>
+        </div>
+
+        {/* Stepper horizontal compacto */}
+        <div className="mx-auto max-w-3xl px-4 pb-3 sm:px-8">
+          <div className="flex items-center gap-0">
+            {STEPS.map((step, idx) => {
+              const done = currentStepIndex > idx;
+              const current = currentStepIndex === idx;
+              return (
+                <div key={step.key} className="flex flex-1 items-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={cn(
+                        "flex size-5 items-center justify-center rounded-full text-[10px] font-bold transition-all",
+                        done
+                          ? "bg-[#007AFF] text-white"
+                          : current
+                            ? "border-2 border-[#007AFF] bg-white text-[#007AFF]"
+                            : "bg-[#D2D2D7] text-white"
+                      )}
+                    >
+                      {done ? "✓" : idx + 1}
+                    </div>
+                    <span
+                      className={cn(
+                        "hidden text-center text-[9px] leading-tight sm:block",
+                        current ? "font-semibold text-[#007AFF]" : done ? "text-[#1D1D1F]" : "text-[#C7C7CC]"
+                      )}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                  {idx < STEPS.length - 1 && (
+                    <div className={cn("mx-1 h-0.5 flex-1 rounded-full transition-colors", done ? "bg-[#007AFF]" : "bg-[#D2D2D7]")} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-6 px-8 py-8">
-        <div className="rounded-lg border bg-white p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Información</h2>
-            {editando && (
+      <main className="mx-auto max-w-3xl space-y-4 px-4 py-5 sm:px-8">
+
+        {/* Urgencia + acción principal */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {requisicion.urgencia === "alta" && (
+              <span className="rounded-full border-2 border-red-300 bg-red-100 px-3 py-1 text-xs font-bold text-red-700 animate-pulse">
+                🚨 URGENTE
+              </span>
+            )}
+            {requisicion.urgencia === "normal" && (
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">Normal</span>
+            )}
+            {requisicion.urgencia === "baja" && (
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">Baja</span>
+            )}
+            {requisicion.solicitado_por && (
+              <span className="text-[12px] text-[#86868B]">por {requisicion.solicitado_por}</span>
+            )}
+          </div>
+          {!isCompleted && (
+            <Button
+              onClick={avanzarPaso}
+              disabled={acting}
+              className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5] text-[13px]"
+              size="sm"
+            >
+              {acting ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              Avanzar → {STEPS[currentStepIndex + 1]?.label}
+            </Button>
+          )}
+        </div>
+
+        {/* Items */}
+        <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white overflow-hidden">
+          {/* Header items */}
+          <div className="flex items-center justify-between border-b border-[#D2D2D7]/40 px-5 py-4">
+            <h3 className="text-[14px] font-semibold text-[#1D1D1F]">Items de la requisición</h3>
+            {totalItems > 0 && recibidos < totalItems && (
               <Button
-                onClick={guardarCambios}
-                disabled={acting}
-                className="bg-blue-500 hover:bg-blue-600"
+                onClick={marcarTodoRecibido}
+                disabled={marcandoTodo}
+                size="sm"
+                className="rounded-xl bg-green-600 text-white text-[12px] hover:bg-green-700"
               >
-                {acting ? "Guardando..." : "Guardar"}
+                {marcandoTodo ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCheck className="size-3.5" />}
+                Todo recibido
+              </Button>
+            )}
+          </div>
+
+          {/* Progress bars */}
+          {totalItems > 0 && (
+            <div className="grid grid-cols-3 gap-4 border-b border-[#D2D2D7]/40 px-5 py-4">
+              <div>
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-[#86868B]">Total</p>
+                <p className="text-2xl font-bold text-[#1D1D1F]">{totalItems}</p>
+                <p className="text-[11px] text-[#86868B]">items</p>
+              </div>
+              <div>
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-[#007AFF]">Comprados</p>
+                <ProgressBar value={comprados} total={totalItems} color={comprados === totalItems ? "bg-[#007AFF]" : "bg-[#007AFF]/70"} />
+                {enTransito > 0 && (
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-amber-600">
+                    <Truck className="size-3" />{enTransito} en tránsito
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-[#34C759]">Recibidos</p>
+                <ProgressBar
+                  value={recibidos}
+                  total={totalItems}
+                  color={recibidos === totalItems ? "bg-[#34C759]" : recibidos > 0 ? "bg-[#34C759]/70" : "bg-gray-200"}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Lista de items */}
+          {items.length === 0 ? (
+            <p className="py-10 text-center text-sm text-[#86868B]">No hay items. Agrega el primero abajo.</p>
+          ) : (
+            <div className="divide-y divide-[#D2D2D7]/30">
+              {items.map((item) => {
+                const st = itemStatus(item);
+                const badge = STATUS_BADGE[st];
+                return (
+                  <div
+                    key={item.id}
+                    className={cn("border-l-4 px-5 py-3 transition-colors", STATUS_ROW[st], {
+                      "border-l-green-400": st === "recibido",
+                      "border-l-amber-400": st === "transito",
+                      "border-l-transparent": st === "pendiente",
+                    })}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-[14px] text-[#1D1D1F]">{item.descripcion}</span>
+                          {item.cantidad && (
+                            <span className="text-[12px] text-[#86868B]">{item.cantidad} {item.unidad || ""}</span>
+                          )}
+                          <span className={cn("flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", badge.className)}>
+                            {badge.icon}{badge.label}
+                          </span>
+                        </div>
+
+                        {/* Proveedor y precio — visibles cuando está comprado */}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <input
+                            defaultValue={item.proveedor || ""}
+                            placeholder="Proveedor"
+                            onBlur={(e) => updateItemField(item.id, "proveedor", e.target.value || null)}
+                            className={cn(
+                              "h-7 rounded-lg border px-2 text-[12px] text-[#1D1D1F] placeholder-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-1 focus:ring-[#007AFF]/20 w-36",
+                              item.comprado ? "border-[#D2D2D7] bg-white" : "border-dashed border-[#D2D2D7] bg-transparent"
+                            )}
+                          />
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-[#86868B]">$</span>
+                            <input
+                              type="number"
+                              defaultValue={item.precio ?? ""}
+                              placeholder="Precio"
+                              onBlur={(e) => updateItemField(item.id, "precio", e.target.value ? Number(e.target.value) : null)}
+                              className={cn(
+                                "h-7 w-28 rounded-lg border pl-5 pr-2 text-[12px] text-[#1D1D1F] placeholder-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-1 focus:ring-[#007AFF]/20",
+                                item.comprado ? "border-[#D2D2D7] bg-white" : "border-dashed border-[#D2D2D7] bg-transparent"
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Toggles */}
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <div className="flex items-center gap-3">
+                          <label className="flex flex-col items-center gap-0.5 cursor-pointer">
+                            <span className="text-[10px] font-medium text-[#007AFF]">Comprado</span>
+                            <input
+                              type="checkbox"
+                              checked={item.comprado}
+                              onChange={() => toggleCheckbox(item.id, "comprado", item.comprado)}
+                              className="peer sr-only"
+                            />
+                            <div className="h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#007AFF] peer-checked:after:translate-x-4 relative after:border after:border-gray-300" />
+                          </label>
+                          <label className="flex flex-col items-center gap-0.5 cursor-pointer">
+                            <span className="text-[10px] font-medium text-[#34C759]">Recibido</span>
+                            <input
+                              type="checkbox"
+                              checked={item.recibido}
+                              onChange={() => toggleCheckbox(item.id, "recibido", item.recibido)}
+                              className="peer sr-only"
+                            />
+                            <div className="h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#34C759] peer-checked:after:translate-x-4 relative after:border after:border-gray-300" />
+                          </label>
+                        </div>
+                        <button
+                          onClick={() => eliminarItem(item.id)}
+                          className="text-[#C7C7CC] hover:text-[#FF3B30] transition-colors"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Agregar item */}
+          <div className="border-t border-[#D2D2D7]/40 bg-[#F5F5F7] px-5 py-4">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#86868B]">Agregar item</p>
+            <div className="flex flex-wrap gap-2">
+              <input
+                value={nuevoItem.descripcion}
+                onChange={(e) => setNuevoItem({ ...nuevoItem, descripcion: e.target.value })}
+                className="h-8 flex-1 min-w-[160px] rounded-lg border border-[#D2D2D7] bg-white px-3 text-[13px] focus:border-[#007AFF] focus:outline-none"
+                placeholder="Descripción *"
+                onKeyDown={(e) => { if (e.key === "Enter" && !agregandoItem) agregarItem(); }}
+              />
+              <input
+                type="number"
+                value={nuevoItem.cantidad}
+                onChange={(e) => setNuevoItem({ ...nuevoItem, cantidad: e.target.value })}
+                className="h-8 w-20 rounded-lg border border-[#D2D2D7] bg-white px-3 text-[13px] focus:border-[#007AFF] focus:outline-none"
+                placeholder="Cant."
+              />
+              <input
+                value={nuevoItem.unidad}
+                onChange={(e) => setNuevoItem({ ...nuevoItem, unidad: e.target.value })}
+                className="h-8 w-20 rounded-lg border border-[#D2D2D7] bg-white px-3 text-[13px] focus:border-[#007AFF] focus:outline-none"
+                placeholder="Und."
+              />
+              <Button
+                onClick={agregarItem}
+                disabled={agregandoItem || !nuevoItem.descripcion.trim()}
+                size="sm"
+                className="h-8 rounded-xl bg-[#007AFF] text-white text-[12px] hover:bg-[#0051D5]"
+              >
+                {agregandoItem ? "..." : "+ Agregar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Información */}
+        <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[14px] font-semibold text-[#1D1D1F]">Información</h3>
+            {editando && (
+              <Button onClick={guardarCambios} disabled={acting} size="sm" className="bg-[#007AFF] text-white rounded-xl text-[12px] hover:bg-[#0051D5]">
+                {acting ? "Guardando..." : "Guardar cambios"}
               </Button>
             )}
           </div>
 
           {editando ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Descripción *
-                </label>
+                <label className="mb-1 block text-[12px] font-medium text-[#86868B]">Descripción</label>
                 <textarea
                   value={formEdit.descripcion}
-                  onChange={(e) =>
-                    setFormEdit({ ...formEdit, descripcion: e.target.value })
-                  }
-                  className="w-full rounded-lg border px-3 py-2"
-                  rows={3}
+                  onChange={(e) => setFormEdit({ ...formEdit, descripcion: e.target.value })}
+                  className="w-full rounded-xl border border-[#D2D2D7] px-3 py-2 text-[13px] focus:border-[#007AFF] focus:outline-none"
+                  rows={2}
                 />
               </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Urgencia
-                </label>
-                <select
-                  value={formEdit.urgencia}
-                  onChange={(e) =>
-                    setFormEdit({ ...formEdit, urgencia: e.target.value as any })
-                  }
-                  className="w-full rounded-lg border px-3 py-2"
-                >
-                  <option value="baja">Baja</option>
-                  <option value="normal">Normal</option>
-                  <option value="alta">Alta</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-[12px] font-medium text-[#86868B]">Urgencia</label>
+                  <select
+                    value={formEdit.urgencia}
+                    onChange={(e) => setFormEdit({ ...formEdit, urgencia: e.target.value })}
+                    className="w-full rounded-xl border border-[#D2D2D7] px-3 py-2 text-[13px] focus:border-[#007AFF] focus:outline-none"
+                  >
+                    <option value="baja">Baja</option>
+                    <option value="normal">Normal</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1 text-[12px] font-medium text-[#86868B]">
+                    <CalendarClock className="size-3" />Fecha estimada de entrega
+                  </label>
+                  <input
+                    type="date"
+                    value={formEdit.fecha_estimada_entrega}
+                    onChange={(e) => setFormEdit({ ...formEdit, fecha_estimada_entrega: e.target.value })}
+                    className="w-full rounded-xl border border-[#D2D2D7] px-3 py-2 text-[13px] focus:border-[#007AFF] focus:outline-none"
+                  />
+                </div>
               </div>
-
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Notas generales
-                </label>
+                <label className="mb-1 block text-[12px] font-medium text-[#86868B]">Notas</label>
                 <textarea
                   value={formEdit.notas}
-                  onChange={(e) =>
-                    setFormEdit({ ...formEdit, notas: e.target.value })
-                  }
-                  className="w-full rounded-lg border px-3 py-2"
+                  onChange={(e) => setFormEdit({ ...formEdit, notas: e.target.value })}
+                  className="w-full rounded-xl border border-[#D2D2D7] px-3 py-2 text-[13px] focus:border-[#007AFF] focus:outline-none"
                   rows={2}
-                  placeholder="Observaciones adicionales sobre la requisición..."
+                  placeholder="Observaciones..."
                 />
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              <div>
-                <span className="text-sm text-gray-600">Descripción</span>
-                <p className="font-medium">{requisicion.descripcion}</p>
-              </div>
-
-              <div>
-                <span className="text-sm text-gray-600">Urgencia</span>
-                <p>
-                  <span
-                    className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
-                      urgenciaColors[requisicion.urgencia || "normal"]
-                    }`}
-                  >
-                    {(requisicion.urgencia || "normal")
-                      .charAt(0)
-                      .toUpperCase() + (requisicion.urgencia || "normal").slice(1)}
-                  </span>
-                </p>
-              </div>
-
-              {requisicion.notas && (
+            <div className="space-y-3 text-[13px]">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-sm text-gray-600">Notas</span>
-                  <p className="text-sm">{requisicion.notas}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-[#86868B]">Proyecto</p>
+                  <p className="font-medium text-[#1D1D1F]">{proyectoNombre}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-[#86868B]">Apartamento</p>
+                  <p className="font-medium text-[#1D1D1F]">{requisicion.apartamento}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-[#86868B]">Tipo material</p>
+                  <p className="font-medium text-[#1D1D1F]">{requisicion.tipo_material}</p>
+                </div>
+                {requisicion.fecha_estimada_entrega && (
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-[#86868B] flex items-center gap-1">
+                      <CalendarClock className="size-3" />Entrega estimada
+                    </p>
+                    <p className="font-medium text-[#1D1D1F]">
+                      {new Date(requisicion.fecha_estimada_entrega + "T12:00:00").toLocaleDateString("es-CO", {
+                        day: "numeric", month: "long", year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {requisicion.notas && (
+                <div className="rounded-xl bg-[#F5F5F7] px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-[#86868B]">Notas</p>
+                  <p className="mt-1 text-[#1D1D1F]">{requisicion.notas}</p>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Items de la requisición - SIEMPRE VISIBLE */}
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="mb-4 text-lg font-semibold">Items de la requisición</h3>
-
-          {/* Formulario para agregar item */}
-          <div className="mb-6 rounded-lg bg-gray-50 p-4">
-            <h4 className="mb-3 text-sm font-medium text-gray-700">
-              Agregar nuevo item
-            </h4>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-              <div className="md:col-span-6">
-                <input
-                  value={nuevoItem.descripcion}
-                  onChange={(e) =>
-                    setNuevoItem({ ...nuevoItem, descripcion: e.target.value })
-                  }
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
-                  placeholder="Descripción del item *"
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter" && !agregandoItem) {
-                      agregarItem();
-                    }
-                  }}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <input
-                  type="number"
-                  value={nuevoItem.cantidad}
-                  onChange={(e) =>
-                    setNuevoItem({ ...nuevoItem, cantidad: e.target.value })
-                  }
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
-                  placeholder="Cantidad"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <input
-                  value={nuevoItem.unidad}
-                  onChange={(e) =>
-                    setNuevoItem({ ...nuevoItem, unidad: e.target.value })
-                  }
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
-                  placeholder="Unidad"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Button
-                  onClick={agregarItem}
-                  disabled={agregandoItem || !nuevoItem.descripcion.trim()}
-                  className="w-full bg-blue-500 hover:bg-blue-600"
-                >
-                  {agregandoItem ? "..." : "Agregar"}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Lista de items */}
-          {items.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500">
-              No hay items registrados. Agrega el primer item arriba.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {/* Header */}
-              <div className="grid grid-cols-12 gap-2 border-b pb-2 text-xs font-medium text-gray-600">
-                <div className="col-span-5">Descripción</div>
-                <div className="col-span-2 text-center">Cantidad</div>
-                <div className="col-span-2 text-center">Comprado</div>
-                <div className="col-span-2 text-center">Recibido</div>
-                <div className="col-span-1"></div>
-              </div>
-
-              {/* Items */}
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-12 items-center gap-2 border-b py-3 hover:bg-gray-50"
-                >
-                  <div className="col-span-5">
-                    <p className="font-medium text-gray-900">{item.descripcion}</p>
-                  </div>
-
-                  <div className="col-span-2 text-center text-sm text-gray-600">
-                    {item.cantidad && (
-                      <span>
-                        {item.cantidad} {item.unidad || ""}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="col-span-2 flex justify-center">
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        checked={item.comprado}
-                        onChange={() =>
-                          toggleCheckbox(item.id, "comprado", item.comprado)
-                        }
-                        className="peer sr-only"
-                      />
-                      <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300" />
-                    </label>
-                  </div>
-
-                  <div className="col-span-2 flex justify-center">
-                    <label className="relative inline-flex cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        checked={item.recibido}
-                        onChange={() =>
-                          toggleCheckbox(item.id, "recibido", item.recibido)
-                        }
-                        className="peer sr-only"
-                      />
-                      <div className="h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-green-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300" />
-                    </label>
-                  </div>
-
-                  <div className="col-span-1 flex justify-end">
-                    <button
-                      onClick={() => eliminarItem(item.id)}
-                      className="p-1 text-red-500 hover:text-red-700"
-                    >
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Estadísticas */}
-          {items.length > 0 && (
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className="text-2xl font-bold text-gray-900">{items.length}</p>
-                <p className="text-xs text-gray-600">Total items</p>
-              </div>
-              <div className="rounded-lg bg-blue-50 p-3 text-center">
-                <p className="text-2xl font-bold text-blue-600">
-                  {items.filter((i) => i.comprado).length}
-                </p>
-                <p className="text-xs text-gray-600">Comprados</p>
-              </div>
-              <div className="rounded-lg bg-green-50 p-3 text-center">
-                <p className="text-2xl font-bold text-green-600">
-                  {items.filter((i) => i.recibido).length}
-                </p>
-                <p className="text-xs text-gray-600">Recibidos</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Timeline with checkboxes */}
-        <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6">
-          <h3 className="mb-6 text-[14px] font-semibold text-[#1D1D1F]">
-            Flujo de requisición
-          </h3>
-
-          <div className="space-y-2">
+        {/* Timeline detallado */}
+        <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-5">
+          <h3 className="mb-5 text-[14px] font-semibold text-[#1D1D1F]">Historial del flujo</h3>
+          <div className="space-y-1">
             {STEPS.map((step, idx) => {
               const isCompleted = currentStepIndex > idx;
               const isCurrent = currentStepIndex === idx;
-              const canCheck = isCurrent;
-              const stepDate =
-                requisicion[step.dateField as keyof Requisicion] as
-                  | string
-                  | null;
+              const stepDate = requisicion[step.dateField as keyof Requisicion] as string | null;
 
               return (
-                <div key={step.key} className="flex items-start gap-4">
+                <div key={step.key} className="flex items-start gap-3">
                   <div className="flex flex-col items-center">
                     <label className="relative cursor-pointer">
                       <input
@@ -773,113 +839,50 @@ export default function RequisicionDetailPage() {
                         disabled={acting}
                         onChange={async () => {
                           if (acting) return;
-                          if (isCompleted) {
-                            await retrocederPaso(idx);
-                          } else if (canCheck) {
-                            await avanzarPaso();
-                          }
+                          if (isCompleted) await retrocederPaso(idx);
+                          else if (isCurrent) await avanzarPaso();
                         }}
                         className="peer sr-only"
                       />
-                      <div
-                        className={cn(
-                          "flex size-6 items-center justify-center rounded border-2 transition-all",
-                          isCompleted
-                            ? "cursor-pointer border-[#007AFF] bg-[#007AFF] hover:bg-[#0051D5]"
-                            : canCheck
-                              ? "cursor-pointer border-[#007AFF] hover:bg-[#007AFF]/5"
-                              : "cursor-not-allowed border-[#D2D2D7] bg-[#F5F5F7]"
-                        )}
-                      >
+                      <div className={cn(
+                        "flex size-5 items-center justify-center rounded border-2 transition-all",
+                        isCompleted
+                          ? "cursor-pointer border-[#007AFF] bg-[#007AFF] hover:bg-[#0051D5]"
+                          : isCurrent
+                            ? "cursor-pointer border-[#007AFF] hover:bg-[#007AFF]/5"
+                            : "cursor-not-allowed border-[#D2D2D7] bg-[#F5F5F7]"
+                      )}>
                         {isCompleted && (
-                          <svg
-                            className="size-4 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={3}
-                              d="M5 13l4 4L19 7"
-                            />
+                          <svg className="size-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </div>
                     </label>
                     {idx < STEPS.length - 1 && (
-                      <div
-                        className={cn(
-                          "mt-2 h-12 w-0.5 transition-colors",
-                          isCompleted ? "bg-[#007AFF]" : "bg-[#D2D2D7]"
-                        )}
-                      />
+                      <div className={cn("mt-1 h-8 w-0.5 transition-colors", isCompleted ? "bg-[#007AFF]" : "bg-[#D2D2D7]")} />
                     )}
                   </div>
-
-                  <div className="flex-1 pb-2">
-                    <div className="flex items-baseline gap-2">
-                      <span
-                        className={cn(
-                          "flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-bold",
-                          isCompleted
-                            ? "bg-[#007AFF] text-white"
-                            : isCurrent
-                              ? "border-2 border-[#007AFF] bg-[#007AFF]/10 text-[#007AFF]"
-                              : "bg-[#F5F5F7] text-[#86868B]"
-                        )}
-                      >
-                        {idx + 1}
-                      </span>
-                      <h4
-                        className={cn(
-                          "font-semibold",
-                          isCompleted
-                            ? "text-[#1D1D1F]"
-                            : isCurrent
-                              ? "text-[#007AFF]"
-                              : "text-[#86868B]"
-                        )}
-                      >
+                  <div className="flex-1 pb-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className={cn("text-[13px] font-semibold",
+                        isCompleted ? "text-[#1D1D1F]" : isCurrent ? "text-[#007AFF]" : "text-[#C7C7CC]"
+                      )}>
                         {step.label}
                       </h4>
-                    </div>
-
-                    <p
-                      className={cn(
-                        "ml-8 mt-1 text-sm",
-                        isCompleted || isCurrent
-                          ? "text-[#86868B]"
-                          : "text-[#C7C7CC]"
+                      {isCurrent && !acting && (
+                        <span className="text-[11px] text-[#007AFF]">← activo</span>
                       )}
-                    >
-                      {step.description}
-                    </p>
-
-                    {stepDate && (
-                      <p className="ml-8 mt-1 text-xs text-[#86868B]">
+                    </div>
+                    {stepDate ? (
+                      <p className="text-[11px] text-[#86868B]">
                         {new Date(stepDate).toLocaleString("es-CO", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
+                          day: "numeric", month: "long", year: "numeric",
+                          hour: "2-digit", minute: "2-digit",
                         })}
                       </p>
-                    )}
-
-                    {isCurrent && !acting && (
-                      <p className="ml-8 mt-1 text-xs font-medium text-[#007AFF]">
-                        ← Marca la casilla para avanzar
-                      </p>
-                    )}
-
-                    {acting && isCurrent && (
-                      <div className="ml-8 mt-2 flex items-center gap-2 text-[#007AFF]">
-                        <div className="size-3 animate-spin rounded-full border-2 border-[#007AFF] border-t-transparent" />
-                        <span className="text-xs">Procesando...</span>
-                      </div>
+                    ) : (
+                      <p className="text-[11px] text-[#C7C7CC]">{step.description}</p>
                     )}
                   </div>
                 </div>
@@ -888,7 +891,7 @@ export default function RequisicionDetailPage() {
           </div>
         </div>
 
-        {currentStepIndex >= STEPS.length - 1 && (
+        {isCompleted && (
           <div className="rounded-2xl border border-[#34C759]/30 bg-[#34C759]/5 p-5 text-center">
             <CheckCircle2 className="mx-auto size-8 text-[#34C759]" />
             <p className="mt-2 text-[14px] font-medium text-[#34C759]">
