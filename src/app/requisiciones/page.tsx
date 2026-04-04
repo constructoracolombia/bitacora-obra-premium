@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Package, Home, Tag, ChevronDown, ChevronRight, Archive } from "lucide-react";
+import { Loader2, Plus, Package, Home, Tag, ChevronDown, ChevronRight, Archive, CheckCircle2 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -44,14 +44,27 @@ const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }>
 
 type FilterEstado = "TODOS" | string;
 
-function ReqCard({ req, dimmed = false }: { req: Requisicion; dimmed?: boolean }) {
+function ReqCard({
+  req,
+  dimmed = false,
+  onAprobar,
+  aprobando = false,
+}: {
+  req: Requisicion;
+  dimmed?: boolean;
+  onAprobar?: (id: string) => void;
+  aprobando?: boolean;
+}) {
   const st = ESTADO_STYLES[req.estado] ?? ESTADO_STYLES.solicitada;
+  const esPorAprobar = req.estado === "por_aprobar";
+
   return (
-    <Link href={`/requisiciones/${req.id}`}>
-      <article className={cn(
-        "group rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:border-[#D2D2D7] hover:shadow-md",
-        dimmed && "opacity-60"
-      )}>
+    <article className={cn(
+      "rounded-2xl border border-[#D2D2D7]/60 bg-white transition-all duration-200",
+      dimmed && "opacity-60",
+      esPorAprobar && "border-[#FF9500]/40"
+    )}>
+      <Link href={`/requisiciones/${req.id}`} className="group block p-5 hover:bg-gray-50/50 rounded-2xl">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="mb-3 flex items-start justify-between">
@@ -102,8 +115,26 @@ function ReqCard({ req, dimmed = false }: { req: Requisicion; dimmed?: boolean }
           {req.fecha_recepcion_obra && <span>Recepción: {new Date(req.fecha_recepcion_obra).toLocaleDateString("es-CO")}</span>}
           {req.fecha_asignado_proyecto && <span>Asignada: {new Date(req.fecha_asignado_proyecto).toLocaleDateString("es-CO")}</span>}
         </div>
-      </article>
-    </Link>
+      </Link>
+
+      {/* Botón de aprobación — solo visible en "Por Aprobar" */}
+      {esPorAprobar && onAprobar && (
+        <div className="border-t border-[#FF9500]/20 px-5 py-3">
+          <button
+            onClick={() => onAprobar(req.id)}
+            disabled={aprobando}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF9500] px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#E08800] disabled:opacity-60 active:scale-[0.98]"
+          >
+            {aprobando ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="size-4" />
+            )}
+            {aprobando ? "Aprobando..." : "Aprobar → Enviar a Compras"}
+          </button>
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -115,6 +146,31 @@ export default function RequisicionesPage() {
   const [filterProyecto, setFilterProyecto] = useState("TODOS");
   const [filterEstado, setFilterEstado] = useState<FilterEstado>("TODOS");
   const [mostrarArchivadas, setMostrarArchivadas] = useState(false);
+  const [aprobando, setAprobando] = useState<string | null>(null);
+
+  async function aprobarRequisicion(id: string) {
+    setAprobando(id);
+    try {
+      await supabase
+        .from("requisiciones")
+        .update({
+          estado: "en_compras",
+          fecha_en_compras: new Date().toISOString(),
+        })
+        .eq("id", id);
+      setRequisiciones((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, estado: "en_compras", fecha_en_compras: new Date().toISOString() }
+            : r
+        )
+      );
+    } catch (err) {
+      console.error("Error aprobando:", err);
+    } finally {
+      setAprobando(null);
+    }
+  }
 
   useEffect(() => {
     async function fetch() {
@@ -264,7 +320,12 @@ export default function RequisicionesPage() {
         ) : (
           <div className="space-y-3">
             {filtered.map((req) => (
-              <ReqCard key={req.id} req={req} />
+              <ReqCard
+                key={req.id}
+                req={req}
+                onAprobar={aprobarRequisicion}
+                aprobando={aprobando === req.id}
+              />
             ))}
 
             {filtered.length === 0 && (
