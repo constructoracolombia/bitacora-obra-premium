@@ -13,10 +13,11 @@ import {
   X,
   PackageCheck,
   Truck,
-  ShoppingCart,
   Clock,
   CheckCheck,
   CalendarClock,
+  Copy,
+  Check,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { es } from "date-fns/locale";
 
 interface Requisicion {
   id: string;
+  codigo: string | null;
   proyecto_id: string;
   apartamento: string;
   tipo_material: string;
@@ -144,6 +146,13 @@ export default function RequisicionDetailPage() {
   const [nuevoItem, setNuevoItem] = useState({ descripcion: "", cantidad: "", unidad: "" });
   const [agregandoItem, setAgregandoItem] = useState(false);
   const [marcandoTodo, setMarcandoTodo] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+
+  function copiarCodigo(codigo: string) {
+    navigator.clipboard.writeText(codigo).catch(() => {});
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
 
   const fetchData = useCallback(async () => {
     try {
@@ -158,6 +167,7 @@ export default function RequisicionDetailPage() {
         const r = data as Record<string, unknown>;
         const req: Requisicion = {
           id: r.id as string,
+          codigo: (r.codigo as string) ?? null,
           proyecto_id: r.proyecto_id as string,
           apartamento: r.apartamento as string,
           tipo_material: (r.tipo_material as string) ?? "Otros",
@@ -430,9 +440,21 @@ export default function RequisicionDetailPage() {
               </Link>
             </Button>
             <div>
-              <h1 className="truncate text-[15px] font-semibold text-[#1D1D1F] leading-tight">
-                {requisicion.descripcion}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="truncate text-[15px] font-semibold text-[#1D1D1F] leading-tight">
+                  {requisicion.descripcion}
+                </h1>
+                {requisicion.codigo && (
+                  <button
+                    onClick={() => copiarCodigo(requisicion.codigo!)}
+                    className="flex shrink-0 items-center gap-1 rounded-lg bg-[#007AFF]/10 px-2 py-0.5 text-[11px] font-bold text-[#007AFF] hover:bg-[#007AFF]/20 transition-colors"
+                    title="Copiar código"
+                  >
+                    {copiado ? <Check className="size-3" /> : <Copy className="size-3" />}
+                    {requisicion.codigo}
+                  </button>
+                )}
+              </div>
               <p className="text-[12px] text-[#86868B]">{proyectoNombre} · {requisicion.apartamento}</p>
             </div>
           </div>
