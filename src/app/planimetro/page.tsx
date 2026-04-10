@@ -5,6 +5,7 @@ import { LayoutGrid, Table2 } from 'lucide-react';
 import { UploadZone } from '@/components/planimetro/UploadZone';
 import { ResultadosAreas } from '@/components/planimetro/ResultadosAreas';
 import { Modelo3D } from '@/components/planimetro/Modelo3D';
+import { parsearDxf, dxfAResultado } from '@/lib/planimetro/dxf';
 import type { ResultadoPlanimetro } from '@/components/planimetro/types';
 
 type Vista = '3d' | 'tabla';
@@ -21,13 +22,23 @@ export default function PlanimetroPage() {
     setResultado(null);
 
     try {
+      const esDxf = file.name.toLowerCase().endsWith('.dxf');
+
+      if (esDxf) {
+        // DXF: parseo 100% client-side — sin límite de tamaño, sin costo de API
+        const contenido = await file.text();
+        const dxf = parsearDxf(contenido);
+        const resultado = dxfAResultado(dxf);
+        setResultado(resultado);
+        setVista('3d');
+        return;
+      }
+
+      // PDF / imagen: Claude Vision en el servidor
       const form = new FormData();
       form.append('file', file);
 
-      const esDxf = file.name.toLowerCase().endsWith('.dxf');
-      const endpoint = esDxf ? '/api/planimetro/analizar-dxf' : '/api/planimetro/analizar';
-
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/planimetro/analizar', {
         method: 'POST',
         body: form,
       });
