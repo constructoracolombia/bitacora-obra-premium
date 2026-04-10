@@ -14,6 +14,7 @@ import {
   Package,
   Hammer,
   Calendar,
+  ScanLine,
   LogOut,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/requisiciones", icon: Package, label: "Requisiciones" },
   { href: "/carpinterias", icon: Hammer, label: "Carpintería" },
   { href: "/calendario", icon: Calendar, label: "Calendario" },
+  { href: "/planimetro", icon: ScanLine, label: "Planimetría IA" },
 ];
 
 export function Sidebar() {
