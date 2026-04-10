@@ -15,6 +15,7 @@ import {
   Hammer,
   Calendar,
   ScanLine,
+  Users,
   LogOut,
 } from "lucide-react";
 
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/requisiciones", icon: Package, label: "Requisiciones" },
   { href: "/carpinterias", icon: Hammer, label: "Carpintería" },
   { href: "/calendario", icon: Calendar, label: "Calendario" },
+  { href: "/nomina", icon: Users, label: "Nómina" },
   { href: "/planimetro", icon: ScanLine, label: "Planimetría IA" },
 ];
 
