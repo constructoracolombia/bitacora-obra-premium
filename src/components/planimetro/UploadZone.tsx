@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Upload, FileImage, FileText, X } from 'lucide-react';
+import { Upload, FileImage, FileText, FileCode2, X } from 'lucide-react';
 
 interface UploadZoneProps {
   onFile: (file: File) => void;
@@ -9,6 +9,7 @@ interface UploadZoneProps {
 }
 
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const ACCEPTED_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.pdf', '.dxf'];
 const MAX_MB = 20;
 
 export function UploadZone({ onFile, loading }: UploadZoneProps) {
@@ -19,8 +20,9 @@ export function UploadZone({ onFile, loading }: UploadZoneProps) {
   const handleFile = useCallback(
     (file: File) => {
       setError(null);
-      if (!ACCEPTED.includes(file.type)) {
-        setError('Formato no soportado. Usa JPG, PNG, WebP o PDF.');
+      const esDxf = file.name.toLowerCase().endsWith('.dxf');
+      if (!esDxf && !ACCEPTED.includes(file.type)) {
+        setError('Formato no soportado. Usa JPG, PNG, WebP, PDF o DXF.');
         return;
       }
       if (file.size > MAX_MB * 1024 * 1024) {
@@ -28,8 +30,9 @@ export function UploadZone({ onFile, loading }: UploadZoneProps) {
         return;
       }
       const isImage = file.type.startsWith('image/');
+      const isDxf = file.name.toLowerCase().endsWith('.dxf');
       const url = isImage ? URL.createObjectURL(file) : undefined;
-      setPreview({ name: file.name, type: file.type, url });
+      setPreview({ name: file.name, type: isDxf ? 'dxf' : file.type, url });
       onFile(file);
     },
     [onFile]
@@ -62,10 +65,12 @@ export function UploadZone({ onFile, loading }: UploadZoneProps) {
           <img src={preview.url} alt="Plano" className="w-full max-h-80 object-contain bg-gray-50" />
         ) : (
           <div className="flex items-center justify-center gap-3 bg-gray-50 py-16">
-            <FileText className="h-10 w-10 text-gray-400" />
+            {preview.type === 'dxf'
+              ? <FileCode2 className="h-10 w-10 text-[#007AFF]" />
+              : <FileText className="h-10 w-10 text-gray-400" />}
             <div>
               <p className="font-medium text-gray-700 text-sm">{preview.name}</p>
-              <p className="text-xs text-gray-400">PDF</p>
+              <p className="text-xs text-gray-400">{preview.type === 'dxf' ? 'AutoCAD DXF — geometría exacta' : 'PDF'}</p>
             </div>
           </div>
         )}
@@ -102,7 +107,7 @@ export function UploadZone({ onFile, loading }: UploadZoneProps) {
       >
         <input
           type="file"
-          accept=".jpg,.jpeg,.png,.webp,.pdf"
+          accept={ACCEPTED_EXT.join(',')}
           className="sr-only"
           onChange={onInputChange}
         />
@@ -113,17 +118,23 @@ export function UploadZone({ onFile, loading }: UploadZoneProps) {
           <div className="rounded-xl bg-white p-3 shadow-sm">
             <FileText className="h-6 w-6 text-[#007AFF]" />
           </div>
+          <div className="rounded-xl bg-white p-3 shadow-sm">
+            <FileCode2 className="h-6 w-6 text-[#007AFF]" />
+          </div>
         </div>
         <div className="text-center">
           <p className="font-medium text-gray-800">
             Arrastra el plano aquí o{' '}
             <span className="text-[#007AFF]">selecciona archivo</span>
           </p>
-          <p className="mt-1 text-sm text-gray-500">JPG, PNG, WebP o PDF — máx. {MAX_MB} MB</p>
+          <p className="mt-1 text-sm text-gray-500">JPG, PNG, WebP, PDF o DXF — máx. {MAX_MB} MB</p>
         </div>
-        <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
-          <Upload className="h-4 w-4 text-gray-400" />
-          <span className="text-xs text-gray-500">Foto del plano impreso también funciona</span>
+        <div className="flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
+            <Upload className="h-4 w-4 text-gray-400" />
+            <span className="text-xs text-gray-500">DXF = geometría exacta de AutoCAD</span>
+          </div>
+          <span className="text-xs text-gray-400">PDF/foto = análisis con IA (Claude Vision)</span>
         </div>
       </label>
       {error && (

@@ -34,7 +34,10 @@ export default function PlanimetroPage() {
       const form = new FormData();
       form.append('file', file);
 
-      const res = await fetch('/api/planimetro/analizar', {
+      const esDxf = file.name.toLowerCase().endsWith('.dxf');
+      const endpoint = esDxf ? '/api/planimetro/analizar-dxf' : '/api/planimetro/analizar';
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         body: form,
       });
