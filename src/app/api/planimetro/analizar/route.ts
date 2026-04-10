@@ -82,15 +82,10 @@ export async function POST(req: NextRequest) {
             { type: 'text', text: PROMPT },
           ],
         },
-        // Prefill para forzar que empiece directamente con el JSON
-        {
-          role: 'assistant',
-          content: '{',
-        },
       ],
     });
 
-    const rawText = '{' + (message.content[0].type === 'text' ? message.content[0].text : '');
+    const rawText = message.content[0].type === 'text' ? message.content[0].text : '';
 
     let jsonLimpio: string;
     try {
