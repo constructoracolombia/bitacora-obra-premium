@@ -1,21 +1,11 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import dynamic from 'next/dynamic';
 import { LayoutGrid, Table2 } from 'lucide-react';
 import { UploadZone } from '@/components/planimetro/UploadZone';
 import { ResultadosAreas } from '@/components/planimetro/ResultadosAreas';
+import { Modelo3D } from '@/components/planimetro/Modelo3D';
 import type { ResultadoPlanimetro } from '@/components/planimetro/types';
-
-// Three.js solo en cliente
-const Modelo3D = dynamic(
-  () => import('@/components/planimetro/Modelo3D').then((m) => m.Modelo3D),
-  { ssr: false, loading: () => (
-    <div className="flex h-[420px] items-center justify-center rounded-xl border border-gray-200 bg-gray-50">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#007AFF] border-t-transparent" />
-    </div>
-  )}
-);
 
 type Vista = '3d' | 'tabla';
 

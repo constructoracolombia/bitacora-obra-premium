@@ -1,209 +1,191 @@
 'use client';
 
-import { Suspense, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Grid, Environment } from '@react-three/drei';
-import * as THREE from 'three';
-import type { ResultadoPlanimetro, Ambiente } from './types';
+import { useState } from 'react';
+import type { ResultadoPlanimetro } from './types';
 
 const COLORES = [
   '#4A9EFF', '#34C759', '#FF9500', '#FF6B6B', '#AF52DE',
-  '#5AC8FA', '#FFCC00', '#FF6B35', '#4CD964', '#007AFF',
+  '#5AC8FA', '#FFCC00', '#FF6B35', '#4CD964', '#0055D4',
 ];
 
-const ALTURA_MURO_DEFAULT = 2.6;
-const GROSOR_MURO = 0.15;
-
-interface AmbienteBoxProps {
-  ambiente: Ambiente;
-  color: string;
-  altura: number;
-  seleccionado: boolean;
-  onSelect: () => void;
-}
-
-function AmbienteBox({ ambiente, color, altura, seleccionado, onSelect }: AmbienteBoxProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-
-  useFrame(() => {
-    if (meshRef.current) {
-      const target = seleccionado ? 1.05 : hovered ? 1.02 : 1;
-      meshRef.current.scale.lerp(new THREE.Vector3(target, target, target), 0.1);
-    }
-  });
-
-  const { x, y, largo, ancho } = ambiente;
-  // Centrar la caja en su posición (x,y es esquina inferior izquierda)
-  const cx = x + largo / 2;
-  const cy = y + ancho / 2;
-
-  const colorObj = new THREE.Color(color);
-
-  return (
-    <group position={[cx, 0, cy]}>
-      {/* Piso */}
-      <mesh
-        ref={meshRef}
-        position={[0, 0.01, 0]}
-        onClick={onSelect}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
-      >
-        <boxGeometry args={[largo, 0.05, ancho]} />
-        <meshStandardMaterial
-          color={colorObj}
-          opacity={seleccionado ? 0.9 : 0.7}
-          transparent
-          roughness={0.4}
-          metalness={0.1}
-        />
-      </mesh>
-
-      {/* Muro Norte */}
-      <mesh position={[0, altura / 2, -ancho / 2 + GROSOR_MURO / 2]}>
-        <boxGeometry args={[largo, altura, GROSOR_MURO]} />
-        <meshStandardMaterial color={colorObj} opacity={0.85} transparent roughness={0.6} />
-      </mesh>
-      {/* Muro Sur */}
-      <mesh position={[0, altura / 2, ancho / 2 - GROSOR_MURO / 2]}>
-        <boxGeometry args={[largo, altura, GROSOR_MURO]} />
-        <meshStandardMaterial color={colorObj} opacity={0.85} transparent roughness={0.6} />
-      </mesh>
-      {/* Muro Oeste */}
-      <mesh position={[-largo / 2 + GROSOR_MURO / 2, altura / 2, 0]}>
-        <boxGeometry args={[GROSOR_MURO, altura, ancho]} />
-        <meshStandardMaterial color={colorObj} opacity={0.85} transparent roughness={0.6} />
-      </mesh>
-      {/* Muro Este */}
-      <mesh position={[largo / 2 - GROSOR_MURO / 2, altura / 2, 0]}>
-        <boxGeometry args={[GROSOR_MURO, altura, ancho]} />
-        <meshStandardMaterial color={colorObj} opacity={0.85} transparent roughness={0.6} />
-      </mesh>
-
-      {/* Etiqueta */}
-      {(hovered || seleccionado) && (
-        <Html position={[0, altura + 0.3, 0]} center>
-          <div className="pointer-events-none rounded-lg bg-white/95 px-3 py-2 shadow-lg text-center min-w-[120px]">
-            <p className="text-xs font-bold text-gray-800">{ambiente.nombre}</p>
-            <p className="text-xs text-gray-500">{ambiente.area_piso.toFixed(2)} m²</p>
-          </div>
-        </Html>
-      )}
-    </group>
-  );
-}
-
-function Escena({ data, seleccionado, onSelect }: {
-  data: ResultadoPlanimetro;
-  seleccionado: string | null;
-  onSelect: (id: string | null) => void;
-}) {
-  const altura = data.altura_piso_a_piso || ALTURA_MURO_DEFAULT;
-
-  // Calcular centro del modelo para centrarlo en la escena
-  const maxX = Math.max(...data.ambientes.map((a) => a.x + a.largo));
-  const maxY = Math.max(...data.ambientes.map((a) => a.y + a.ancho));
-  const offsetX = maxX / 2;
-  const offsetY = maxY / 2;
-
-  return (
-    <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[10, 15, 10]} intensity={1.2} castShadow />
-      <directionalLight position={[-5, 8, -5]} intensity={0.4} />
-
-      <group position={[-offsetX, 0, -offsetY]}>
-        {data.ambientes.map((ambiente, i) => (
-          <AmbienteBox
-            key={ambiente.id}
-            ambiente={ambiente}
-            color={COLORES[i % COLORES.length]}
-            altura={altura}
-            seleccionado={seleccionado === ambiente.id}
-            onSelect={() => onSelect(seleccionado === ambiente.id ? null : ambiente.id)}
-          />
-        ))}
-      </group>
-
-      <Grid
-        args={[50, 50]}
-        position={[0, 0, 0]}
-        cellColor="#e5e7eb"
-        sectionColor="#d1d5db"
-        cellSize={1}
-        sectionSize={5}
-        fadeDistance={30}
-        infiniteGrid
-      />
-
-      <OrbitControls
-        makeDefault
-        minDistance={3}
-        maxDistance={60}
-        maxPolarAngle={Math.PI / 2.05}
-      />
-    </>
-  );
-}
+const PADDING = 40; // px padding interno del SVG
 
 interface Props {
   data: ResultadoPlanimetro;
 }
 
+function fmt(n: number) {
+  return n.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function Modelo3D({ data }: Props) {
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
-  const ambienteSelec = data.ambientes.find((a) => a.id === seleccionado);
 
   if (!data.ambientes.length) return null;
 
-  return (
-    <div className="space-y-3">
-      <div className="relative h-[420px] overflow-hidden rounded-xl border border-gray-200 bg-[#F7F8FA]">
-        <Canvas
-          camera={{ position: [8, 10, 12], fov: 45 }}
-          shadows
-          gl={{ antialias: true }}
-        >
-          <Suspense fallback={null}>
-            <Escena data={data} seleccionado={seleccionado} onSelect={setSeleccionado} />
-          </Suspense>
-        </Canvas>
+  const ambienteSelec = data.ambientes.find((a) => a.id === seleccionado) ?? null;
 
-        {/* Controles hint */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-2">
-          <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] text-gray-500 shadow-sm">
-            🖱 Arrastrar para rotar · Scroll para zoom · Click en ambiente para detalle
-          </span>
+  // ── Calcular escala para que el plano quepa en el SVG ──────────────────
+  const maxX = Math.max(...data.ambientes.map((a) => a.x + a.largo));
+  const maxY = Math.max(...data.ambientes.map((a) => a.y + a.ancho));
+
+  const SVG_W = 680;
+  const SVG_H = Math.min(520, Math.max(300, (maxY / maxX) * SVG_W));
+  const scaleX = (SVG_W - PADDING * 2) / maxX;
+  const scaleY = (SVG_H - PADDING * 2) / maxY;
+  const scale  = Math.min(scaleX, scaleY);
+
+  // Convertir metros → px (SVG: Y invertido → ambientes crecen hacia abajo)
+  const px = (xM: number) => PADDING + xM * scale;
+  const py = (yM: number) => SVG_H - PADDING - (yM + 0) * scale; // flip Y
+  const pw = (m: number)  => Math.max(m * scale, 1);
+
+  return (
+    <div className="space-y-4">
+      {/* Plano 2D SVG */}
+      <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-[#F7F8FA]">
+        <svg
+          width="100%"
+          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+          style={{ display: 'block' }}
+        >
+          {/* Fondo cuadriculado */}
+          <defs>
+            <pattern id="grid" width={scale} height={scale} patternUnits="userSpaceOnUse"
+              x={PADDING} y={SVG_H - PADDING}>
+              <path d={`M ${scale} 0 L 0 0 0 ${scale}`} fill="none" stroke="#E5E7EB" strokeWidth="0.5" />
+            </pattern>
+          </defs>
+          <rect width={SVG_W} height={SVG_H} fill="url(#grid)" />
+
+          {/* Ambientes */}
+          {data.ambientes.map((a, i) => {
+            const x  = px(a.x);
+            const y  = py(a.y + a.ancho); // flip: top-left en SVG
+            const w  = pw(a.largo);
+            const h  = pw(a.ancho);
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+            const color = COLORES[i % COLORES.length];
+            const isSelected = seleccionado === a.id;
+            const fontSize = Math.max(9, Math.min(13, Math.min(w, h) / 4));
+
+            return (
+              <g
+                key={a.id}
+                onClick={() => setSeleccionado(isSelected ? null : a.id)}
+                style={{ cursor: 'pointer' }}
+              >
+                {/* Sombra selección */}
+                {isSelected && (
+                  <rect
+                    x={x - 3} y={y - 3} width={w + 6} height={h + 6}
+                    rx="4" fill="none"
+                    stroke={color} strokeWidth="2.5" strokeDasharray="5,3" opacity="0.7"
+                  />
+                )}
+                {/* Relleno */}
+                <rect
+                  x={x} y={y} width={w} height={h}
+                  rx="2"
+                  fill={color}
+                  fillOpacity={isSelected ? 0.35 : 0.18}
+                  stroke={color}
+                  strokeWidth={isSelected ? 2 : 1.5}
+                />
+                {/* Nombre */}
+                {w > 40 && h > 24 && (
+                  <text
+                    x={cx} y={cy - (fontSize * 0.6)}
+                    textAnchor="middle" dominantBaseline="middle"
+                    fontSize={fontSize} fontWeight="600" fill={color}
+                    style={{ userSelect: 'none' }}
+                  >
+                    {a.nombre.length > 14 ? a.nombre.slice(0, 13) + '…' : a.nombre}
+                  </text>
+                )}
+                {/* Área */}
+                {w > 40 && h > 38 && (
+                  <text
+                    x={cx} y={cy + (fontSize * 0.8)}
+                    textAnchor="middle" dominantBaseline="middle"
+                    fontSize={fontSize * 0.85} fill={color} opacity="0.8"
+                    style={{ userSelect: 'none' }}
+                  >
+                    {fmt(a.area_piso)} m²
+                  </text>
+                )}
+                {/* Cotas dimensión */}
+                {isSelected && w > 60 && (
+                  <>
+                    {/* Cota ancho (horizontal inferior) */}
+                    <line x1={x} y1={y+h+10} x2={x+w} y2={y+h+10} stroke={color} strokeWidth="1" />
+                    <line x1={x} y1={y+h+6} x2={x} y2={y+h+14} stroke={color} strokeWidth="1" />
+                    <line x1={x+w} y1={y+h+6} x2={x+w} y2={y+h+14} stroke={color} strokeWidth="1" />
+                    <text x={cx} y={y+h+22} textAnchor="middle" fontSize="9" fill={color} fontWeight="500">
+                      {fmt(a.largo)} m
+                    </text>
+                    {/* Cota alto (vertical derecha) */}
+                    <line x1={x+w+10} y1={y} x2={x+w+10} y2={y+h} stroke={color} strokeWidth="1" />
+                    <line x1={x+w+6} y1={y} x2={x+w+14} y2={y} stroke={color} strokeWidth="1" />
+                    <line x1={x+w+6} y1={y+h} x2={x+w+14} y2={y+h} stroke={color} strokeWidth="1" />
+                    <text
+                      x={x+w+22} y={cy}
+                      textAnchor="middle" dominantBaseline="middle"
+                      fontSize="9" fill={color} fontWeight="500"
+                      transform={`rotate(-90, ${x+w+22}, ${cy})`}
+                    >
+                      {fmt(a.ancho)} m
+                    </text>
+                  </>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Escala gráfica */}
+          {scale > 5 && (
+            <g transform={`translate(${PADDING}, ${SVG_H - 12})`}>
+              <line x1="0" y1="0" x2={scale * 5} y2="0" stroke="#9CA3AF" strokeWidth="2" />
+              <line x1="0" y1="-4" x2="0" y2="4" stroke="#9CA3AF" strokeWidth="1.5" />
+              <line x1={scale * 5} y1="-4" x2={scale * 5} y2="4" stroke="#9CA3AF" strokeWidth="1.5" />
+              <text x={scale * 2.5} y="-6" textAnchor="middle" fontSize="9" fill="#6B7280">5 m</text>
+            </g>
+          )}
+        </svg>
+
+        {/* Badge instrucción */}
+        <div className="absolute bottom-3 right-3 rounded-full bg-white/90 px-3 py-1 text-[11px] text-gray-500 shadow-sm">
+          Click en un ambiente para ver cotas
         </div>
 
-        {/* Panel detalle del ambiente seleccionado */}
+        {/* Panel detalle */}
         {ambienteSelec && (
-          <div className="absolute right-3 top-3 rounded-xl bg-white/95 p-4 shadow-lg min-w-[180px]">
+          <div className="absolute right-3 top-3 rounded-xl bg-white/97 p-4 shadow-lg min-w-[175px] border border-gray-100">
             <div className="flex items-center gap-2 mb-3">
               <span
-                className="h-3 w-3 rounded-full"
+                className="h-3 w-3 rounded-full shrink-0"
                 style={{ backgroundColor: COLORES[data.ambientes.indexOf(ambienteSelec) % COLORES.length] }}
               />
-              <p className="font-semibold text-gray-800 text-sm">{ambienteSelec.nombre}</p>
+              <p className="font-semibold text-gray-800 text-sm leading-tight">{ambienteSelec.nombre}</p>
             </div>
             <div className="space-y-1.5 text-xs text-gray-600">
               <div className="flex justify-between gap-4">
                 <span>Largo</span>
-                <span className="font-medium text-gray-800">{ambienteSelec.largo} m</span>
+                <span className="font-medium text-gray-800">{fmt(ambienteSelec.largo)} m</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Ancho</span>
-                <span className="font-medium text-gray-800">{ambienteSelec.ancho} m</span>
+                <span className="font-medium text-gray-800">{fmt(ambienteSelec.ancho)} m</span>
               </div>
-              <div className="border-t border-gray-100 pt-1.5">
+              <div className="border-t border-gray-100 pt-1.5 space-y-1">
                 <div className="flex justify-between gap-4">
                   <span>Área piso</span>
-                  <span className="font-bold text-[#007AFF]">{ambienteSelec.area_piso.toFixed(2)} m²</span>
+                  <span className="font-bold text-[#007AFF]">{fmt(ambienteSelec.area_piso)} m²</span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span>Área muros</span>
-                  <span className="font-bold text-green-600">{ambienteSelec.area_muros.toFixed(2)} m²</span>
+                  <span className="font-bold text-green-600">{fmt(ambienteSelec.area_muros)} m²</span>
                 </div>
               </div>
             </div>
@@ -211,7 +193,7 @@ export function Modelo3D({ data }: Props) {
         )}
       </div>
 
-      {/* Leyenda de colores */}
+      {/* Leyenda */}
       <div className="flex flex-wrap gap-2">
         {data.ambientes.map((a, i) => (
           <button
@@ -223,10 +205,8 @@ export function Modelo3D({ data }: Props) {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: COLORES[i % COLORES.length] }}
-            />
+            <span className="h-2 w-2 rounded-full shrink-0"
+              style={{ backgroundColor: COLORES[i % COLORES.length] }} />
             {a.nombre}
           </button>
         ))}
