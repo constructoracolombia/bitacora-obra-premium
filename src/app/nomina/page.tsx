@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, CheckCircle2, Clock, ChevronDown, ChevronRight, Loader2, Save } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Clock, ChevronDown, ChevronRight, Loader2, Save, Trash } from "lucide-react";
 
 const db = getSupabaseClient();
 
@@ -174,6 +174,13 @@ export default function NominaPage() {
     }
   }
 
+  async function eliminarNomina(id: string, label: string) {
+    if (!confirm(`¿Eliminar la nómina "${label}"? Esta acción no se puede deshacer.`)) return;
+    const { error } = await db.from("nomina_semanal").delete().eq("id", id);
+    if (error) { alert("Error eliminando: " + error.message); return; }
+    await cargarNominas();
+  }
+
   const totalActual = filas.reduce((s, f) => s + parseCOP(f.valor_pagado), 0);
 
   return (
@@ -284,6 +291,13 @@ export default function NominaPage() {
                     )}>
                       {n.estado === "pagado" ? "Pagado" : "Pendiente"}
                     </span>
+                    <button
+                      onClick={e => { e.stopPropagation(); eliminarNomina(n.id, n.semana_label); }}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Eliminar nómina"
+                    >
+                      <Trash className="size-4" />
+                    </button>
                     {expandedId === n.id ? <ChevronDown className="size-4 text-gray-400" /> : <ChevronRight className="size-4 text-gray-400" />}
                   </div>
                 </button>
