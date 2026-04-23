@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Providers } from "@/components/Providers";
+import { KeyGuard } from "@/components/KeyGuard";
 import { VersionCheck } from "./version-check";
 import "./globals.css";
 
@@ -59,14 +60,16 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <VersionCheck />
-        <Providers>
-          <div className="flex min-h-screen bg-white">
-            <Sidebar />
-            <main className="flex-1 overflow-auto transition-smooth">
-              {children}
-            </main>
-          </div>
-        </Providers>
+        <KeyGuard>
+          <Providers>
+            <div className="flex min-h-screen bg-white">
+              <Sidebar />
+              <main className="flex-1 overflow-auto transition-smooth">
+                {children}
+              </main>
+            </div>
+          </Providers>
+        </KeyGuard>
       </body>
     </html>
   );
