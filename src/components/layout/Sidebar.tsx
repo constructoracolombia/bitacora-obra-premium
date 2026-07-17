@@ -11,11 +11,8 @@ import {
   LayoutDashboard,
   ClipboardList,
   PlusCircle,
-  Package,
-  Hammer,
+  ShoppingCart,
   Calendar,
-  ScanLine,
-  Users,
   LogOut,
 } from "lucide-react";
 
@@ -23,11 +20,8 @@ const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Inicio", exact: true },
   { href: "/proyectos", icon: ClipboardList, label: "Proyectos" },
   { href: "/adicionales", icon: PlusCircle, label: "Adicionales" },
-  { href: "/requisiciones", icon: Package, label: "Requisiciones" },
-  { href: "/carpinterias", icon: Hammer, label: "Carpintería" },
+  { href: "/compras", icon: ShoppingCart, label: "Compras" },
   { href: "/calendario", icon: Calendar, label: "Calendario" },
-  { href: "/nomina", icon: Users, label: "Nómina" },
-  { href: "/planimetro", icon: ScanLine, label: "Planimetría IA" },
 ];
 
 export function Sidebar() {
