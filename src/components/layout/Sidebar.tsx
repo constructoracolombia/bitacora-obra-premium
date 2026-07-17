@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
   ChevronRight,
-  LayoutDashboard,
   ClipboardList,
   PlusCircle,
   ShoppingCart,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Inicio", exact: true },
   { href: "/proyectos", icon: ClipboardList, label: "Proyectos" },
   { href: "/adicionales", icon: PlusCircle, label: "Adicionales" },
   { href: "/compras", icon: ShoppingCart, label: "Compras" },
