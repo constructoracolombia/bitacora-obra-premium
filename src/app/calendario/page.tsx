@@ -59,6 +59,7 @@ export default function CalendarioPage() {
         .order("fecha_acta_inicio", { ascending: true });
 
       if (calError) throw calError;
+      console.log('calendario_proyectos (manual):', calData?.length, calData);
 
       const scheduledIds = new Set((calData || []).map((c: any) => c.proyecto_id));
 
@@ -72,6 +73,7 @@ export default function CalendarioPage() {
         .neq("estado", "CANCELADO");
 
       if (maestroError) throw maestroError;
+      console.log('proyectos_maestro candidatos:', maestroData?.length, maestroData);
 
       const autoEntries: ProyectoCalendario[] = (maestroData || [])
         .filter((m: any) => !scheduledIds.has(m.id))
@@ -95,7 +97,9 @@ export default function CalendarioPage() {
         _source: "calendario" as const,
       }));
 
-      setProyectos([...calEntries, ...autoEntries]);
+      const resultado = [...calEntries, ...autoEntries];
+      console.log('merge final:', resultado?.length, resultado);
+      setProyectos(resultado);
     } catch (err) {
       console.error("Error:", err);
     } finally {
