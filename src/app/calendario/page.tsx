@@ -67,12 +67,15 @@ export default function CalendarioPage() {
       const { data: maestroData, error: maestroError } = await supabase
         .from("proyectos_maestro")
         .select(
-          "id, proyecto_nombre, cliente_nombre, estado, presupuesto_total, fecha_acta_inicio, fecha_inicio, fecha_entrega_contractual"
+          "id, cliente_nombre, estado, presupuesto_total, fecha_acta_inicio, fecha_inicio, fecha_entrega_contractual"
         )
         .not("fecha_entrega_contractual", "is", null)
         .neq("estado", "CANCELADO");
 
-      if (maestroError) throw maestroError;
+      if (maestroError) {
+        console.error('Error en query proyectos_maestro:', maestroError);
+        throw maestroError;
+      }
       console.log('proyectos_maestro candidatos:', maestroData?.length, maestroData);
 
       const autoEntries: ProyectoCalendario[] = (maestroData || [])
@@ -86,7 +89,7 @@ export default function CalendarioPage() {
           notas: "",
           _source: "maestro" as const,
           proyecto: {
-            cliente_nombre: m.cliente_nombre || m.proyecto_nombre || "Sin nombre",
+            cliente_nombre: m.cliente_nombre || "Sin nombre",
             estado: (m.estado || "ACTIVO").toUpperCase(),
             presupuesto_total: m.presupuesto_total || 0,
           },
