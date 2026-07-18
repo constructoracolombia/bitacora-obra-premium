@@ -21,6 +21,7 @@ interface ProyectoCalendario {
   fecha_acta_inicio: string;
   fecha_entrega_programada: string;
   notas: string;
+  _source?: "calendario" | "maestro";
   proyecto: {
     cliente_nombre: string;
     estado: string;
@@ -49,18 +50,52 @@ export default function CalendarioPage() {
   async function cargarProyectos() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Query 1: entradas manuales en calendario_proyectos
+      const { data: calData, error: calError } = await supabase
         .from("calendario_proyectos")
         .select(
-          `
-          *,
-          proyecto:proyectos_maestro(cliente_nombre, estado, presupuesto_total)
-        `
+          `*, proyecto:proyectos_maestro(cliente_nombre, estado, presupuesto_total)`
         )
         .order("fecha_acta_inicio", { ascending: true });
 
-      if (error) throw error;
-      setProyectos(data || []);
+      if (calError) throw calError;
+
+      const scheduledIds = new Set((calData || []).map((c: any) => c.proyecto_id));
+
+      // Query 2: proyectos con fecha_entrega_contractual que no tienen entrada manual
+      const { data: maestroData, error: maestroError } = await supabase
+        .from("proyectos_maestro")
+        .select(
+          "id, proyecto_nombre, cliente_nombre, estado, presupuesto_total, fecha_acta_inicio, fecha_inicio, fecha_entrega_contractual"
+        )
+        .not("fecha_entrega_contractual", "is", null)
+        .neq("estado", "CANCELADO");
+
+      if (maestroError) throw maestroError;
+
+      const autoEntries: ProyectoCalendario[] = (maestroData || [])
+        .filter((m: any) => !scheduledIds.has(m.id))
+        .filter((m: any) => m.fecha_acta_inicio || m.fecha_inicio)
+        .map((m: any) => ({
+          id: m.id,
+          proyecto_id: m.id,
+          fecha_acta_inicio: m.fecha_acta_inicio || m.fecha_inicio,
+          fecha_entrega_programada: m.fecha_entrega_contractual,
+          notas: "",
+          _source: "maestro" as const,
+          proyecto: {
+            cliente_nombre: m.cliente_nombre || m.proyecto_nombre || "Sin nombre",
+            estado: (m.estado || "ACTIVO").toUpperCase(),
+            presupuesto_total: m.presupuesto_total || 0,
+          },
+        }));
+
+      const calEntries = (calData || []).map((c: any) => ({
+        ...c,
+        _source: "calendario" as const,
+      }));
+
+      setProyectos([...calEntries, ...autoEntries]);
     } catch (err) {
       console.error("Error:", err);
     } finally {
@@ -439,7 +474,9 @@ export default function CalendarioPage() {
                         {/* Nombre del proyecto */}
                         <div
                           onClick={() =>
-                            router.push(`/calendario/${proyecto.id}`)
+                            proyecto._source === "maestro"
+                              ? router.push(`/proyectos/${proyecto.id}`)
+                              : router.push(`/calendario/${proyecto.id}`)
                           }
                           className="w-64 flex-shrink-0 cursor-pointer border-r border-[#D2D2D7]/40 p-3"
                         >
@@ -482,7 +519,9 @@ export default function CalendarioPage() {
                           {/* Barra del proyecto */}
                           <div
                             onClick={() =>
-                              router.push(`/calendario/${proyecto.id}`)
+                              proyecto._source === "maestro"
+                              ? router.push(`/proyectos/${proyecto.id}`)
+                              : router.push(`/calendario/${proyecto.id}`)
                             }
                             className="absolute top-3 cursor-pointer"
                             style={{
