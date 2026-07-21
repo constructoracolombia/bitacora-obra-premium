@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useMemo, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
-import { ShoppingCart, Plus, X, CheckCircle2, Circle, ChevronDown } from "lucide-react";
+import { ShoppingCart, Plus, X, CheckCircle2, Circle, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -165,11 +165,13 @@ export default function ComprasPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState<string | null>(null);
 
   const [filtroProyecto, setFiltroProyecto] = useState("TODOS");
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
 
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editando, setEditando] = useState<Compra | null>(null);
   const [form, setForm] = useState({ item: "", cantidad: "1", unidad: "und", proyecto_id: "" });
 
   useEffect(() => {
@@ -236,20 +238,59 @@ export default function ComprasPage() {
     setToggling(null);
   }
 
-  async function agregarCompra() {
+  function abrirAgregar() {
+    setEditando(null);
+    setForm({ item: "", cantidad: "1", unidad: "und", proyecto_id: "" });
+    setMostrarForm(true);
+  }
+
+  function abrirEditar(compra: Compra) {
+    setEditando(compra);
+    setForm({
+      item: compra.item,
+      cantidad: String(compra.cantidad),
+      unidad: compra.unidad,
+      proyecto_id: compra.proyecto_id,
+    });
+    setMostrarForm(true);
+  }
+
+  function cerrarModal() {
+    setMostrarForm(false);
+    setEditando(null);
+  }
+
+  async function guardarCompra() {
     if (!form.item.trim() || !form.proyecto_id) return;
     setSaving(true);
-    const { error } = await supabase.from("compras").insert({
+
+    const payload = {
       item: form.item.trim(),
       cantidad: parseFloat(form.cantidad) || 1,
       unidad: form.unidad.trim() || "und",
       proyecto_id: form.proyecto_id,
-    });
+    };
+
+    const { error } = editando
+      ? await supabase.from("compras").update(payload).eq("id", editando.id)
+      : await supabase.from("compras").insert(payload);
+
     setSaving(false);
     if (error) { alert("Error: " + error.message); return; }
-    setForm((f) => ({ ...f, item: "", cantidad: "1", unidad: "und" }));
-    setMostrarForm(false);
+    cerrarModal();
     await cargar();
+  }
+
+  async function eliminarCompra(compra: Compra) {
+    if (!window.confirm(`¿Eliminar "${compra.item}"?`)) return;
+    setEliminando(compra.id);
+    const { error } = await supabase.from("compras").delete().eq("id", compra.id);
+    if (error) {
+      alert("Error: " + error.message);
+    } else {
+      setCompras((prev) => prev.filter((c) => c.id !== compra.id));
+    }
+    setEliminando(null);
   }
 
   const comprasFiltradas = compras.filter((c) => {
@@ -275,7 +316,7 @@ export default function ComprasPage() {
             Lista global de materiales · todas las obras
           </p>
         </div>
-        <Button onClick={() => setMostrarForm(true)}>
+        <Button onClick={abrirAgregar}>
           <Plus className="size-4 mr-1" />
           Agregar compra
         </Button>
@@ -359,6 +400,7 @@ export default function ComprasPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-500 w-20">Unidad</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">Proyecto</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Comprado el</th>
+                <th className="px-4 py-3 w-20" />
               </tr>
             </thead>
             <tbody>
@@ -408,6 +450,25 @@ export default function ComprasPage() {
                       ? format(new Date(compra.comprado_at), "d MMM yyyy", { locale: es })
                       : "—"}
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => abrirEditar(compra)}
+                        title="Editar"
+                        className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={() => void eliminarCompra(compra)}
+                        disabled={eliminando === compra.id}
+                        title="Eliminar"
+                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -415,17 +476,19 @@ export default function ComprasPage() {
         </div>
       )}
 
-      {/* Modal agregar compra */}
+      {/* Modal agregar / editar compra */}
       {mostrarForm && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setMostrarForm(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) cerrarModal(); }}
         >
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Agregar compra</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {editando ? "Editar compra" : "Agregar compra"}
+              </h2>
               <button
-                onClick={() => setMostrarForm(false)}
+                onClick={cerrarModal}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="size-5" />
@@ -441,7 +504,7 @@ export default function ComprasPage() {
                   autoFocus
                   value={form.item}
                   onChange={(e) => setForm((f) => ({ ...f, item: e.target.value }))}
-                  onKeyDown={(e) => e.key === "Enter" && void agregarCompra()}
+                  onKeyDown={(e) => e.key === "Enter" && void guardarCompra()}
                   placeholder="ej. Sanitario Corona Lyra"
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -491,14 +554,14 @@ export default function ComprasPage() {
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setMostrarForm(false)}>
+              <Button variant="ghost" onClick={cerrarModal}>
                 Cancelar
               </Button>
               <Button
-                onClick={() => void agregarCompra()}
+                onClick={() => void guardarCompra()}
                 disabled={saving || !form.item.trim() || !form.proyecto_id}
               >
-                {saving ? "Guardando..." : "Agregar"}
+                {saving ? "Guardando..." : editando ? "Guardar cambios" : "Agregar"}
               </Button>
             </div>
           </div>
