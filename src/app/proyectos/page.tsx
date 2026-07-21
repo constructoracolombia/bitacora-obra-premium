@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Plus, Search, X, ChevronRight, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
@@ -115,14 +115,14 @@ export default function ProyectosPage() {
   );
 
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-white p-4 sm:p-8">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">Proyectos</h1>
           <Button
             onClick={() => router.push("/proyectos/nuevo")}
-            className="bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
+            className="h-11 bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5] sm:h-9"
           >
             <Plus className="mr-2 h-4 w-4" />
             Nuevo Proyecto
@@ -138,7 +138,7 @@ export default function ProyectosPage() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar por nombre o dirección..."
-              className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-9 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
+              className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-9 text-gray-900 placeholder:text-gray-400 focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10 sm:h-10"
             />
             {busqueda && (
               <button
@@ -150,14 +150,14 @@ export default function ProyectosPage() {
             )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-2 overflow-x-auto">
               {ESTADOS.map((e) => (
                 <button
                   key={e}
                   onClick={() => setFiltro(e)}
                   className={cn(
-                    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    "shrink-0 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors sm:py-1.5",
                     filtro === e
                       ? "bg-[#007AFF] text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -169,7 +169,7 @@ export default function ProyectosPage() {
             </div>
 
             {!loading && (
-              <span className="text-xs text-gray-400">
+              <span className="shrink-0 text-xs text-gray-400 sm:pl-2">
                 {proyectosFiltrados.length} proyecto{proyectosFiltrados.length !== 1 ? "s" : ""}
               </span>
             )}
@@ -203,9 +203,119 @@ export default function ProyectosPage() {
           </div>
         )}
 
-        {/* Tabla con acordeón */}
+        {/* Tarjetas con acordeón — móvil */}
         {!loading && proyectosFiltrados.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-gray-200">
+          <div className="space-y-3 md:hidden">
+            {proyectosFiltrados.map((proyecto) => {
+              const pendientes = comprasPendientes.get(proyecto.id) ?? [];
+              const expandido = expandidos.has(proyecto.id);
+
+              return (
+                <div key={proyecto.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                  <div
+                    onClick={() => router.push(`/proyectos/${proyecto.id}`)}
+                    className="cursor-pointer p-3.5 active:bg-gray-50"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-semibold text-gray-900">{proyecto.cliente_nombre}</span>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+                              ESTADO_BADGE[proyecto.estado] ?? "bg-gray-50 text-gray-600 ring-1 ring-gray-200"
+                            )}
+                          >
+                            {proyecto.estado.charAt(0) + proyecto.estado.slice(1).toLowerCase()}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-sm text-gray-500">{proyecto.direccion || "—"}</p>
+                      </div>
+                      <button
+                        onClick={(e) => toggleExpand(proyecto.id, e)}
+                        title={expandido ? "Colapsar" : "Ver compras pendientes"}
+                        className="flex size-11 shrink-0 items-center justify-center rounded-lg active:bg-gray-100"
+                      >
+                        {expandido ? (
+                          <ChevronUp className="size-4 text-gray-500" />
+                        ) : pendientes.length > 0 ? (
+                          <ChevronDown className="size-4 text-orange-400" />
+                        ) : (
+                          <ChevronRight className="size-4 text-gray-300" />
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between text-sm">
+                      <span className="font-medium text-gray-900 tabular-nums">
+                        {formatoCOP(proyecto.presupuesto_total ?? 0)}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {proyecto.fecha_inicio
+                          ? new Date(proyecto.fecha_inicio + "T12:00:00").toLocaleDateString("es-CO", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : "—"}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {pendientes.length > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                          {pendientes.length} por comprar
+                        </span>
+                      )}
+                      {proyecto.app_origen === "FINANZAS" && (
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 ring-1 ring-blue-200">
+                          Finanzas
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Compras pendientes expandidas */}
+                  {expandido && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="border-t border-orange-100 bg-orange-50/30 px-3.5 py-3"
+                    >
+                      {pendientes.length === 0 ? (
+                        <p className="text-xs text-gray-400">Sin compras pendientes</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {pendientes.map((c, idx) => (
+                            <span
+                              key={idx}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1.5 text-xs",
+                                c.urgente ? "border-red-300 bg-red-50/60" : "border-orange-200"
+                              )}
+                            >
+                              {c.urgente && <AlertTriangle className="size-3 text-red-500" />}
+                              <span className="font-medium text-gray-800">{c.item}</span>
+                              <span className="text-gray-400">
+                                {Number(c.cantidad) % 1 === 0
+                                  ? Number(c.cantidad).toFixed(0)
+                                  : c.cantidad}{" "}
+                                {c.unidad}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Tabla con acordeón — desktop */}
+        {!loading && proyectosFiltrados.length > 0 && (
+          <div className="hidden overflow-hidden rounded-xl border border-gray-200 md:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -225,9 +335,8 @@ export default function ProyectosPage() {
                     const expandido = expandidos.has(proyecto.id);
 
                     return (
-                      <>
+                      <Fragment key={proyecto.id}>
                         <tr
-                          key={proyecto.id}
                           onClick={() => router.push(`/proyectos/${proyecto.id}`)}
                           className={cn(
                             "cursor-pointer border-b border-gray-100 transition-colors",
@@ -339,7 +448,7 @@ export default function ProyectosPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>

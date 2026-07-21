@@ -270,7 +270,7 @@ export default function CalendarioPage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[95vw] items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-[95vw] items-center justify-between px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
             <Calendar className="size-6 text-[#007AFF]" />
             <h1 className="text-xl font-semibold tracking-tight text-[#1D1D1F]">
@@ -279,19 +279,28 @@ export default function CalendarioPage() {
           </div>
           <Button
             onClick={() => router.push("/calendario/nuevo")}
-            className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
+            className="h-11 rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5] sm:h-9"
           >
             <Plus className="size-4" />
-            Programar Proyecto
+            <span className="hidden sm:inline">Programar Proyecto</span>
           </Button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[95vw] px-6 py-6">
+      <main className="mx-auto max-w-[95vw] px-4 py-6 sm:px-6">
+        {/* Aviso móvil — el Gantt necesita pantalla grande */}
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-[#FF9500]/30 bg-[#FF9500]/5 p-3 text-[13px] text-[#1D1D1F] md:hidden">
+          <Calendar className="mt-0.5 size-4 shrink-0 text-[#FF9500]" />
+          <span>
+            La programación (Gantt) se ve mejor en pantalla grande. Aquí abajo tienes una lista
+            simplificada con fechas y estado de cada proyecto.
+          </span>
+        </div>
+
         {/* Controles */}
-        <div className="mb-4 flex items-center justify-between rounded-2xl border border-[#D2D2D7]/60 bg-white p-4">
-          <div className="flex items-center gap-4">
-            {/* Vista toggle */}
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#D2D2D7]/60 bg-white p-4 md:flex-row md:items-center md:justify-between">
+          {/* Vista toggle + navegación — solo aplican al Gantt, oculto en móvil */}
+          <div className="hidden items-center gap-4 md:flex">
             <div className="flex overflow-hidden rounded-lg border border-[#D2D2D7]">
               {VISTAS.map((v) => (
                 <button
@@ -335,28 +344,30 @@ export default function CalendarioPage() {
           </div>
 
           {/* Filtros de estado */}
-          <div className="flex items-center gap-2">
-            <Filter className="size-4 text-[#86868B]" />
-            {ESTADOS_FILTRO.map((estado) => (
-              <button
-                key={estado}
-                onClick={() => setFiltroEstado(estado)}
-                className={cn(
-                  "rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
-                  filtroEstado === estado
-                    ? "bg-[#007AFF] text-white"
-                    : "bg-[#F5F5F7] text-[#1D1D1F] hover:bg-[#E8E8ED]"
-                )}
-              >
-                {estado === "TODOS"
-                  ? "Todos"
-                  : estado.charAt(0) + estado.slice(1).toLowerCase()}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="hidden size-4 shrink-0 text-[#86868B] sm:block" />
+            <div className="flex flex-wrap gap-2">
+              {ESTADOS_FILTRO.map((estado) => (
+                <button
+                  key={estado}
+                  onClick={() => setFiltroEstado(estado)}
+                  className={cn(
+                    "rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors sm:py-1.5",
+                    filtroEstado === estado
+                      ? "bg-[#007AFF] text-white"
+                      : "bg-[#F5F5F7] text-[#1D1D1F] hover:bg-[#E8E8ED]"
+                  )}
+                >
+                  {estado === "TODOS"
+                    ? "Todos"
+                    : estado.charAt(0) + estado.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
 
             {/* Ordenamiento */}
-            <div className="ml-4 flex items-center gap-2 border-l border-[#D2D2D7] pl-4">
-              <span className="text-[13px] text-[#86868B]">Ordenar:</span>
+            <div className="flex items-center gap-2 border-[#D2D2D7] pl-0 sm:ml-4 sm:border-l sm:pl-4">
+              <span className="hidden text-[13px] text-[#86868B] sm:inline">Ordenar:</span>
               <select
                 value={ordenamiento}
                 onChange={(e) =>
@@ -364,7 +375,7 @@ export default function CalendarioPage() {
                     e.target.value as "nombre" | "fecha_inicio" | "fecha_fin"
                   )
                 }
-                className="rounded-lg border border-[#D2D2D7] px-3 py-1.5 text-[13px] text-[#1D1D1F] transition-colors focus:border-[#007AFF] focus:outline-none focus:ring-1 focus:ring-[#007AFF]"
+                className="h-11 rounded-lg border border-[#D2D2D7] px-3 text-[13px] text-[#1D1D1F] transition-colors focus:border-[#007AFF] focus:outline-none focus:ring-1 focus:ring-[#007AFF] sm:h-auto sm:py-1.5"
               >
                 <option value="fecha_fin">Fecha entrega (próxima primero)</option>
                 <option value="fecha_inicio">Fecha inicio</option>
@@ -374,13 +385,106 @@ export default function CalendarioPage() {
           </div>
         </div>
 
-        {/* Gantt Chart */}
+        {/* Lista simplificada — móvil */}
         {loading ? (
-          <div className="flex min-h-[400px] items-center justify-center">
+          <div className="flex min-h-[300px] items-center justify-center md:hidden">
             <div className="size-8 animate-spin rounded-full border-4 border-[#007AFF] border-r-transparent" />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-[#D2D2D7]/60 bg-white shadow-sm">
+          <div className="mb-6 space-y-3 md:hidden">
+            {proyectosFiltrados.length === 0 ? (
+              <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center">
+                <Calendar className="size-10 text-[#D2D2D7]" />
+                <p className="text-[14px] text-[#86868B]">No hay proyectos programados</p>
+              </div>
+            ) : (
+              proyectosFiltrados.map((proyecto) => {
+                const progreso = calcularProgreso(
+                  proyecto.fecha_acta_inicio,
+                  proyecto.fecha_entrega_programada
+                );
+                const ahora = new Date();
+                const fechaFin = new Date(proyecto.fecha_entrega_programada);
+                const estaRetrasado =
+                  ahora > fechaFin && proyecto.proyecto.estado !== "FINALIZADO";
+
+                return (
+                  <div
+                    key={proyecto.id}
+                    onClick={() =>
+                      proyecto._source === "maestro"
+                        ? router.push(`/proyectos/${proyecto.id}`)
+                        : router.push(`/calendario/${proyecto.id}`)
+                    }
+                    className="cursor-pointer rounded-xl border border-[#D2D2D7]/60 bg-white p-3.5 active:bg-[#FAFAFA]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-base font-medium text-[#1D1D1F]">
+                        {proyecto.proyecto.cliente_nombre}
+                      </span>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                          proyecto.proyecto.estado === "ACTIVO"
+                            ? "bg-[#34C759]/10 text-[#34C759]"
+                            : proyecto.proyecto.estado === "PAUSADO"
+                              ? "bg-[#FF9500]/10 text-[#FF9500]"
+                              : "bg-[#86868B]/10 text-[#86868B]"
+                        )}
+                      >
+                        {proyecto.proyecto.estado}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
+                      <div
+                        className={cn(
+                          "h-full rounded-full",
+                          estaRetrasado ? "bg-[#FF3B30]" : "bg-[#007AFF]"
+                        )}
+                        style={{ width: `${progreso}%` }}
+                      />
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between text-xs text-[#86868B]">
+                      <span>
+                        {new Date(proyecto.fecha_acta_inicio).toLocaleDateString("es-CO", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                        {" → "}
+                        {new Date(proyecto.fecha_entrega_programada).toLocaleDateString("es-CO", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                      {estaRetrasado ? (
+                        <span className="font-semibold text-[#FF3B30]">Retrasado</span>
+                      ) : (
+                        <span>
+                          {calcularDiasHabiles(
+                            proyecto.fecha_acta_inicio,
+                            proyecto.fecha_entrega_programada
+                          )}{" "}
+                          d háb
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Gantt Chart — desktop */}
+        {loading ? (
+          <div className="hidden min-h-[400px] items-center justify-center md:flex">
+            <div className="size-8 animate-spin rounded-full border-4 border-[#007AFF] border-r-transparent" />
+          </div>
+        ) : (
+          <div className="hidden overflow-x-auto rounded-2xl border border-[#D2D2D7]/60 bg-white shadow-sm md:block">
             <div className="min-w-[1200px]">
               {/* Header de fechas */}
               <div className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-[#FAFAFA]">
@@ -599,8 +703,8 @@ export default function CalendarioPage() {
           </div>
         )}
 
-        {/* Leyenda */}
-        <div className="mt-4 flex items-center gap-6 text-[13px] text-[#86868B]">
+        {/* Leyenda — solo aplica al Gantt de desktop */}
+        <div className="mt-4 hidden items-center gap-6 text-[13px] text-[#86868B] md:flex">
           <div className="flex items-center gap-2">
             <div className="size-3 rounded-sm bg-[#007AFF]" />
             <span>Activo</span>

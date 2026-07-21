@@ -188,7 +188,7 @@ export default function ComprasPage() {
             Lista global de materiales · todas las obras
           </p>
         </div>
-        <Button onClick={abrirAgregar}>
+        <Button onClick={abrirAgregar} className="h-11 sm:h-9">
           <Plus className="size-4 mr-1" />
           Agregar compra
         </Button>
@@ -218,10 +218,10 @@ export default function ComprasPage() {
           proyectos={proyectos}
           incluirTodos
           placeholder="Todos los proyectos"
-          className="min-w-[220px]"
+          className="w-full sm:w-auto sm:min-w-[220px]"
         />
 
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-white text-sm">
+        <div className="flex w-full rounded-lg border border-gray-200 overflow-hidden bg-white text-sm sm:w-auto">
           {[
             { key: "TODOS", label: "Todos" },
             { key: "pendiente", label: "Pendientes" },
@@ -232,7 +232,7 @@ export default function ComprasPage() {
               key={f.key}
               onClick={() => setFiltroEstado(f.key)}
               className={cn(
-                "px-3 py-1.5 font-medium transition-colors",
+                "flex-1 px-3 py-3 font-medium transition-colors sm:flex-none sm:py-1.5",
                 filtroEstado === f.key
                   ? f.key === "urgente" ? "bg-red-500 text-white" : "bg-blue-600 text-white"
                   : "text-gray-600 hover:bg-gray-50"
@@ -253,7 +253,7 @@ export default function ComprasPage() {
         )}
       </div>
 
-      {/* Tabla */}
+      {/* Tabla (desktop) / Tarjetas (móvil) */}
       {loading ? (
         <div className="flex justify-center py-16 text-gray-400 text-sm">Cargando...</div>
       ) : comprasFiltradas.length === 0 ? (
@@ -263,54 +263,144 @@ export default function ComprasPage() {
             : "Sin resultados para los filtros seleccionados."}
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 w-10" />
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Ítem</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 w-24">Cantidad</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 w-20">Unidad</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Proyecto</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Comprado el</th>
-                <th className="px-4 py-3 w-20" />
-              </tr>
-            </thead>
-            <tbody>
-              {comprasFiltradas.map((compra) => (
-                <tr
-                  key={compra.id}
-                  className={cn(
-                    "border-b border-gray-100 last:border-0 transition-colors",
-                    compra.comprado
-                      ? "bg-green-50/50"
-                      : compra.urgente
-                      ? "bg-red-50/50 hover:bg-red-50/80"
-                      : "hover:bg-gray-50/60"
-                  )}
-                >
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => void toggleComprado(compra)}
-                      disabled={toggling === compra.id}
-                      title={compra.comprado ? "Marcar como pendiente" : "Marcar como comprado"}
-                      className="transition-transform hover:scale-110 disabled:opacity-50"
-                    >
-                      {compra.comprado ? (
-                        <CheckCircle2 className="size-5 text-green-500" />
-                      ) : (
-                        <Circle className="size-5 text-gray-300 hover:text-blue-400" />
-                      )}
-                    </button>
-                  </td>
-                  <td
+        <>
+          {/* Tabla — desktop */}
+          <div className="hidden rounded-xl border border-gray-200 overflow-hidden bg-white md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-10" />
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Ítem</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-24">Cantidad</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-20">Unidad</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Proyecto</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Comprado el</th>
+                  <th className="px-4 py-3 w-20" />
+                </tr>
+              </thead>
+              <tbody>
+                {comprasFiltradas.map((compra) => (
+                  <tr
+                    key={compra.id}
                     className={cn(
-                      "px-4 py-3 font-medium",
-                      compra.comprado ? "line-through text-gray-400" : "text-gray-900"
+                      "border-b border-gray-100 last:border-0 transition-colors",
+                      compra.comprado
+                        ? "bg-green-50/50"
+                        : compra.urgente
+                        ? "bg-red-50/50 hover:bg-red-50/80"
+                        : "hover:bg-gray-50/60"
                     )}
                   >
-                    <div className="flex items-center gap-2">
-                      {compra.item}
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => void toggleComprado(compra)}
+                        disabled={toggling === compra.id}
+                        title={compra.comprado ? "Marcar como pendiente" : "Marcar como comprado"}
+                        className="transition-transform hover:scale-110 disabled:opacity-50"
+                      >
+                        {compra.comprado ? (
+                          <CheckCircle2 className="size-5 text-green-500" />
+                        ) : (
+                          <Circle className="size-5 text-gray-300 hover:text-blue-400" />
+                        )}
+                      </button>
+                    </td>
+                    <td
+                      className={cn(
+                        "px-4 py-3 font-medium",
+                        compra.comprado ? "line-through text-gray-400" : "text-gray-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        {compra.item}
+                        {compra.urgente && !compra.comprado && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                            <AlertTriangle className="size-2.5" />
+                            Urgente
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 tabular-nums">
+                      {Number(compra.cantidad) % 1 === 0
+                        ? Number(compra.cantidad).toFixed(0)
+                        : Number(compra.cantidad).toString()}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">{compra.unidad}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                        {compra.proyecto_nombre}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-400">
+                      {compra.comprado_at
+                        ? format(new Date(compra.comprado_at), "d MMM yyyy", { locale: es })
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => abrirEditar(compra)}
+                          title="Editar"
+                          className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={() => void eliminarCompra(compra)}
+                          disabled={eliminando === compra.id}
+                          title="Eliminar"
+                          className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Tarjetas — móvil */}
+          <div className="space-y-3 md:hidden">
+            {comprasFiltradas.map((compra) => (
+              <div
+                key={compra.id}
+                className={cn(
+                  "rounded-xl border p-3",
+                  compra.comprado
+                    ? "border-green-200 bg-green-50/40"
+                    : compra.urgente
+                    ? "border-red-200 bg-red-50/50"
+                    : "border-gray-200 bg-white"
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  {/* Checkbox — área táctil 44×44 */}
+                  <button
+                    onClick={() => void toggleComprado(compra)}
+                    disabled={toggling === compra.id}
+                    title={compra.comprado ? "Marcar como pendiente" : "Marcar como comprado"}
+                    className="flex size-11 shrink-0 items-center justify-center rounded-lg active:bg-gray-100 disabled:opacity-50"
+                  >
+                    {compra.comprado ? (
+                      <CheckCircle2 className="size-7 text-green-500" />
+                    ) : (
+                      <Circle className="size-7 text-gray-300" />
+                    )}
+                  </button>
+
+                  <div className="min-w-0 flex-1 pt-2.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "text-base font-semibold",
+                          compra.comprado ? "text-gray-400 line-through" : "text-gray-900"
+                        )}
+                      >
+                        {compra.item}
+                      </span>
                       {compra.urgente && !compra.comprado && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
                           <AlertTriangle className="size-2.5" />
@@ -318,63 +408,63 @@ export default function ComprasPage() {
                         </span>
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 tabular-nums">
-                    {Number(compra.cantidad) % 1 === 0
-                      ? Number(compra.cantidad).toFixed(0)
-                      : Number(compra.cantidad).toString()}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{compra.unidad}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                      {compra.proyecto_nombre}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-400">
-                    {compra.comprado_at
-                      ? format(new Date(compra.comprado_at), "d MMM yyyy", { locale: es })
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => abrirEditar(compra)}
-                        title="Editar"
-                        className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button
-                        onClick={() => void eliminarCompra(compra)}
-                        disabled={eliminando === compra.id}
-                        title="Eliminar"
-                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
+                      <span className="tabular-nums">
+                        {Number(compra.cantidad) % 1 === 0
+                          ? Number(compra.cantidad).toFixed(0)
+                          : Number(compra.cantidad).toString()}{" "}
+                        {compra.unidad}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        {compra.proyecto_nombre}
+                      </span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    {compra.comprado_at && (
+                      <div className="mt-1 text-xs text-gray-400">
+                        Comprado el {format(new Date(compra.comprado_at), "d MMM yyyy", { locale: es })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Editar/eliminar — separados del checkbox para evitar toques accidentales */}
+                <div className="mt-2 flex justify-end gap-1 border-t border-gray-100 pt-1">
+                  <button
+                    onClick={() => abrirEditar(compra)}
+                    title="Editar"
+                    className="flex size-11 items-center justify-center rounded-lg text-gray-400 active:bg-blue-50 active:text-blue-600"
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                  <button
+                    onClick={() => void eliminarCompra(compra)}
+                    disabled={eliminando === compra.id}
+                    title="Eliminar"
+                    className="flex size-11 items-center justify-center rounded-lg text-gray-400 active:bg-red-50 active:text-red-600 disabled:opacity-40"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
-      {/* Modal agregar / editar compra */}
+      {/* Modal agregar / editar compra — bottom sheet en móvil, modal centrado en desktop */}
       {mostrarForm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
           onClick={(e) => { if (e.target === e.currentTarget) cerrarModal(); }}
         >
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+          <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:max-w-md sm:rounded-2xl sm:p-6 sm:pb-6">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">
                 {editando ? "Editar compra" : "Agregar compra"}
               </h2>
               <button
                 onClick={cerrarModal}
-                className="text-gray-400 hover:text-gray-600"
+                className="flex size-11 items-center justify-center rounded-lg text-gray-400 active:bg-gray-100 sm:size-8 sm:hover:text-gray-600"
               >
                 <X className="size-5" />
               </button>
@@ -391,7 +481,7 @@ export default function ComprasPage() {
                   onChange={(e) => setForm((f) => ({ ...f, item: e.target.value }))}
                   onKeyDown={(e) => e.key === "Enter" && void guardarCompra()}
                   placeholder="ej. Sanitario Corona Lyra"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -406,17 +496,17 @@ export default function ComprasPage() {
                     step="any"
                     value={form.cantidad}
                     onChange={(e) => setForm((f) => ({ ...f, cantidad: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div className="w-32">
+                <div className="w-28 sm:w-32">
                   <label className="mb-1 block text-sm font-medium text-gray-700">Unidad</label>
                   <input
                     list="unidades-list"
                     value={form.unidad}
                     onChange={(e) => setForm((f) => ({ ...f, unidad: e.target.value }))}
                     placeholder="und"
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <datalist id="unidades-list">
                     {UNIDADES_COMUNES.map((u) => <option key={u} value={u} />)}
@@ -437,12 +527,12 @@ export default function ComprasPage() {
                 />
               </div>
 
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 has-[:checked]:border-red-200 has-[:checked]:bg-red-50">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 has-[:checked]:border-red-200 has-[:checked]:bg-red-50">
                 <input
                   type="checkbox"
                   checked={form.urgente}
                   onChange={(e) => setForm((f) => ({ ...f, urgente: e.target.checked }))}
-                  className="size-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                  className="size-5 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
                 <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
                   <AlertTriangle className="size-3.5 text-red-500" />
@@ -451,13 +541,14 @@ export default function ComprasPage() {
               </label>
             </div>
 
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="ghost" onClick={cerrarModal}>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button variant="ghost" onClick={cerrarModal} className="h-12 w-full sm:h-9 sm:w-auto">
                 Cancelar
               </Button>
               <Button
                 onClick={() => void guardarCompra()}
                 disabled={saving || !form.item.trim() || !form.proyecto_id}
+                className="h-12 w-full sm:h-9 sm:w-auto"
               >
                 {saving ? "Guardando..." : editando ? "Guardar cambios" : "Agregar"}
               </Button>

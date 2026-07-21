@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { Providers } from "@/components/Providers";
 import { KeyGuard } from "@/components/KeyGuard";
 import { VersionCheck } from "./version-check";
@@ -64,9 +65,10 @@ export default function RootLayout({
           <Providers>
             <div className="flex min-h-screen bg-white">
               <Sidebar />
-              <main className="flex-1 overflow-auto transition-smooth">
+              <main className="flex-1 overflow-auto pb-16 transition-smooth md:pb-0">
                 {children}
               </main>
+              <MobileBottomNav />
             </div>
           </Providers>
         </KeyGuard>

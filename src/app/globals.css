@@ -193,3 +193,21 @@ body {
 .scrollbar-card {
   scrollbar-color: #C7C7CC var(--card);
 }
+
+/* ============================================
+   Móvil — evita zoom automático de iOS al enfocar
+   inputs con font-size < 16px, y da espacio seguro
+   al bottom nav en dispositivos con notch/home indicator.
+   ============================================ */
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

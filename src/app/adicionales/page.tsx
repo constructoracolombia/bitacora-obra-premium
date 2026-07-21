@@ -132,7 +132,7 @@ export default function AdicionalesPage() {
             Trabajos adicionales por proyecto · flujo de aprobación y pago
           </p>
         </div>
-        <Button onClick={() => router.push("/adicionales/nuevo")}>
+        <Button onClick={() => router.push("/adicionales/nuevo")} className="h-11 sm:h-9">
           <Plus className="size-4 mr-1" />
           Nuevo Adicional
         </Button>
@@ -146,16 +146,16 @@ export default function AdicionalesPage() {
           proyectos={proyectos}
           incluirTodos
           placeholder="Todos los proyectos"
-          className="min-w-[220px]"
+          className="w-full sm:w-auto sm:min-w-[220px]"
         />
 
-        <div className="flex flex-wrap rounded-lg border border-gray-200 overflow-hidden bg-white text-sm">
+        <div className="flex w-full flex-wrap rounded-lg border border-gray-200 overflow-hidden bg-white text-sm sm:w-auto">
           {FILTROS_ESTADO.map((f) => (
             <button
               key={f.key}
               onClick={() => setFiltroEstado(f.key)}
               className={cn(
-                "px-3 py-1.5 font-medium transition-colors whitespace-nowrap",
+                "px-3 py-2.5 font-medium transition-colors whitespace-nowrap sm:py-1.5",
                 filtroEstado === f.key
                   ? "bg-blue-600 text-white"
                   : "text-gray-600 hover:bg-gray-50"
@@ -166,11 +166,11 @@ export default function AdicionalesPage() {
           ))}
         </div>
 
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-white text-sm">
+        <div className="flex w-full rounded-lg border border-gray-200 overflow-hidden bg-white text-sm sm:w-auto">
           <button
             onClick={() => setVista("activos")}
             className={cn(
-              "px-3 py-1.5 font-medium transition-colors",
+              "flex-1 px-3 py-2.5 font-medium transition-colors sm:flex-none sm:py-1.5",
               vista === "activos" ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-50"
             )}
           >
@@ -179,7 +179,7 @@ export default function AdicionalesPage() {
           <button
             onClick={() => setVista("archivados")}
             className={cn(
-              "px-3 py-1.5 font-medium transition-colors flex items-center gap-1.5",
+              "flex flex-1 items-center justify-center gap-1.5 px-3 py-2.5 font-medium transition-colors sm:flex-none sm:py-1.5",
               vista === "archivados" ? "bg-gray-700 text-white" : "text-gray-600 hover:bg-gray-50"
             )}
           >
@@ -202,7 +202,7 @@ export default function AdicionalesPage() {
         )}
       </div>
 
-      {/* Tabla */}
+      {/* Tabla (desktop) / Tarjetas (móvil) */}
       {loading ? (
         <div className="flex justify-center py-16 text-gray-400 text-sm">Cargando...</div>
       ) : filtrados.length === 0 ? (
@@ -215,69 +215,121 @@ export default function AdicionalesPage() {
             : "Sin resultados para los filtros seleccionados."}
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Adicional</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Proyecto</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500 w-32">Valor</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Fecha</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 w-44">Estado</th>
-                <th className="px-4 py-3 w-16" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtrados.map((ad) => {
-                const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.solicitado;
-                return (
-                  <tr
-                    key={ad.id}
-                    onClick={() => router.push(`/adicionales/${ad.id}`)}
-                    className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50/60 transition-colors"
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-900 max-w-[280px] truncate">
-                      {ad.descripcion}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+        <>
+          {/* Tabla — desktop */}
+          <div className="hidden rounded-xl border border-gray-200 overflow-hidden bg-white md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Adicional</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Proyecto</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500 w-32">Valor</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Fecha</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-44">Estado</th>
+                  <th className="px-4 py-3 w-16" />
+                </tr>
+              </thead>
+              <tbody>
+                {filtrados.map((ad) => {
+                  const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.solicitado;
+                  return (
+                    <tr
+                      key={ad.id}
+                      onClick={() => router.push(`/adicionales/${ad.id}`)}
+                      className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50/60 transition-colors"
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-900 max-w-[280px] truncate">
+                        {ad.descripcion}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                          {ad.proyecto_nombre}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700 tabular-nums">
+                        {formatoCOP(ad.monto)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-400">
+                        {ad.created_at ? format(new Date(ad.created_at), "d MMM yyyy", { locale: es }) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", st.bg, st.text)}>
+                          {st.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void toggleArchivado(ad);
+                          }}
+                          disabled={archivando === ad.id}
+                          title={ad.archivado ? "Desarchivar" : "Archivar"}
+                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-40"
+                        >
+                          {ad.archivado ? (
+                            <ArchiveRestore className="size-3.5" />
+                          ) : (
+                            <Archive className="size-3.5" />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Tarjetas — móvil */}
+          <div className="space-y-3 md:hidden">
+            {filtrados.map((ad) => {
+              const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.solicitado;
+              return (
+                <div
+                  key={ad.id}
+                  onClick={() => router.push(`/adicionales/${ad.id}`)}
+                  className="cursor-pointer rounded-xl border border-gray-200 bg-white p-3.5 active:bg-gray-50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-semibold text-gray-900">{ad.descripcion}</p>
+                      <span className="mt-1 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                         {ad.proyecto_nombre}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700 tabular-nums">
-                      {formatoCOP(ad.monto)}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-400">
-                      {ad.created_at ? format(new Date(ad.created_at), "d MMM yyyy", { locale: es }) : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", st.bg, st.text)}>
-                        {st.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void toggleArchivado(ad);
-                        }}
-                        disabled={archivando === ad.id}
-                        title={ad.archivado ? "Desarchivar" : "Archivar"}
-                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-40"
-                      >
-                        {ad.archivado ? (
-                          <ArchiveRestore className="size-3.5" />
-                        ) : (
-                          <Archive className="size-3.5" />
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void toggleArchivado(ad);
+                      }}
+                      disabled={archivando === ad.id}
+                      title={ad.archivado ? "Desarchivar" : "Archivar"}
+                      className="flex size-11 shrink-0 items-center justify-center rounded-lg text-gray-400 active:bg-gray-100 disabled:opacity-40"
+                    >
+                      {ad.archivado ? (
+                        <ArchiveRestore className="size-4" />
+                      ) : (
+                        <Archive className="size-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", st.bg, st.text)}>
+                      {st.label}
+                    </span>
+                    <span className="font-medium text-gray-900 tabular-nums">{formatoCOP(ad.monto)}</span>
+                  </div>
+
+                  <div className="mt-1 text-xs text-gray-400">
+                    {ad.created_at ? format(new Date(ad.created_at), "d MMM yyyy", { locale: es }) : "—"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

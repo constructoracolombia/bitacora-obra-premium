@@ -29,7 +29,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col bg-[#1A1D29] transition-all duration-200 ease-in-out",
+        "hidden flex-col bg-[#1A1D29] transition-all duration-200 ease-in-out md:flex",
         collapsed ? "w-[68px]" : "w-60"
       )}
     >

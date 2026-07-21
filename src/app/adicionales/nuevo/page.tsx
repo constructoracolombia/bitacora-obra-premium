@@ -87,7 +87,7 @@ export default function NuevoAdicionalPage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-2xl items-center gap-4 px-8 py-4">
+        <div className="mx-auto flex max-w-2xl items-center gap-4 px-4 py-4 sm:px-8">
           <Button variant="ghost" size="icon" className="size-8 text-[#86868B] hover:bg-[#F5F5F7]" asChild>
             <Link href="/adicionales">
               <ArrowLeft className="size-4" />
@@ -99,7 +99,7 @@ export default function NuevoAdicionalPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-8 py-8">
+      <main className="mx-auto max-w-2xl px-4 py-6 sm:px-8 sm:py-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-6 space-y-5">
             {/* Proyecto */}
@@ -108,7 +108,7 @@ export default function NuevoAdicionalPage() {
               <select
                 value={form.proyecto_id}
                 onChange={(e) => setForm((f) => ({ ...f, proyecto_id: e.target.value }))}
-                className="h-11 w-full rounded-xl border border-[#D2D2D7] bg-white px-4 text-[14px] text-[#1D1D1F] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
+                className="h-11 w-full rounded-xl border border-[#D2D2D7] bg-white px-4 text-base text-[#1D1D1F] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10 sm:text-[14px]"
               >
                 <option value="">Selecciona un proyecto</option>
                 {proyectos.map((p) => (
@@ -127,7 +127,7 @@ export default function NuevoAdicionalPage() {
                 onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
                 placeholder="Describe el trabajo adicional solicitado..."
                 rows={4}
-                className="w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-[14px] text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
+                className="w-full rounded-xl border border-[#D2D2D7] px-4 py-3 text-base text-[#1D1D1F] placeholder:text-[#C7C7CC] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10 sm:text-[14px]"
               />
             </div>
 
@@ -140,7 +140,7 @@ export default function NuevoAdicionalPage() {
                 value={form.monto}
                 onChange={(e) => setForm((f) => ({ ...f, monto: e.target.value }))}
                 placeholder="0"
-                className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                className="h-11 rounded-xl border-[#D2D2D7] text-base focus:border-[#007AFF] focus:ring-[#007AFF]/10 sm:text-[14px]"
               />
             </div>
 
@@ -151,7 +151,7 @@ export default function NuevoAdicionalPage() {
                 value={form.solicitado_por}
                 onChange={(e) => setForm((f) => ({ ...f, solicitado_por: e.target.value }))}
                 placeholder="Nombre de quien solicita"
-                className="h-11 rounded-xl border-[#D2D2D7] text-[14px] focus:border-[#007AFF] focus:ring-[#007AFF]/10"
+                className="h-11 rounded-xl border-[#D2D2D7] text-base focus:border-[#007AFF] focus:ring-[#007AFF]/10 sm:text-[14px]"
               />
             </div>
           </div>
