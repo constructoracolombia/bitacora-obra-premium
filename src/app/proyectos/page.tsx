@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Plus, Search, X, ChevronRight } from "lucide-react";
+import { Building2, Plus, Search, X, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,12 @@ interface Proyecto {
   estado: string;
   margen_objetivo: number;
   app_origen: string;
+}
+
+interface CompraPendiente {
+  item: string;
+  cantidad: number;
+  unidad: string;
 }
 
 const formatoCOP = (valor: number) =>
@@ -42,6 +48,9 @@ export default function ProyectosPage() {
   const [busqueda, setBusqueda] = useState("");
   const router = useRouter();
 
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
+  const [comprasPendientes, setComprasPendientes] = useState<Map<string, CompraPendiente[]>>(new Map());
+
   useEffect(() => {
     async function fetch() {
       setLoading(true);
@@ -66,6 +75,36 @@ export default function ProyectosPage() {
     }
     void fetch();
   }, [filtro]);
+
+  useEffect(() => {
+    async function cargarCompras() {
+      const { data } = await supabase
+        .from("compras")
+        .select("proyecto_id, item, cantidad, unidad")
+        .eq("comprado", false);
+
+      if (data) {
+        const mapa = new Map<string, CompraPendiente[]>();
+        for (const row of data as { proyecto_id: string; item: string; cantidad: number; unidad: string }[]) {
+          const list = mapa.get(row.proyecto_id) ?? [];
+          list.push({ item: row.item, cantidad: row.cantidad, unidad: row.unidad });
+          mapa.set(row.proyecto_id, list);
+        }
+        setComprasPendientes(mapa);
+      }
+    }
+    void cargarCompras();
+  }, []);
+
+  function toggleExpand(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    setExpandidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const proyectosFiltrados = proyectos.filter(
     (p) =>
@@ -162,7 +201,7 @@ export default function ProyectosPage() {
           </div>
         )}
 
-        {/* Tabla */}
+        {/* Tabla con acordeón */}
         {!loading && proyectosFiltrados.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-gray-200">
             <div className="overflow-x-auto">
@@ -175,61 +214,128 @@ export default function ProyectosPage() {
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Inicio</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Estado</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Origen</th>
-                    <th className="w-8 px-4 py-3" />
+                    <th className="w-20 px-4 py-3 text-center font-medium text-gray-500">Compras</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {proyectosFiltrados.map((proyecto, i) => (
-                    <tr
-                      key={proyecto.id}
-                      onClick={() => router.push(`/proyectos/${proyecto.id}`)}
-                      className={cn(
-                        "cursor-pointer border-b border-gray-100 transition-colors last:border-0 hover:bg-blue-50/40",
-                        i % 2 === 0 ? "bg-white" : "bg-gray-50/40"
-                      )}
-                    >
-                      <td className="px-4 py-3.5 font-medium text-gray-900">
-                        {proyecto.cliente_nombre}
-                      </td>
-                      <td className="px-4 py-3.5 text-gray-500 max-w-[180px] truncate">
-                        {proyecto.direccion || "—"}
-                      </td>
-                      <td className="px-4 py-3.5 text-right font-medium text-gray-900 tabular-nums">
-                        {formatoCOP(proyecto.presupuesto_total ?? 0)}
-                      </td>
-                      <td className="px-4 py-3.5 text-gray-600 whitespace-nowrap">
-                        {proyecto.fecha_inicio
-                          ? new Date(proyecto.fecha_inicio + "T12:00:00").toLocaleDateString("es-CO", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span
+                  {proyectosFiltrados.map((proyecto, i) => {
+                    const pendientes = comprasPendientes.get(proyecto.id) ?? [];
+                    const expandido = expandidos.has(proyecto.id);
+
+                    return (
+                      <>
+                        <tr
+                          key={proyecto.id}
+                          onClick={() => router.push(`/proyectos/${proyecto.id}`)}
                           className={cn(
-                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                            ESTADO_BADGE[proyecto.estado] ?? "bg-gray-50 text-gray-600 ring-1 ring-gray-200"
+                            "cursor-pointer border-b border-gray-100 transition-colors",
+                            expandido ? "border-gray-200" : "last:border-0",
+                            i % 2 === 0 ? "bg-white" : "bg-gray-50/40",
+                            "hover:bg-blue-50/40"
                           )}
                         >
-                          {proyecto.estado.charAt(0) + proyecto.estado.slice(1).toLowerCase()}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        {proyecto.app_origen === "FINANZAS" ? (
-                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600 ring-1 ring-blue-200">
-                            Finanzas
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">—</span>
+                          {/* Nombre + badge */}
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-gray-900">
+                                {proyecto.cliente_nombre}
+                              </span>
+                              {pendientes.length > 0 && (
+                                <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                                  {pendientes.length} por comprar
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 text-gray-500 max-w-[180px] truncate">
+                            {proyecto.direccion || "—"}
+                          </td>
+                          <td className="px-4 py-3.5 text-right font-medium text-gray-900 tabular-nums">
+                            {formatoCOP(proyecto.presupuesto_total ?? 0)}
+                          </td>
+                          <td className="px-4 py-3.5 text-gray-600 whitespace-nowrap">
+                            {proyecto.fecha_inicio
+                              ? new Date(proyecto.fecha_inicio + "T12:00:00").toLocaleDateString("es-CO", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "—"}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                ESTADO_BADGE[proyecto.estado] ?? "bg-gray-50 text-gray-600 ring-1 ring-gray-200"
+                              )}
+                            >
+                              {proyecto.estado.charAt(0) + proyecto.estado.slice(1).toLowerCase()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            {proyecto.app_origen === "FINANZAS" ? (
+                              <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600 ring-1 ring-blue-200">
+                                Finanzas
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
+                          {/* Botón expandir — stopPropagation evita navegar al hacer clic aquí */}
+                          <td className="px-4 py-3.5 text-center">
+                            <button
+                              onClick={(e) => toggleExpand(proyecto.id, e)}
+                              title={expandido ? "Colapsar" : "Ver compras pendientes"}
+                              className="inline-flex items-center justify-center rounded-md p-1.5 transition-colors hover:bg-gray-100"
+                            >
+                              {expandido ? (
+                                <ChevronUp className="size-4 text-gray-500" />
+                              ) : pendientes.length > 0 ? (
+                                <ChevronDown className="size-4 text-orange-400" />
+                              ) : (
+                                <ChevronRight className="size-4 text-gray-300" />
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+
+                        {/* Fila expandida con compras pendientes */}
+                        {expandido && (
+                          <tr
+                            key={`${proyecto.id}-compras`}
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              "border-b border-gray-200",
+                              i % 2 === 0 ? "bg-orange-50/20" : "bg-orange-50/30"
+                            )}
+                          >
+                            <td colSpan={7} className="px-6 py-3">
+                              {pendientes.length === 0 ? (
+                                <p className="text-xs text-gray-400">Sin compras pendientes</p>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {pendientes.map((c, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 bg-white px-2.5 py-1 text-xs"
+                                    >
+                                      <span className="font-medium text-gray-800">{c.item}</span>
+                                      <span className="text-gray-400">
+                                        {Number(c.cantidad) % 1 === 0
+                                          ? Number(c.cantidad).toFixed(0)
+                                          : c.cantidad}{" "}
+                                        {c.unidad}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <ChevronRight className="size-4 text-gray-300" />
-                      </td>
-                    </tr>
-                  ))}
+                      </>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
