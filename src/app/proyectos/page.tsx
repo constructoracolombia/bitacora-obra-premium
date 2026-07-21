@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Plus, Search, X, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Building2, Plus, Search, X, ChevronRight, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ interface CompraPendiente {
   item: string;
   cantidad: number;
   unidad: string;
+  urgente: boolean;
 }
 
 const formatoCOP = (valor: number) =>
@@ -80,14 +81,15 @@ export default function ProyectosPage() {
     async function cargarCompras() {
       const { data } = await supabase
         .from("compras")
-        .select("proyecto_id, item, cantidad, unidad")
-        .eq("comprado", false);
+        .select("proyecto_id, item, cantidad, unidad, urgente")
+        .eq("comprado", false)
+        .order("urgente", { ascending: false });
 
       if (data) {
         const mapa = new Map<string, CompraPendiente[]>();
-        for (const row of data as { proyecto_id: string; item: string; cantidad: number; unidad: string }[]) {
+        for (const row of data as { proyecto_id: string; item: string; cantidad: number; unidad: string; urgente: boolean }[]) {
           const list = mapa.get(row.proyecto_id) ?? [];
-          list.push({ item: row.item, cantidad: row.cantidad, unidad: row.unidad });
+          list.push({ item: row.item, cantidad: row.cantidad, unidad: row.unidad, urgente: row.urgente });
           mapa.set(row.proyecto_id, list);
         }
         setComprasPendientes(mapa);
@@ -317,8 +319,12 @@ export default function ProyectosPage() {
                                   {pendientes.map((c, idx) => (
                                     <span
                                       key={idx}
-                                      className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 bg-white px-2.5 py-1 text-xs"
+                                      className={cn(
+                                        "inline-flex items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1 text-xs",
+                                        c.urgente ? "border-red-300 bg-red-50/60" : "border-orange-200"
+                                      )}
                                     >
+                                      {c.urgente && <AlertTriangle className="size-3 text-red-500" />}
                                       <span className="font-medium text-gray-800">{c.item}</span>
                                       <span className="text-gray-400">
                                         {Number(c.cantidad) % 1 === 0

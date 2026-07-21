@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useMemo, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
-import { ShoppingCart, Plus, X, CheckCircle2, Circle, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { ShoppingCart, Plus, X, CheckCircle2, Circle, ChevronDown, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -13,6 +13,7 @@ interface Compra {
   item: string;
   cantidad: number;
   unidad: string;
+  urgente: boolean;
   proyecto_id: string;
   proyecto_nombre: string;
   comprado: boolean;
@@ -172,7 +173,7 @@ export default function ComprasPage() {
 
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState<Compra | null>(null);
-  const [form, setForm] = useState({ item: "", cantidad: "1", unidad: "und", proyecto_id: "" });
+  const [form, setForm] = useState({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false });
 
   useEffect(() => {
     void cargar();
@@ -181,7 +182,7 @@ export default function ComprasPage() {
   async function cargar() {
     setLoading(true);
     const [comprasRes, proyRes] = await Promise.all([
-      supabase.from("compras").select("*").order("created_at", { ascending: false }),
+      supabase.from("compras").select("*").order("urgente", { ascending: false }).order("created_at", { ascending: false }),
       supabase.from("proyectos_maestro").select("id, cliente_nombre").order("cliente_nombre"),
     ]);
 
@@ -201,6 +202,7 @@ export default function ComprasPage() {
           cantidad: r.cantidad as number,
           unidad: r.unidad as string,
           proyecto_id: r.proyecto_id as string,
+          urgente: r.urgente as boolean,
           proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "Proyecto desconocido",
           comprado: r.comprado as boolean,
           comprado_at: r.comprado_at as string | null,
@@ -240,7 +242,7 @@ export default function ComprasPage() {
 
   function abrirAgregar() {
     setEditando(null);
-    setForm({ item: "", cantidad: "1", unidad: "und", proyecto_id: "" });
+    setForm({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false });
     setMostrarForm(true);
   }
 
@@ -251,6 +253,7 @@ export default function ComprasPage() {
       cantidad: String(compra.cantidad),
       unidad: compra.unidad,
       proyecto_id: compra.proyecto_id,
+      urgente: compra.urgente,
     });
     setMostrarForm(true);
   }
@@ -269,6 +272,7 @@ export default function ComprasPage() {
       cantidad: parseFloat(form.cantidad) || 1,
       unidad: form.unidad.trim() || "und",
       proyecto_id: form.proyecto_id,
+      urgente: form.urgente,
     };
 
     const { error } = editando
@@ -297,6 +301,7 @@ export default function ComprasPage() {
     if (filtroProyecto !== "TODOS" && c.proyecto_id !== filtroProyecto) return false;
     if (filtroEstado === "pendiente" && c.comprado) return false;
     if (filtroEstado === "comprado" && !c.comprado) return false;
+    if (filtroEstado === "urgente" && !c.urgente) return false;
     return true;
   });
 
@@ -354,6 +359,7 @@ export default function ComprasPage() {
             { key: "TODOS", label: "Todos" },
             { key: "pendiente", label: "Pendientes" },
             { key: "comprado", label: "Comprados" },
+            { key: "urgente", label: "Urgentes" },
           ].map((f) => (
             <button
               key={f.key}
@@ -361,7 +367,7 @@ export default function ComprasPage() {
               className={cn(
                 "px-3 py-1.5 font-medium transition-colors",
                 filtroEstado === f.key
-                  ? "bg-blue-600 text-white"
+                  ? f.key === "urgente" ? "bg-red-500 text-white" : "bg-blue-600 text-white"
                   : "text-gray-600 hover:bg-gray-50"
               )}
             >
@@ -409,7 +415,11 @@ export default function ComprasPage() {
                   key={compra.id}
                   className={cn(
                     "border-b border-gray-100 last:border-0 transition-colors",
-                    compra.comprado ? "bg-green-50/50" : "hover:bg-gray-50/60"
+                    compra.comprado
+                      ? "bg-green-50/50"
+                      : compra.urgente
+                      ? "bg-red-50/50 hover:bg-red-50/80"
+                      : "hover:bg-gray-50/60"
                   )}
                 >
                   <td className="px-4 py-3">
@@ -432,7 +442,15 @@ export default function ComprasPage() {
                       compra.comprado ? "line-through text-gray-400" : "text-gray-900"
                     )}
                   >
-                    {compra.item}
+                    <div className="flex items-center gap-2">
+                      {compra.item}
+                      {compra.urgente && !compra.comprado && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                          <AlertTriangle className="size-2.5" />
+                          Urgente
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-gray-700 tabular-nums">
                     {Number(compra.cantidad) % 1 === 0
@@ -551,6 +569,19 @@ export default function ComprasPage() {
                   className="w-full"
                 />
               </div>
+
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 has-[:checked]:border-red-200 has-[:checked]:bg-red-50">
+                <input
+                  type="checkbox"
+                  checked={form.urgente}
+                  onChange={(e) => setForm((f) => ({ ...f, urgente: e.target.checked }))}
+                  className="size-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                />
+                <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                  <AlertTriangle className="size-3.5 text-red-500" />
+                  Urgente
+                </span>
+              </label>
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
