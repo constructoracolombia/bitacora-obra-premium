@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Loader2, Plus, PlusCircle, DollarSign, Building2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { PlusCircle, Plus, X, Archive, ArchiveRestore } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ProyectoCombobox, type Proyecto } from "@/components/proyecto-combobox";
 
 interface Adicional {
   id: string;
@@ -15,14 +16,9 @@ interface Adicional {
   descripcion: string;
   monto: number;
   estado: string;
-  solicitado_por: string | null;
+  archivado: boolean;
   created_at: string;
-  proyecto_nombre?: string;
-}
-
-interface ProyectoOption {
-  id: string;
-  cliente_nombre: string | null;
+  proyecto_nombre: string;
 }
 
 const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }> = {
@@ -44,110 +40,125 @@ const FILTROS_ESTADO = [
   { key: "entregado", label: "Entregados" },
 ];
 
+const formatoCOP = (valor: number) =>
+  new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+  }).format(valor);
+
 export default function AdicionalesPage() {
   const supabase = getSupabaseClient();
+  const router = useRouter();
   const [adicionales, setAdicionales] = useState<Adicional[]>([]);
-  const [proyectos, setProyectos] = useState<ProyectoOption[]>([]);
+  const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterProyecto, setFilterProyecto] = useState("TODOS");
+  const [archivando, setArchivando] = useState<string | null>(null);
+
+  const [filtroProyecto, setFiltroProyecto] = useState("TODOS");
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
+  const [vista, setVista] = useState<"activos" | "archivados">("activos");
 
   useEffect(() => {
-    async function fetch() {
-      try {
-        const [adRes, projRes] = await Promise.all([
-          supabase
-            .from("adicionales")
-            .select("*")
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("proyectos_maestro")
-            .select("id, cliente_nombre")
-            .order("cliente_nombre"),
-        ]);
-
-        const projMap = new Map<string, string>();
-        if (projRes.data) {
-          const list = projRes.data as ProyectoOption[];
-          setProyectos(list);
-          list.forEach((p) => projMap.set(p.id, p.cliente_nombre ?? "Sin nombre"));
-        }
-
-        if (adRes.data) {
-          setAdicionales(
-            (adRes.data as Record<string, unknown>[]).map((r) => ({
-              id: r.id as string,
-              proyecto_id: r.proyecto_id as string,
-              descripcion: r.descripcion as string,
-              monto: Number(r.monto) || 0,
-              estado: (r.estado as string) ?? "solicitado",
-              solicitado_por: (r.solicitado_por as string) ?? null,
-              created_at: (r.created_at as string) ?? "",
-              proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "—",
-            }))
-          );
-        }
-      } catch (err) {
-        console.error("Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetch();
+    void cargar();
   }, []);
 
-  const filtered = adicionales.filter((a) => {
-    if (filterProyecto !== "TODOS" && a.proyecto_id !== filterProyecto) return false;
+  async function cargar() {
+    setLoading(true);
+    const [adRes, projRes] = await Promise.all([
+      supabase.from("adicionales").select("*").order("created_at", { ascending: false }),
+      supabase.from("proyectos_maestro").select("id, cliente_nombre").order("cliente_nombre"),
+    ]);
+
+    const projMap = new Map<string, string>();
+    if (projRes.data) {
+      setProyectos(projRes.data as Proyecto[]);
+      (projRes.data as Proyecto[]).forEach((p) => projMap.set(p.id, p.cliente_nombre ?? "Sin nombre"));
+    }
+
+    if (adRes.data) {
+      setAdicionales(
+        (adRes.data as Record<string, unknown>[]).map((r) => ({
+          id: r.id as string,
+          proyecto_id: r.proyecto_id as string,
+          descripcion: r.descripcion as string,
+          monto: Number(r.monto) || 0,
+          estado: (r.estado as string) ?? "solicitado",
+          archivado: Boolean(r.archivado),
+          created_at: (r.created_at as string) ?? "",
+          proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "Proyecto desconocido",
+        }))
+      );
+    }
+    setLoading(false);
+  }
+
+  async function toggleArchivado(ad: Adicional) {
+    const nuevoValor = !ad.archivado;
+    setArchivando(ad.id);
+    setAdicionales((prev) =>
+      prev.map((a) => (a.id === ad.id ? { ...a, archivado: nuevoValor } : a))
+    );
+
+    const { error } = await supabase
+      .from("adicionales")
+      .update({ archivado: nuevoValor })
+      .eq("id", ad.id);
+
+    if (error) {
+      setAdicionales((prev) =>
+        prev.map((a) => (a.id === ad.id ? { ...a, archivado: ad.archivado } : a))
+      );
+      alert("Error: " + error.message);
+    }
+    setArchivando(null);
+  }
+
+  const filtrados = adicionales.filter((a) => {
+    if (vista === "activos" && a.archivado) return false;
+    if (vista === "archivados" && !a.archivado) return false;
+    if (filtroProyecto !== "TODOS" && a.proyecto_id !== filtroProyecto) return false;
     if (filtroEstado !== "TODOS" && a.estado !== filtroEstado) return false;
     return true;
   });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[#D2D2D7]/40 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-8 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#1D1D1F]">
-            Adicionales
-          </h1>
-          <div className="flex items-center gap-3">
-            {/* Filtro por proyecto */}
-            <select
-              value={filterProyecto}
-              onChange={(e) => setFilterProyecto(e.target.value)}
-              className="h-9 rounded-xl border border-[#D2D2D7] bg-white px-3 text-[13px] text-[#1D1D1F] focus:border-[#007AFF] focus:outline-none focus:ring-2 focus:ring-[#007AFF]/10"
-            >
-              <option value="TODOS">Todos los proyectos</option>
-              {proyectos.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.cliente_nombre || "Sin nombre"}
-                </option>
-              ))}
-            </select>
-
-            <Button asChild className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
-              <Link href="/adicionales/nuevo">
-                <Plus className="size-4" />
-                Nuevo Adicional
-              </Link>
-            </Button>
-          </div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Adicionales</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Trabajos adicionales por proyecto · flujo de aprobación y pago
+          </p>
         </div>
-      </header>
+        <Button onClick={() => router.push("/adicionales/nuevo")}>
+          <Plus className="size-4 mr-1" />
+          Nuevo Adicional
+        </Button>
+      </div>
 
-      {/* Content */}
-      <main className="mx-auto max-w-5xl px-8 py-8">
-        {/* Filtros por estado */}
-        <div className="mb-6 flex gap-2 overflow-x-auto">
+      {/* Filtros */}
+      <div className="flex gap-3 mb-4 flex-wrap items-center">
+        <ProyectoCombobox
+          value={filtroProyecto}
+          onChange={setFiltroProyecto}
+          proyectos={proyectos}
+          incluirTodos
+          placeholder="Todos los proyectos"
+          className="min-w-[220px]"
+        />
+
+        <div className="flex flex-wrap rounded-lg border border-gray-200 overflow-hidden bg-white text-sm">
           {FILTROS_ESTADO.map((f) => (
             <button
               key={f.key}
               onClick={() => setFiltroEstado(f.key)}
               className={cn(
-                "whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                "px-3 py-1.5 font-medium transition-colors whitespace-nowrap",
                 filtroEstado === f.key
-                  ? "bg-[#007AFF] text-white"
-                  : "border border-[#D2D2D7] bg-white text-[#1D1D1F] hover:bg-[#F5F5F7]"
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-600 hover:bg-gray-50"
               )}
             >
               {f.label}
@@ -155,60 +166,119 @@ export default function AdicionalesPage() {
           ))}
         </div>
 
-        {loading ? (
-          <div className="flex min-h-[400px] items-center justify-center">
-            <Loader2 className="size-8 animate-spin text-[#007AFF]" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-center">
-            <PlusCircle className="size-12 text-[#D2D2D7]" />
-            <p className="text-[15px] text-[#1D1D1F]">No hay adicionales</p>
-            <p className="text-sm text-[#86868B]">Crea el primer adicional para un proyecto</p>
-            <Button asChild className="mt-2 rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]">
-              <Link href="/adicionales/nuevo">
-                <Plus className="size-4" />
-                Nuevo Adicional
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((ad) => {
-              const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.solicitado;
-              return (
-                <Link key={ad.id} href={`/adicionales/${ad.id}`}>
-                  <article className="group rounded-2xl border border-[#D2D2D7]/60 bg-white p-5 transition-all duration-200 hover:border-[#D2D2D7] hover:shadow-md">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 text-[12px] text-[#86868B]">
-                          <Building2 className="size-3.5" />
-                          <span>{ad.proyecto_nombre}</span>
-                        </div>
-                        <h3 className="mt-1 text-[14px] font-medium text-[#1D1D1F] group-hover:text-[#007AFF] transition-colors">
-                          {ad.descripcion}
-                        </h3>
-                      </div>
-                      <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold", st.bg, st.text)}>
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-white text-sm">
+          <button
+            onClick={() => setVista("activos")}
+            className={cn(
+              "px-3 py-1.5 font-medium transition-colors",
+              vista === "activos" ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-50"
+            )}
+          >
+            Activos
+          </button>
+          <button
+            onClick={() => setVista("archivados")}
+            className={cn(
+              "px-3 py-1.5 font-medium transition-colors flex items-center gap-1.5",
+              vista === "archivados" ? "bg-gray-700 text-white" : "text-gray-600 hover:bg-gray-50"
+            )}
+          >
+            <Archive className="size-3.5" />
+            Archivados
+          </button>
+        </div>
+
+        {(filtroProyecto !== "TODOS" || filtroEstado !== "TODOS" || vista !== "activos") && (
+          <button
+            onClick={() => {
+              setFiltroProyecto("TODOS");
+              setFiltroEstado("TODOS");
+              setVista("activos");
+            }}
+            className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+          >
+            <X className="size-3" /> Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      {/* Tabla */}
+      {loading ? (
+        <div className="flex justify-center py-16 text-gray-400 text-sm">Cargando...</div>
+      ) : filtrados.length === 0 ? (
+        <div className="flex flex-col items-center py-16 text-center text-gray-400 text-sm gap-2">
+          <PlusCircle className="size-10 text-gray-200" />
+          {vista === "archivados"
+            ? "No hay adicionales archivados con estos filtros."
+            : adicionales.length === 0
+            ? "No hay adicionales registrados. Crea el primero con el botón de arriba."
+            : "Sin resultados para los filtros seleccionados."}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">Adicional</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500">Proyecto</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500 w-32">Valor</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Fecha</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 w-44">Estado</th>
+                <th className="px-4 py-3 w-16" />
+              </tr>
+            </thead>
+            <tbody>
+              {filtrados.map((ad) => {
+                const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.solicitado;
+                return (
+                  <tr
+                    key={ad.id}
+                    onClick={() => router.push(`/adicionales/${ad.id}`)}
+                    className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50/60 transition-colors"
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900 max-w-[280px] truncate">
+                      {ad.descripcion}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                        {ad.proyecto_nombre}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-700 tabular-nums">
+                      {formatoCOP(ad.monto)}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-400">
+                      {ad.created_at ? format(new Date(ad.created_at), "d MMM yyyy", { locale: es }) : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", st.bg, st.text)}>
                         {st.label}
                       </span>
-                    </div>
-                    <div className="mt-3 flex items-center gap-4 text-[12px] text-[#86868B]">
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="size-3.5" />
-                        ${ad.monto.toLocaleString("es-CO")}
-                      </span>
-                      <span>
-                        {format(new Date(ad.created_at), "d MMM yyyy", { locale: es })}
-                      </span>
-                      {ad.solicitado_por && <span>por {ad.solicitado_por}</span>}
-                    </div>
-                  </article>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </main>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void toggleArchivado(ad);
+                        }}
+                        disabled={archivando === ad.id}
+                        title={ad.archivado ? "Desarchivar" : "Archivar"}
+                        className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-40"
+                      >
+                        {ad.archivado ? (
+                          <ArchiveRestore className="size-3.5" />
+                        ) : (
+                          <Archive className="size-3.5" />
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
