@@ -28,12 +28,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { esFestivo } from "@/lib/festivos-colombia";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ActividadCard, type Actividad } from "./components/ActividadCard";
 import { ActividadModal } from "./components/ActividadModal";
 import { ProgramacionProyecto } from "@/components/ProgramacionProyecto";
+import { AvancesFeed } from "@/components/AvancesFeed";
 
 interface Proyecto {
   id: string;
@@ -47,16 +47,10 @@ interface Proyecto {
   fecha_inicio: string | null;
   fecha_entrega_estimada: string | null;
   conjunto: string | null;
-  alcance_text: string | null;
   alcance_imagen: string | null;
   proyecto_nombre: string | null;
   app_origen: string | null;
   link_contrato: string | null;
-  link_acta_inicio: string | null;
-  fecha_acta_inicio: string | null;
-  dias_contractuales: number | null;
-  fecha_entrega_contractual: string | null;
-  fecha_reprogramada_final: string | null;
 }
 
 interface AdicionalRow {
@@ -168,9 +162,7 @@ export default function ProyectoDetailPage() {
     estado: "ACTIVO" as "ACTIVO" | "PAUSADO" | "FINALIZADO",
   });
 
-  const [alcance, setAlcance] = useState("");
   const [alcanceImagen, setAlcanceImagen] = useState<string | null>(null);
-  const [historialAlcance, setHistorialAlcance] = useState<any[]>([]);
 
   const [referencias, setReferencias] = useState<any>(null);
   const [editandoReferencias, setEditandoReferencias] = useState(false);
@@ -189,20 +181,8 @@ export default function ProyectoDetailPage() {
     color_carpinteria: "",
   });
 
-  const [editandoContrato, setEditandoContrato] = useState(false);
-  const [guardandoContrato, setGuardandoContrato] = useState(false);
-  const [formContrato, setFormContrato] = useState({
-    link_contrato: "",
-    link_acta_inicio: "",
-    fecha_acta_inicio: "",
-    dias_contractuales: "",
-    fecha_reprogramada_final: "",
-  });
-
   const [editando, setEditando] = useState(false);
   const [guardando, setGuardando] = useState(false);
-  const [savingAlcance, setSavingAlcance] = useState(false);
-  const [savedAlcance, setSavedAlcance] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   // Modal state
@@ -233,31 +213,17 @@ export default function ProyectoDetailPage() {
           fecha_inicio: r.fecha_inicio ?? null,
           fecha_entrega_estimada: r.fecha_entrega_estimada ?? null,
           conjunto: r.conjunto ?? null,
-          alcance_text: r.alcance_text ?? null,
           alcance_imagen: r.alcance_imagen ?? null,
           proyecto_nombre: r.proyecto_nombre ?? null,
           app_origen: r.app_origen ?? null,
           link_contrato: r.link_contrato ?? null,
-          link_acta_inicio: r.link_acta_inicio ?? null,
-          fecha_acta_inicio: r.fecha_acta_inicio ?? null,
-          dias_contractuales: r.dias_contractuales != null ? Number(r.dias_contractuales) : null,
-          fecha_entrega_contractual: r.fecha_entrega_contractual ?? null,
-          fecha_reprogramada_final: r.fecha_reprogramada_final ?? null,
         });
-        setAlcance(r.alcance_text ?? "");
         setAlcanceImagen(r.alcance_imagen ?? null);
         setEditForm({
           cliente_nombre: r.cliente_nombre ?? "",
           residente: r.residente ?? "",
           presupuesto_total: r.presupuesto_total != null ? String(r.presupuesto_total) : "",
           estado: (r.estado as any) ?? "ACTIVO",
-        });
-        setFormContrato({
-          link_contrato: r.link_contrato ?? "",
-          link_acta_inicio: r.link_acta_inicio ?? "",
-          fecha_acta_inicio: r.fecha_acta_inicio ?? "",
-          dias_contractuales: r.dias_contractuales != null ? String(r.dias_contractuales) : "",
-          fecha_reprogramada_final: r.fecha_reprogramada_final ?? "",
         });
       }
 
@@ -339,94 +305,11 @@ export default function ProyectoDetailPage() {
     }
   }
 
-  // ── Alcance handlers ──
-
-  async function cargarHistorialAlcance() {
-    if (!projectId) return;
-    try {
-      console.log("📋 Cargando historial para proyecto:", projectId);
-      const { data, error } = await supabase
-        .from("alcance_historial")
-        .select("*")
-        .eq("proyecto_id", projectId)
-        .order("created_at", { ascending: false });
-
-      console.log("📋 Historial cargado:", data);
-      console.log("❌ Error:", error);
-
-      if (error) {
-        console.error("Error cargando historial:", error);
-        return;
-      }
-
-      setHistorialAlcance(data || []);
-    } catch (err) {
-      console.error("Exception cargando historial:", err);
-    }
-  }
-
   useEffect(() => {
-    if (projectId) {
-      cargarHistorialAlcance();
-      cargarReferencias();
-    }
+    if (projectId) cargarReferencias();
   }, [projectId]);
 
-  async function handleSaveAlcance() {
-    const textoLimpio = alcance.trim();
-    if (!project || !textoLimpio) {
-      alert("Escribe algo antes de guardar");
-      return;
-    }
-
-    setSavingAlcance(true);
-    setSavedAlcance(false);
-    try {
-      console.log("💾 Guardando texto...", textoLimpio);
-
-      const { data, error } = await supabase
-        .from("alcance_historial")
-        .insert({
-          proyecto_id: project.id,
-          texto: textoLimpio,
-        })
-        .select();
-
-      console.log("✅ Guardado:", data);
-      console.log("❌ Error:", error);
-
-      if (error) {
-        console.error("Error guardando:", error);
-        alert("Error al guardar: " + error.message);
-        return;
-      }
-
-      setAlcance("");
-      setSavedAlcance(true);
-      setTimeout(() => setSavedAlcance(false), 2000);
-      await cargarHistorialAlcance();
-
-      console.log("✅ Texto guardado exitosamente");
-    } catch (err) {
-      console.error("Exception guardando:", err);
-      alert("Error al guardar");
-    } finally {
-      setSavingAlcance(false);
-    }
-  }
-
-  async function handleDeleteHistorial(id: string) {
-    try {
-      const { error } = await supabase.from("alcance_historial").delete().eq("id", id);
-      if (error) {
-        console.error("Error eliminando:", error);
-        return;
-      }
-      setHistorialAlcance((prev) => prev.filter((h) => h.id !== id));
-    } catch (err) {
-      console.error("Exception eliminando historial:", err);
-    }
-  }
+  // ── Imagen de alcance handlers ──
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -539,60 +422,6 @@ export default function ProyectoDetailPage() {
       alert("Error al guardar referencias");
     } finally {
       setGuardandoReferencias(false);
-    }
-  }
-
-  // ── Contract helpers ──
-
-  function calcularFechaEntrega(fechaInicio: string, diasHabiles: number): string {
-    const inicio = new Date(fechaInicio);
-    let diasContados = 0;
-    const current = new Date(inicio);
-    current.setDate(current.getDate() + 1);
-
-    while (diasContados < diasHabiles) {
-      const diaSemana = current.getDay();
-      if (diaSemana !== 0 && diaSemana !== 6 && !esFestivo(current)) {
-        diasContados++;
-      }
-      if (diasContados < diasHabiles) {
-        current.setDate(current.getDate() + 1);
-      }
-    }
-
-    return current.toISOString().split("T")[0];
-  }
-
-  async function guardarDatosContractuales() {
-    if (!project) return;
-    setGuardandoContrato(true);
-    try {
-      const fechaEntrega =
-        formContrato.fecha_acta_inicio && formContrato.dias_contractuales
-          ? calcularFechaEntrega(formContrato.fecha_acta_inicio, parseInt(formContrato.dias_contractuales))
-          : null;
-
-      const { error } = await supabase
-        .from("proyectos_maestro")
-        .update({
-          link_contrato: formContrato.link_contrato || null,
-          link_acta_inicio: formContrato.link_acta_inicio || null,
-          fecha_acta_inicio: formContrato.fecha_acta_inicio || null,
-          dias_contractuales: formContrato.dias_contractuales ? parseInt(formContrato.dias_contractuales) : null,
-          fecha_entrega_contractual: fechaEntrega,
-          fecha_reprogramada_final: formContrato.fecha_reprogramada_final || null,
-        } as any)
-        .eq("id", project.id);
-
-      if (error) throw error;
-
-      await fetchData();
-      setEditandoContrato(false);
-    } catch (err) {
-      console.error("Error:", err);
-      alert("Error al guardar datos contractuales");
-    } finally {
-      setGuardandoContrato(false);
     }
   }
 
@@ -722,22 +551,6 @@ export default function ProyectoDetailPage() {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            {project.link_contrato ? (
-              <a
-                href={project.link_contrato}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 rounded-full bg-[#007AFF]/8 px-2.5 py-1 text-[11px] font-semibold text-[#007AFF] transition-colors hover:bg-[#007AFF]/15"
-              >
-                <FileText className="size-3.5" />
-                <span className="hidden sm:inline">Ver contrato</span>
-              </a>
-            ) : (
-              <span className="flex items-center gap-1 rounded-full bg-[#F5F5F7] px-2.5 py-1 text-[11px] font-medium text-[#86868B]">
-                <FileText className="size-3.5" />
-                <span className="hidden sm:inline">Sin contrato</span>
-              </span>
-            )}
             <span className={cn(
               "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
               isFromFinanzas ? "bg-[#007AFF]/8 text-[#007AFF]" : "bg-[#FF9500]/10 text-[#FF9500]"
@@ -783,31 +596,25 @@ export default function ProyectoDetailPage() {
           <div className="space-y-6">
             <h2 className="text-[20px] font-bold text-[#1D1D1F]">Información</h2>
 
-            {/* Avance general */}
-            <div className="rounded-lg border bg-white p-6">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm text-gray-600">Avance general</span>
-                <span className="text-2xl font-bold">{kanbanProgress}%</span>
-              </div>
-              <div className="h-3 w-full rounded-full bg-gray-200">
-                <div
-                  className="h-3 rounded-full bg-blue-500 transition-all"
-                  style={{ width: `${kanbanProgress}%` }}
-                />
-              </div>
-              <p className="mt-2 text-sm text-gray-600">
-                {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades completadas
-              </p>
-            </div>
-
             {/* Información del proyecto */}
             <div className="rounded-lg border bg-white p-6">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <h3 className="text-lg font-semibold">
                   {isFromFinanzas
                     ? "Proyecto gestionado desde Finanzas"
                     : "Información del Proyecto"}
                 </h3>
+                {project.link_contrato && (
+                  <a
+                    href={project.link_contrato}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex shrink-0 items-center gap-1 rounded-full bg-[#007AFF]/8 px-3 py-1 text-[12px] font-semibold text-[#007AFF] transition-colors hover:bg-[#007AFF]/15"
+                  >
+                    <FileText className="size-3.5" />
+                    Ver contrato
+                  </a>
+                )}
                 {!isFromFinanzas && (
                   <Button
                     onClick={() => setEditando(!editando)}
@@ -958,344 +765,8 @@ export default function ProyectoDetailPage() {
           <div className="mt-10 space-y-6">
             <h2 className="text-[20px] font-bold text-[#1D1D1F]">Alcance</h2>
 
-            {/* Textarea para nuevo texto */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Alcance del proyecto
-              </label>
-              <textarea
-                value={alcance}
-                onChange={(e) => setAlcance(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={6}
-                placeholder="Describe el alcance del proyecto: actividades incluidas, entregables, especificaciones técnicas..."
-              />
-            </div>
-
-            {/* Boton guardar */}
-            <Button
-              onClick={handleSaveAlcance}
-              disabled={savingAlcance || !alcance.trim()}
-              className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
-            >
-              {savingAlcance ? "Guardando..." : "Guardar texto"}
-            </Button>
-
-            {/* Historial de textos */}
-            <div className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                Historial de alcance ({historialAlcance.length})
-              </h3>
-              {historialAlcance.length === 0 ? (
-                <p className="text-sm text-gray-500 italic">No hay registros de alcance todavia.</p>
-              ) : (
-                <div className="space-y-3">
-                  {historialAlcance.map((registro) => (
-                    <div
-                      key={registro.id}
-                      className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          <span className="text-xs font-medium text-gray-600">
-                            {new Date(registro.created_at).toLocaleString("es-CO", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            if (confirm("Eliminar este registro?")) {
-                              await handleDeleteHistorial(registro.id);
-                            }
-                          }}
-                          className="text-xs text-red-500 hover:text-red-700 font-medium"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                        {registro.texto}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Datos contractuales */}
-            <div className="mt-8 rounded-lg border bg-white p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Contrato</h3>
-                <div className="flex gap-2">
-                  {editandoContrato ? (
-                    <>
-                      <Button
-                        onClick={guardarDatosContractuales}
-                        disabled={guardandoContrato}
-                        className="bg-blue-500 hover:bg-blue-600"
-                      >
-                        {guardandoContrato ? "Guardando..." : "Guardar"}
-                      </Button>
-                      <Button
-                        onClick={() => setEditandoContrato(false)}
-                        variant="outline"
-                      >
-                        Cancelar
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      onClick={() => setEditandoContrato(true)}
-                      variant="outline"
-                      className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                    >
-                      Editar
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {editandoContrato ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Link del contrato
-                    </label>
-                    <input
-                      type="url"
-                      value={formContrato.link_contrato}
-                      onChange={(e) => setFormContrato({ ...formContrato, link_contrato: e.target.value })}
-                      className="w-full rounded-lg border px-3 py-2"
-                      placeholder="https://drive.google.com/..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Link del acta de inicio
-                    </label>
-                    <input
-                      type="url"
-                      value={formContrato.link_acta_inicio}
-                      onChange={(e) => setFormContrato({ ...formContrato, link_acta_inicio: e.target.value })}
-                      className="w-full rounded-lg border px-3 py-2"
-                      placeholder="https://drive.google.com/..."
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {formContrato.link_contrato && (
-                    <div>
-                      <span className="text-sm text-gray-600">Contrato</span>
-                      <p>
-                        <a
-                          href={formContrato.link_contrato}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          Ver contrato
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      </p>
-                    </div>
-                  )}
-
-                  {formContrato.link_acta_inicio && (
-                    <div>
-                      <span className="text-sm text-gray-600">Acta de inicio</span>
-                      <p>
-                        <a
-                          href={formContrato.link_acta_inicio}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          Ver acta de inicio
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      </p>
-                    </div>
-                  )}
-
-                  {!formContrato.link_contrato && !formContrato.link_acta_inicio && (
-                    <p className="text-sm text-gray-500">No hay enlaces registrados</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Flujo contractual */}
-            <div className="mt-6 rounded-lg border bg-white p-6">
-              <h3 className="text-lg font-semibold mb-4">Programación Contractual</h3>
-
-              {editandoContrato ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha acta de inicio
-                      </label>
-                      <input
-                        type="date"
-                        value={formContrato.fecha_acta_inicio}
-                        onChange={(e) => setFormContrato({ ...formContrato, fecha_acta_inicio: e.target.value })}
-                        className="w-full rounded-lg border px-3 py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Días hábiles contractuales
-                      </label>
-                      <input
-                        type="number"
-                        value={formContrato.dias_contractuales}
-                        onChange={(e) => setFormContrato({ ...formContrato, dias_contractuales: e.target.value })}
-                        className="w-full rounded-lg border px-3 py-2"
-                        placeholder="90"
-                      />
-                    </div>
-                  </div>
-
-                  {formContrato.fecha_acta_inicio && formContrato.dias_contractuales && (
-                    <div className="rounded-lg bg-blue-50 p-4">
-                      <p className="text-sm text-gray-600">Fecha entrega contractual (calculada)</p>
-                      <p className="text-lg font-bold text-blue-600">
-                        {new Date(calcularFechaEntrega(
-                          formContrato.fecha_acta_inicio,
-                          parseInt(formContrato.dias_contractuales)
-                        ) + "T12:00:00").toLocaleDateString("es-CO", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha reprogramada final (opcional)
-                    </label>
-                    <input
-                      type="date"
-                      value={formContrato.fecha_reprogramada_final}
-                      onChange={(e) => setFormContrato({ ...formContrato, fecha_reprogramada_final: e.target.value })}
-                      className="w-full rounded-lg border px-3 py-2"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Si el proyecto se reprogramó, indica la nueva fecha de entrega
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {project.fecha_acta_inicio ? (
-                    <>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="rounded-lg bg-gray-50 p-4">
-                          <p className="text-xs text-gray-600 mb-1">Fecha acta de inicio</p>
-                          <p className="font-semibold">
-                            {new Date(project.fecha_acta_inicio + "T12:00:00").toLocaleDateString("es-CO")}
-                          </p>
-                        </div>
-
-                        <div className="rounded-lg bg-gray-50 p-4">
-                          <p className="text-xs text-gray-600 mb-1">Tiempo contractual</p>
-                          <p className="font-semibold">{project.dias_contractuales || 0} días hábiles</p>
-                        </div>
-
-                        <div className="rounded-lg bg-blue-50 p-4">
-                          <p className="text-xs text-gray-600 mb-1">Fecha entrega contractual</p>
-                          <p className="font-semibold text-blue-600">
-                            {project.fecha_entrega_contractual
-                              ? new Date(project.fecha_entrega_contractual + "T12:00:00").toLocaleDateString("es-CO")
-                              : "—"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {project.fecha_reprogramada_final && (
-                        <div className="rounded-lg bg-orange-50 p-4 border-l-4 border-orange-500">
-                          <p className="text-xs text-gray-600 mb-1">⚠️ Fecha reprogramada final</p>
-                          <p className="font-semibold text-orange-700">
-                            {new Date(project.fecha_reprogramada_final + "T12:00:00").toLocaleDateString("es-CO", {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Flujo visual */}
-                      <div className="flex items-center gap-2 mt-6">
-                        <div className="flex-1 text-center">
-                          <div className="w-12 h-12 mx-auto rounded-full bg-green-500 text-white flex items-center justify-center font-bold mb-2">
-                            1
-                          </div>
-                          <p className="text-xs text-gray-600">Acta inicio</p>
-                          <p className="text-sm font-medium">
-                            {new Date(project.fecha_acta_inicio + "T12:00:00").toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
-                          </p>
-                        </div>
-
-                        <div className="flex-1 h-1 bg-gray-300 relative">
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2 text-xs text-gray-600 whitespace-nowrap">
-                            {project.dias_contractuales} días hábiles
-                          </div>
-                        </div>
-
-                        <div className="flex-1 text-center">
-                          <div className="w-12 h-12 mx-auto rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mb-2">
-                            2
-                          </div>
-                          <p className="text-xs text-gray-600">Entrega contractual</p>
-                          <p className="text-sm font-medium">
-                            {project.fecha_entrega_contractual
-                              ? new Date(project.fecha_entrega_contractual + "T12:00:00").toLocaleDateString("es-CO", { day: "2-digit", month: "short" })
-                              : "—"}
-                          </p>
-                        </div>
-
-                        {project.fecha_reprogramada_final && (
-                          <>
-                            <div className="flex-1 h-1 bg-orange-300" />
-                            <div className="flex-1 text-center">
-                              <div className="w-12 h-12 mx-auto rounded-full bg-orange-500 text-white flex items-center justify-center font-bold mb-2">
-                                3
-                              </div>
-                              <p className="text-xs text-gray-600">Reprogramada</p>
-                              <p className="text-sm font-medium">
-                                {new Date(project.fecha_reprogramada_final + "T12:00:00").toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-sm text-gray-500 text-center py-8">
-                      No hay datos contractuales registrados
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* Avances — misma data que /bitacora (bitacora_entradas), no un historial paralelo */}
+            <AvancesFeed proyectoId={projectId} proyectoNombre={project.cliente_nombre ?? undefined} />
 
             {/* Imagen de alcance */}
             <div className="mt-6">
