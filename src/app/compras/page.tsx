@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
-import { ShoppingCart, Plus, X, Search, CheckCircle2, Circle, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { ShoppingCart, Plus, X, Search, CheckCircle2, Circle, Pencil, Trash2, AlertTriangle, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ProyectoCombobox, type Proyecto } from "@/components/proyecto-combobox";
@@ -17,6 +17,8 @@ interface Compra {
   proyecto_nombre: string;
   comprado: boolean;
   comprado_at: string | null;
+  recibido: boolean;
+  recibido_at: string | null;
   created_at: string;
 }
 
@@ -72,6 +74,8 @@ export default function ComprasPage() {
           proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "Proyecto desconocido",
           comprado: r.comprado as boolean,
           comprado_at: r.comprado_at as string | null,
+          recibido: r.recibido as boolean,
+          recibido_at: r.recibido_at as string | null,
           created_at: r.created_at as string,
         }))
       );
@@ -82,24 +86,55 @@ export default function ComprasPage() {
   async function toggleComprado(compra: Compra) {
     const nuevoValor = !compra.comprado;
     const nuevoAt = nuevoValor ? new Date().toISOString() : null;
+    // Si se desmarca "comprado", no puede seguir "recibido" — se resetea junto.
+    const nuevoRecibido = nuevoValor ? compra.recibido : false;
+    const nuevoRecibidoAt = nuevoRecibido ? compra.recibido_at : null;
 
     setToggling(compra.id);
     setCompras((prev) =>
       prev.map((c) =>
-        c.id === compra.id ? { ...c, comprado: nuevoValor, comprado_at: nuevoAt } : c
+        c.id === compra.id
+          ? { ...c, comprado: nuevoValor, comprado_at: nuevoAt, recibido: nuevoRecibido, recibido_at: nuevoRecibidoAt }
+          : c
       )
     );
 
     const { error } = await supabase
       .from("compras")
-      .update({ comprado: nuevoValor, comprado_at: nuevoAt })
+      .update({ comprado: nuevoValor, comprado_at: nuevoAt, recibido: nuevoRecibido, recibido_at: nuevoRecibidoAt })
       .eq("id", compra.id);
 
     if (error) {
       setCompras((prev) =>
         prev.map((c) =>
-          c.id === compra.id ? { ...c, comprado: compra.comprado, comprado_at: compra.comprado_at } : c
+          c.id === compra.id
+            ? { ...c, comprado: compra.comprado, comprado_at: compra.comprado_at, recibido: compra.recibido, recibido_at: compra.recibido_at }
+            : c
         )
+      );
+      alert("Error: " + error.message);
+    }
+    setToggling(null);
+  }
+
+  async function toggleRecibido(compra: Compra) {
+    if (!compra.comprado) return; // no se puede recibir algo que no está comprado
+    const nuevoValor = !compra.recibido;
+    const nuevoAt = nuevoValor ? new Date().toISOString() : null;
+
+    setToggling(compra.id);
+    setCompras((prev) =>
+      prev.map((c) => (c.id === compra.id ? { ...c, recibido: nuevoValor, recibido_at: nuevoAt } : c))
+    );
+
+    const { error } = await supabase
+      .from("compras")
+      .update({ recibido: nuevoValor, recibido_at: nuevoAt })
+      .eq("id", compra.id);
+
+    if (error) {
+      setCompras((prev) =>
+        prev.map((c) => (c.id === compra.id ? { ...c, recibido: compra.recibido, recibido_at: compra.recibido_at } : c))
       );
       alert("Error: " + error.message);
     }
@@ -166,14 +201,18 @@ export default function ComprasPage() {
   const comprasFiltradas = compras.filter((c) => {
     if (filtroProyecto !== "TODOS" && c.proyecto_id !== filtroProyecto) return false;
     if (filtroEstado === "pendiente" && c.comprado) return false;
-    if (filtroEstado === "comprado" && !c.comprado) return false;
+    // "Comprados" = comprado pero todavía no recibido (en tránsito). Una vez
+    // recibido, el ítem pasa a la pestaña "Recibidos" y deja de contar aquí.
+    if (filtroEstado === "comprado" && (!c.comprado || c.recibido)) return false;
+    if (filtroEstado === "recibido" && !c.recibido) return false;
     if (filtroEstado === "urgente" && !c.urgente) return false;
     if (busqueda.trim() && !c.item.toLowerCase().includes(busqueda.trim().toLowerCase())) return false;
     return true;
   });
 
   const pendientes = compras.filter((c) => !c.comprado).length;
-  const comprados = compras.filter((c) => c.comprado).length;
+  const comprados = compras.filter((c) => c.comprado && !c.recibido).length;
+  const recibidos = compras.filter((c) => c.recibido).length;
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -195,7 +234,7 @@ export default function ComprasPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-4">
         <div className="rounded-xl border border-gray-200 bg-white p-4">
           <div className="text-2xl font-bold text-gray-900">{compras.length}</div>
           <div className="text-sm text-gray-500">Total ítems</div>
@@ -207,6 +246,10 @@ export default function ComprasPage() {
         <div className="rounded-xl border border-green-200 bg-green-50 p-4">
           <div className="text-2xl font-bold text-green-700">{comprados}</div>
           <div className="text-sm text-green-600">Comprados</div>
+        </div>
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <div className="text-2xl font-bold text-blue-700">{recibidos}</div>
+          <div className="text-sm text-blue-600">Recibidos</div>
         </div>
       </div>
 
@@ -246,6 +289,7 @@ export default function ComprasPage() {
             { key: "TODOS", label: "Todos" },
             { key: "pendiente", label: "Pendientes" },
             { key: "comprado", label: "Comprados" },
+            { key: "recibido", label: "Recibidos" },
             { key: "urgente", label: "Urgentes" },
           ].map((f) => (
             <button
@@ -289,7 +333,9 @@ export default function ComprasPage() {
               key={compra.id}
               className={cn(
                 "flex items-center gap-1.5 border-b border-l-[3px] border-gray-100 pl-[5px] pr-1.5 transition-colors last:border-b-0 sm:gap-2 sm:pr-3",
-                compra.comprado
+                compra.recibido
+                  ? "border-l-blue-300 bg-blue-50/30"
+                  : compra.comprado
                   ? "border-l-green-300 bg-green-50/30"
                   : compra.urgente
                   ? "border-l-red-400 bg-red-50/40"
@@ -329,6 +375,22 @@ export default function ComprasPage() {
                 >
                   {compra.item}
                 </span>
+                {compra.comprado && (
+                  <button
+                    onClick={() => void toggleRecibido(compra)}
+                    disabled={toggling === compra.id}
+                    title={compra.recibido ? "Marcar como no recibido" : "Marcar como recibido"}
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide transition-colors disabled:opacity-50 sm:px-2 sm:text-[9px]",
+                      compra.recibido
+                        ? "bg-blue-500 text-white"
+                        : "border border-blue-300 text-blue-500 hover:bg-blue-50"
+                    )}
+                  >
+                    <PackageCheck className="size-2.5" />
+                    {compra.recibido ? "Recibido" : "Recibir"}
+                  </button>
+                )}
               </div>
 
               {/* Cantidad + unidad */}
