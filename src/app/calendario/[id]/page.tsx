@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { calcularDiasHabiles } from "@/lib/festivos-colombia";
+import { calcularDiasHabiles, calcularProgreso, calcularDiasRestantes } from "@/lib/programacion";
 
 export default function CalendarioDetallePage() {
   const supabase = getSupabaseClient();
@@ -122,26 +122,6 @@ export default function CalendarioDetallePage() {
       console.error("Error:", err);
       alert("Error al eliminar");
     }
-  }
-
-  function calcularProgreso(inicio: string, fin: string) {
-    const hoy = new Date();
-    const fechaInicio = new Date(inicio);
-    const fechaFin = new Date(fin);
-
-    if (hoy < fechaInicio) return 0;
-    if (hoy > fechaFin) return 100;
-
-    const total = fechaFin.getTime() - fechaInicio.getTime();
-    const transcurrido = hoy.getTime() - fechaInicio.getTime();
-    return Math.round((transcurrido / total) * 100);
-  }
-
-  function calcularDiasRestantes(fin: string) {
-    const hoy = new Date();
-    const fechaFin = new Date(fin);
-    const diff = fechaFin.getTime() - hoy.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
   if (loading) {

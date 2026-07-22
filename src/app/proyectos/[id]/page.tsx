@@ -21,6 +21,7 @@ import {
   Trash2,
   Pencil,
   HardHat,
+  FileText,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ActividadCard, type Actividad } from "./components/ActividadCard";
 import { ActividadModal } from "./components/ActividadModal";
+import { ProgramacionProyecto } from "@/components/ProgramacionProyecto";
 
 interface Proyecto {
   id: string;
@@ -111,10 +113,8 @@ function calcularRutaCritica(acts: Actividad[]): Actividad[] {
 // ── Constants ──
 
 const TABS = [
-  { id: "info", label: "Información" },
-  { id: "alcance", label: "Alcance" },
+  { id: "detalle", label: "Detalle" },
   { id: "adicionales", label: "Adicionales" },
-  { id: "programacion", label: "Programación" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -159,7 +159,7 @@ export default function ProyectoDetailPage() {
   const [adicionales, setAdicionales] = useState<AdicionalRow[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabId>("info");
+  const [activeTab, setActiveTab] = useState<TabId>("detalle");
 
   const [editForm, setEditForm] = useState({
     cliente_nombre: "",
@@ -366,11 +366,11 @@ export default function ProyectoDetailPage() {
   }
 
   useEffect(() => {
-    if (activeTab === "alcance" && projectId) {
+    if (projectId) {
       cargarHistorialAlcance();
       cargarReferencias();
     }
-  }, [activeTab, projectId]);
+  }, [projectId]);
 
   async function handleSaveAlcance() {
     const textoLimpio = alcance.trim();
@@ -722,6 +722,22 @@ export default function ProyectoDetailPage() {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            {project.link_contrato ? (
+              <a
+                href={project.link_contrato}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 rounded-full bg-[#007AFF]/8 px-2.5 py-1 text-[11px] font-semibold text-[#007AFF] transition-colors hover:bg-[#007AFF]/15"
+              >
+                <FileText className="size-3.5" />
+                <span className="hidden sm:inline">Ver contrato</span>
+              </a>
+            ) : (
+              <span className="flex items-center gap-1 rounded-full bg-[#F5F5F7] px-2.5 py-1 text-[11px] font-medium text-[#86868B]">
+                <FileText className="size-3.5" />
+                <span className="hidden sm:inline">Sin contrato</span>
+              </span>
+            )}
             <span className={cn(
               "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
               isFromFinanzas ? "bg-[#007AFF]/8 text-[#007AFF]" : "bg-[#FF9500]/10 text-[#FF9500]"
@@ -761,10 +777,12 @@ export default function ProyectoDetailPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-8 py-8">
-        {/* ─── TAB: Info ─── */}
-        {activeTab === "info" && (
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
+        {/* ─── SECCIÓN: Información ─── */}
+        {activeTab === "detalle" && (
           <div className="space-y-6">
+            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Información</h2>
+
             {/* Avance general */}
             <div className="rounded-lg border bg-white p-6">
               <div className="mb-2 flex items-center justify-between">
@@ -935,9 +953,11 @@ export default function ProyectoDetailPage() {
           </div>
         )}
 
-        {/* ─── TAB: Alcance ─── */}
-        {activeTab === "alcance" && (
-          <div className="space-y-6">
+        {/* ─── SECCIÓN: Alcance ─── */}
+        {activeTab === "detalle" && (
+          <div className="mt-10 space-y-6">
+            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Alcance</h2>
+
             {/* Textarea para nuevo texto */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1482,6 +1502,14 @@ export default function ProyectoDetailPage() {
           </div>
         )}
 
+        {/* ─── SECCIÓN: Cronograma ─── */}
+        {activeTab === "detalle" && projectId && (
+          <div className="mt-10 space-y-6">
+            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Cronograma</h2>
+            <ProgramacionProyecto proyectoId={projectId} />
+          </div>
+        )}
+
         {/* ─── TAB: Adicionales ─── */}
         {activeTab === "adicionales" && (
           <div className="space-y-4">
@@ -1523,9 +1551,11 @@ export default function ProyectoDetailPage() {
           </div>
         )}
 
-        {/* ─── TAB: Programación (Kanban + CPM) ─── */}
-        {activeTab === "programacion" && (
-          <div className="space-y-6">
+        {/* ─── SECCIÓN: Programación (Kanban + CPM) ─── */}
+        {activeTab === "detalle" && (
+          <div className="mt-10 space-y-6">
+            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Programación</h2>
+
             {/* Progress bar */}
             <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-5">
               <div className="mb-2 flex items-center justify-between">

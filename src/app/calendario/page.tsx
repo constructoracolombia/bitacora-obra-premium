@@ -13,7 +13,7 @@ import {
 import { getSupabaseClient } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { calcularDiasHabiles } from "@/lib/festivos-colombia";
+import { calcularDiasHabiles, calcularProgreso } from "@/lib/programacion";
 
 interface ProyectoCalendario {
   id: string;
@@ -206,19 +206,6 @@ export default function CalendarioPage() {
       porcentajeInicio: (indiceInicio / columnas.length) * 100,
       porcentajeAncho: (ancho / columnas.length) * 100,
     };
-  }
-
-  function calcularProgreso(inicio: string, fin: string) {
-    const hoy = new Date();
-    const fechaIni = new Date(inicio);
-    const fechaFin = new Date(fin);
-
-    if (hoy < fechaIni) return 0;
-    if (hoy > fechaFin) return 100;
-
-    const total = fechaFin.getTime() - fechaIni.getTime();
-    const transcurrido = hoy.getTime() - fechaIni.getTime();
-    return Math.round((transcurrido / total) * 100);
   }
 
   const columnasFechas = generarColumnasFechas();
