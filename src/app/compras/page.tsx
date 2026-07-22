@@ -2,11 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
-import { ShoppingCart, Plus, X, CheckCircle2, Circle, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { ShoppingCart, Plus, X, Search, CheckCircle2, Circle, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { ProyectoCombobox, type Proyecto } from "@/components/proyecto-combobox";
 
 interface Compra {
@@ -36,7 +34,8 @@ export default function ComprasPage() {
   const [eliminando, setEliminando] = useState<string | null>(null);
 
   const [filtroProyecto, setFiltroProyecto] = useState("TODOS");
-  const [filtroEstado, setFiltroEstado] = useState("TODOS");
+  const [filtroEstado, setFiltroEstado] = useState("pendiente");
+  const [busqueda, setBusqueda] = useState("");
 
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState<Compra | null>(null);
@@ -169,6 +168,7 @@ export default function ComprasPage() {
     if (filtroEstado === "pendiente" && c.comprado) return false;
     if (filtroEstado === "comprado" && !c.comprado) return false;
     if (filtroEstado === "urgente" && !c.urgente) return false;
+    if (busqueda.trim() && !c.item.toLowerCase().includes(busqueda.trim().toLowerCase())) return false;
     return true;
   });
 
@@ -210,6 +210,26 @@ export default function ComprasPage() {
         </div>
       </div>
 
+      {/* Buscador */}
+      <div className="relative mb-3">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar ítem..."
+          className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-9 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 sm:h-10"
+        />
+        {busqueda && (
+          <button
+            onClick={() => setBusqueda("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
+
       {/* Filtros */}
       <div className="flex gap-3 mb-4 flex-wrap items-center">
         <ProyectoCombobox
@@ -243,9 +263,9 @@ export default function ComprasPage() {
           ))}
         </div>
 
-        {(filtroProyecto !== "TODOS" || filtroEstado !== "TODOS") && (
+        {(filtroProyecto !== "TODOS" || filtroEstado !== "pendiente" || busqueda.trim() !== "") && (
           <button
-            onClick={() => { setFiltroProyecto("TODOS"); setFiltroEstado("TODOS"); }}
+            onClick={() => { setFiltroProyecto("TODOS"); setFiltroEstado("pendiente"); setBusqueda(""); }}
             className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
           >
             <X className="size-3" /> Limpiar filtros
@@ -253,7 +273,7 @@ export default function ComprasPage() {
         )}
       </div>
 
-      {/* Tabla (desktop) / Tarjetas (móvil) */}
+      {/* Lista compacta — mismo layout en móvil y desktop */}
       {loading ? (
         <div className="flex justify-center py-16 text-gray-400 text-sm">Cargando...</div>
       ) : comprasFiltradas.length === 0 ? (
@@ -263,192 +283,91 @@ export default function ComprasPage() {
             : "Sin resultados para los filtros seleccionados."}
         </div>
       ) : (
-        <>
-          {/* Tabla — desktop */}
-          <div className="hidden rounded-xl border border-gray-200 overflow-hidden bg-white md:block">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-10" />
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Ítem</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-24">Cantidad</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-20">Unidad</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Proyecto</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 w-28">Comprado el</th>
-                  <th className="px-4 py-3 w-20" />
-                </tr>
-              </thead>
-              <tbody>
-                {comprasFiltradas.map((compra) => (
-                  <tr
-                    key={compra.id}
-                    className={cn(
-                      "border-b border-gray-100 last:border-0 transition-colors",
-                      compra.comprado
-                        ? "bg-green-50/50"
-                        : compra.urgente
-                        ? "bg-red-50/50 hover:bg-red-50/80"
-                        : "hover:bg-gray-50/60"
-                    )}
-                  >
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => void toggleComprado(compra)}
-                        disabled={toggling === compra.id}
-                        title={compra.comprado ? "Marcar como pendiente" : "Marcar como comprado"}
-                        className="transition-transform hover:scale-110 disabled:opacity-50"
-                      >
-                        {compra.comprado ? (
-                          <CheckCircle2 className="size-5 text-green-500" />
-                        ) : (
-                          <Circle className="size-5 text-gray-300 hover:text-blue-400" />
-                        )}
-                      </button>
-                    </td>
-                    <td
-                      className={cn(
-                        "px-4 py-3 font-medium",
-                        compra.comprado ? "line-through text-gray-400" : "text-gray-900"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        {compra.item}
-                        {compra.urgente && !compra.comprado && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                            <AlertTriangle className="size-2.5" />
-                            Urgente
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 tabular-nums">
-                      {Number(compra.cantidad) % 1 === 0
-                        ? Number(compra.cantidad).toFixed(0)
-                        : Number(compra.cantidad).toString()}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">{compra.unidad}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                        {compra.proyecto_nombre}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-400">
-                      {compra.comprado_at
-                        ? format(new Date(compra.comprado_at), "d MMM yyyy", { locale: es })
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => abrirEditar(compra)}
-                          title="Editar"
-                          className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <Pencil className="size-3.5" />
-                        </button>
-                        <button
-                          onClick={() => void eliminarCompra(compra)}
-                          disabled={eliminando === compra.id}
-                          title="Eliminar"
-                          className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Tarjetas — móvil */}
-          <div className="space-y-3 md:hidden">
-            {comprasFiltradas.map((compra) => (
-              <div
-                key={compra.id}
-                className={cn(
-                  "rounded-xl border p-3",
-                  compra.comprado
-                    ? "border-green-200 bg-green-50/40"
-                    : compra.urgente
-                    ? "border-red-200 bg-red-50/50"
-                    : "border-gray-200 bg-white"
-                )}
+        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          {comprasFiltradas.map((compra) => (
+            <div
+              key={compra.id}
+              className={cn(
+                "flex items-center gap-1.5 border-b border-l-[3px] border-gray-100 pl-[5px] pr-1.5 transition-colors last:border-b-0 sm:gap-2 sm:pr-3",
+                compra.comprado
+                  ? "border-l-green-300 bg-green-50/30"
+                  : compra.urgente
+                  ? "border-l-red-400 bg-red-50/40"
+                  : "border-l-transparent hover:bg-gray-50/60"
+              )}
+            >
+              {/* Checkbox — 44×44 */}
+              <button
+                onClick={() => void toggleComprado(compra)}
+                disabled={toggling === compra.id}
+                title={compra.comprado ? "Marcar como pendiente" : "Marcar como comprado"}
+                className="flex size-11 shrink-0 items-center justify-center rounded-lg active:bg-gray-100 disabled:opacity-50"
               >
-                <div className="flex items-start gap-2">
-                  {/* Checkbox — área táctil 44×44 */}
-                  <button
-                    onClick={() => void toggleComprado(compra)}
-                    disabled={toggling === compra.id}
-                    title={compra.comprado ? "Marcar como pendiente" : "Marcar como comprado"}
-                    className="flex size-11 shrink-0 items-center justify-center rounded-lg active:bg-gray-100 disabled:opacity-50"
-                  >
-                    {compra.comprado ? (
-                      <CheckCircle2 className="size-7 text-green-500" />
-                    ) : (
-                      <Circle className="size-7 text-gray-300" />
-                    )}
-                  </button>
+                {compra.comprado ? (
+                  <CheckCircle2 className="size-5 text-green-500" />
+                ) : (
+                  <Circle className="size-5 text-gray-300" />
+                )}
+              </button>
 
-                  <div className="min-w-0 flex-1 pt-2.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span
-                        className={cn(
-                          "text-base font-semibold",
-                          compra.comprado ? "text-gray-400 line-through" : "text-gray-900"
-                        )}
-                      >
-                        {compra.item}
-                      </span>
-                      {compra.urgente && !compra.comprado && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                          <AlertTriangle className="size-2.5" />
-                          Urgente
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
-                      <span className="tabular-nums">
-                        {Number(compra.cantidad) % 1 === 0
-                          ? Number(compra.cantidad).toFixed(0)
-                          : Number(compra.cantidad).toString()}{" "}
-                        {compra.unidad}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-                        {compra.proyecto_nombre}
-                      </span>
-                    </div>
-                    {compra.comprado_at && (
-                      <div className="mt-1 text-xs text-gray-400">
-                        Comprado el {format(new Date(compra.comprado_at), "d MMM yyyy", { locale: es })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Editar/eliminar — separados del checkbox para evitar toques accidentales */}
-                <div className="mt-2 flex justify-end gap-1 border-t border-gray-100 pt-1">
-                  <button
-                    onClick={() => abrirEditar(compra)}
-                    title="Editar"
-                    className="flex size-11 items-center justify-center rounded-lg text-gray-400 active:bg-blue-50 active:text-blue-600"
+              {/* Nombre + urgente inline */}
+              <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-1.5">
+                {compra.urgente && !compra.comprado && (
+                  <span
+                    className="inline-flex shrink-0 items-center rounded-full bg-red-500 px-1 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white sm:px-1.5 sm:text-[9px]"
+                    title="Urgente"
                   >
-                    <Pencil className="size-4" />
-                  </button>
-                  <button
-                    onClick={() => void eliminarCompra(compra)}
-                    disabled={eliminando === compra.id}
-                    title="Eliminar"
-                    className="flex size-11 items-center justify-center rounded-lg text-gray-400 active:bg-red-50 active:text-red-600 disabled:opacity-40"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
+                    <span className="sm:hidden">URG</span>
+                    <span className="hidden sm:inline">Urgente</span>
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    "truncate text-sm font-medium",
+                    compra.comprado ? "text-gray-400 line-through" : "text-gray-900"
+                  )}
+                >
+                  {compra.item}
+                </span>
               </div>
-            ))}
-          </div>
-        </>
+
+              {/* Cantidad + unidad */}
+              <span className="shrink-0 whitespace-nowrap text-xs text-gray-500 tabular-nums">
+                {Number(compra.cantidad) % 1 === 0
+                  ? Number(compra.cantidad).toFixed(0)
+                  : Number(compra.cantidad).toString()}{" "}
+                {compra.unidad}
+              </span>
+
+              {/* Proyecto */}
+              <span
+                className="shrink-0 max-w-[56px] truncate text-xs text-gray-400 sm:max-w-[140px]"
+                title={compra.proyecto_nombre}
+              >
+                {compra.proyecto_nombre}
+              </span>
+
+              {/* Editar/eliminar — discretos, al final del renglón */}
+              <div className="flex shrink-0 items-center">
+                <button
+                  onClick={() => abrirEditar(compra)}
+                  title="Editar"
+                  className="flex size-7 items-center justify-center rounded-lg text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                >
+                  <Pencil className="size-3" />
+                </button>
+                <button
+                  onClick={() => void eliminarCompra(compra)}
+                  disabled={eliminando === compra.id}
+                  title="Eliminar"
+                  className="flex size-7 items-center justify-center rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Modal agregar / editar compra — bottom sheet en móvil, modal centrado en desktop */}
