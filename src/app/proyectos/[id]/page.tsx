@@ -193,10 +193,14 @@ export default function ProyectoDetailPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [projRes, adRes, actRes] = await Promise.all([
+      const [projRes, adRes, actRes, finRes] = await Promise.all([
         supabase.from("proyectos_maestro").select("*").eq("id", projectId).single(),
         supabase.from("adicionales").select("*").eq("proyecto_id", projectId).order("created_at", { ascending: false }),
         supabase.from("actividades_proyecto").select("*").eq("proyecto_id", projectId).order("orden", { ascending: true }),
+        // proyectos.contrato_url (tabla propia de Finanzas, mismo id que proyectos_maestro) — fuente
+        // automática del PDF del contrato. proyectos_maestro.link_contrato es un enlace manual
+        // (Drive) que se guardaba aparte y no siempre coincide; se usa como respaldo.
+        supabase.from("proyectos").select("contrato_url").eq("id", projectId).maybeSingle(),
       ]);
 
       if (projRes.data) {
@@ -216,7 +220,7 @@ export default function ProyectoDetailPage() {
           alcance_imagen: r.alcance_imagen ?? null,
           proyecto_nombre: r.proyecto_nombre ?? null,
           app_origen: r.app_origen ?? null,
-          link_contrato: r.link_contrato ?? null,
+          link_contrato: finRes.data?.contrato_url ?? r.link_contrato ?? null,
         });
         setAlcanceImagen(r.alcance_imagen ?? null);
         setEditForm({
