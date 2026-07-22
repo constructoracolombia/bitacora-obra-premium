@@ -9,8 +9,6 @@ import {
   Loader2,
   MapPin,
   DollarSign,
-  User,
-  Calendar,
   Save,
   CheckCircle2,
   Lock,
@@ -20,7 +18,6 @@ import {
   PlusCircle,
   Trash2,
   Pencil,
-  HardHat,
   FileText,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
@@ -106,13 +103,6 @@ export default function ProyectoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("detalle");
 
-  const [editForm, setEditForm] = useState({
-    cliente_nombre: "",
-    residente: "",
-    presupuesto_total: "",
-    estado: "ACTIVO" as "ACTIVO" | "PAUSADO" | "FINALIZADO",
-  });
-
   const [alcanceImagen, setAlcanceImagen] = useState<string | null>(null);
 
   const [referencias, setReferencias] = useState<any>(null);
@@ -132,8 +122,6 @@ export default function ProyectoDetailPage() {
     color_carpinteria: "",
   });
 
-  const [editando, setEditando] = useState(false);
-  const [guardando, setGuardando] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   // ── Data loading ──
@@ -170,12 +158,6 @@ export default function ProyectoDetailPage() {
           link_contrato: finRes.data?.contrato_url ?? r.link_contrato ?? null,
         });
         setAlcanceImagen(r.alcance_imagen ?? null);
-        setEditForm({
-          cliente_nombre: r.cliente_nombre ?? "",
-          residente: r.residente ?? "",
-          presupuesto_total: r.presupuesto_total != null ? String(r.presupuesto_total) : "",
-          estado: (r.estado as any) ?? "ACTIVO",
-        });
       }
 
       if (adRes.data) {
@@ -227,34 +209,6 @@ export default function ProyectoDetailPage() {
     const done = actividades.filter((a) => a.estado === "TERMINADO").length;
     return Math.round((done / total) * 100);
   })();
-
-  // ── Info handlers ──
-
-  async function guardarCambios() {
-    if (!project) return;
-    setGuardando(true);
-    try {
-      const { error } = await supabase
-        .from("proyectos_maestro")
-        .update({
-          cliente_nombre: editForm.cliente_nombre,
-          residente: editForm.residente || null,
-          presupuesto_total: editForm.presupuesto_total ? Number(editForm.presupuesto_total) : null,
-          estado: editForm.estado,
-        } as any)
-        .eq("id", project.id);
-
-      if (error) throw error;
-
-      await fetchData();
-      setEditando(false);
-    } catch (err) {
-      console.error("Error:", err);
-      alert("Error al guardar cambios");
-    } finally {
-      setGuardando(false);
-    }
-  }
 
   useEffect(() => {
     if (projectId) cargarReferencias();
@@ -485,6 +439,20 @@ export default function ProyectoDetailPage() {
               )}
             </div>
 
+            {project.presupuesto_total != null && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <DollarSign className="size-4 shrink-0 text-gray-400" />
+                Presupuesto:{" "}
+                <span className="font-semibold text-gray-900">
+                  {new Intl.NumberFormat("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    minimumFractionDigits: 0,
+                  }).format(project.presupuesto_total)}
+                </span>
+              </div>
+            )}
+
             <ProgramacionProyecto proyectoId={projectId} />
 
             {/* Progreso del proyecto (actividades_proyecto) */}
@@ -499,164 +467,6 @@ export default function ProyectoDetailPage() {
               <p className="mt-2 text-[12px] text-[#86868B]">
                 {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades
               </p>
-            </div>
-          </div>
-        )}
-
-        {/* ─── SECCIÓN: Finanzas ─── */}
-        {activeTab === "detalle" && (
-          <div className="mt-10 space-y-6">
-            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Finanzas</h2>
-
-            {/* Información del proyecto */}
-            <div className="rounded-lg border bg-white p-6">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold">
-                  {isFromFinanzas
-                    ? "Proyecto gestionado desde Finanzas"
-                    : "Información del Proyecto"}
-                </h3>
-                {!isFromFinanzas && (
-                  <Button
-                    onClick={() => setEditando(!editando)}
-                    variant="outline"
-                    className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                  >
-                    {editando ? "Cancelar" : "Editar"}
-                  </Button>
-                )}
-              </div>
-
-              {isFromFinanzas && (
-                <div className="mb-4 rounded-lg bg-blue-50 p-4 text-sm text-blue-700 border border-blue-200">
-                  🔒 Los datos principales son de solo lectura.
-                </div>
-              )}
-
-              {editando && !isFromFinanzas ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nombre del proyecto *
-                    </label>
-                    <input
-                      value={editForm.cliente_nombre}
-                      onChange={(e) => setEditForm({ ...editForm, cliente_nombre: e.target.value })}
-                      className="w-full rounded-lg border px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Residente
-                    </label>
-                    <input
-                      value={editForm.residente}
-                      onChange={(e) => setEditForm({ ...editForm, residente: e.target.value })}
-                      className="w-full rounded-lg border px-3 py-2"
-                      placeholder="Nombre del residente de obra"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Presupuesto total
-                    </label>
-                    <input
-                      type="number"
-                      value={editForm.presupuesto_total}
-                      onChange={(e) => setEditForm({ ...editForm, presupuesto_total: e.target.value })}
-                      className="w-full rounded-lg border px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Estado
-                    </label>
-                    <select
-                      value={editForm.estado}
-                      onChange={(e) => setEditForm({ ...editForm, estado: e.target.value as any })}
-                      className="w-full rounded-lg border px-3 py-2"
-                    >
-                      <option value="ACTIVO">Activo</option>
-                      <option value="PAUSADO">Pausado</option>
-                      <option value="FINALIZADO">Finalizado</option>
-                    </select>
-                  </div>
-
-                  <Button
-                    onClick={guardarCambios}
-                    disabled={guardando}
-                    className="w-full bg-blue-500 hover:bg-blue-600"
-                  >
-                    {guardando ? "Guardando..." : "Guardar cambios"}
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <User className="h-5 w-5 text-gray-400 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-600">Cliente</p>
-                        <p className="font-semibold text-gray-900">{project.cliente_nombre}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <DollarSign className="h-5 w-5 text-gray-400 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-600">Presupuesto</p>
-                        <p className="font-semibold text-gray-900">
-                          {project.presupuesto_total
-                            ? new Intl.NumberFormat("es-CO", {
-                                style: "currency",
-                                currency: "COP",
-                                minimumFractionDigits: 0,
-                              }).format(project.presupuesto_total)
-                            : "—"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-600">Fecha inicio</p>
-                        <p className="font-semibold text-gray-900">
-                          {project.fecha_inicio
-                            ? new Date(project.fecha_inicio + "T12:00:00").toLocaleDateString("es-CO", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })
-                            : "—"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <HardHat className="h-5 w-5 text-gray-400 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-600">Residente</p>
-                        {!isFromFinanzas && !project.residente ? (
-                          <button
-                            onClick={() => setEditando(true)}
-                            className="text-sm text-blue-600 hover:underline"
-                          >
-                            Agregar residente
-                          </button>
-                        ) : (
-                          <p className="font-semibold text-gray-900">{project.residente || "—"}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
