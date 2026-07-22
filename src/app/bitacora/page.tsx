@@ -8,7 +8,6 @@ import {
   X,
   Pencil,
   Trash2,
-  Calendar,
   PlayCircle,
   Link2,
   Share2,
@@ -36,6 +35,7 @@ interface Foto {
 interface Entrada {
   id: string;
   proyecto_id: string;
+  proyecto_nombre: string;
   fecha: string;
   titulo: string;
   descripcion: string | null;
@@ -52,17 +52,22 @@ interface Tarea {
 }
 
 // ─── Página ───────────────────────────────────────────────────────────────────
+// Lista global de avances (mismo patrón que /compras): no obliga a elegir
+// proyecto para ver o registrar. El filtro de proyecto es opcional y solo
+// habilita "Compartir al cliente" y la pestaña "Por Hacer", que sí son
+// por-proyecto.
 
 export default function BitacoraPage() {
   const supabase = getSupabaseClient();
 
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
-  const [proyectoId, setProyectoId] = useState("");
-  const [loadingProyectos, setLoadingProyectos] = useState(true);
-
   const [entradas, setEntradas] = useState<Entrada[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [filtroProyecto, setFiltroProyecto] = useState("TODOS");
+
   const [tareas, setTareas] = useState<Tarea[]>([]);
-  const [loadingDatos, setLoadingDatos] = useState(false);
+  const [loadingTareas, setLoadingTareas] = useState(false);
 
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState<Entrada | null>(null);
@@ -71,70 +76,74 @@ export default function BitacoraPage() {
   const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
-    void cargarProyectos();
+    void cargar();
   }, []);
 
   useEffect(() => {
-    if (proyectoId) void cargarDatosProyecto(proyectoId);
-    else {
-      setEntradas([]);
-      setTareas([]);
-    }
-  }, [proyectoId]);
+    if (filtroProyecto !== "TODOS") void cargarTareas(filtroProyecto);
+    else setTareas([]);
+  }, [filtroProyecto]);
 
-  async function cargarProyectos() {
-    setLoadingProyectos(true);
-    const { data } = await supabase
-      .from("proyectos_maestro")
-      .select("id, cliente_nombre")
-      .order("cliente_nombre");
-    if (data) setProyectos(data as Proyecto[]);
-    setLoadingProyectos(false);
-  }
-
-  async function cargarDatosProyecto(id: string) {
-    setLoadingDatos(true);
-    const [entradasRes, tareasRes] = await Promise.all([
+  async function cargar() {
+    setLoading(true);
+    const [entradasRes, proyRes] = await Promise.all([
       supabase
         .from("bitacora_entradas")
         .select("id, proyecto_id, fecha, titulo, descripcion, video_url, bitacora_fotos(id, foto_url, orden)")
-        .eq("proyecto_id", id)
         .order("fecha", { ascending: false }),
-      supabase
-        .from("bitacora_tareas")
-        .select("*")
-        .eq("proyecto_id", id)
-        .order("orden", { ascending: true }),
+      supabase.from("proyectos_maestro").select("id, cliente_nombre").order("cliente_nombre"),
     ]);
+
+    const projMap = new Map<string, string>();
+    if (proyRes.data) {
+      setProyectos(proyRes.data as Proyecto[]);
+      (proyRes.data as Proyecto[]).forEach((p) => projMap.set(p.id, p.cliente_nombre ?? "Sin nombre"));
+    }
 
     if (entradasRes.data) {
       setEntradas(
-        (entradasRes.data as Array<Omit<Entrada, "fotos"> & { bitacora_fotos: Foto[] }>).map((e) => ({
-          id: e.id,
-          proyecto_id: e.proyecto_id,
-          fecha: e.fecha,
-          titulo: e.titulo,
-          descripcion: e.descripcion,
-          video_url: e.video_url,
-          fotos: [...(e.bitacora_fotos ?? [])].sort((a: Foto, b: Foto) => a.orden - b.orden),
-        }))
+        (entradasRes.data as Array<Omit<Entrada, "fotos" | "proyecto_nombre"> & { bitacora_fotos: Foto[] }>).map(
+          (e) => ({
+            id: e.id,
+            proyecto_id: e.proyecto_id,
+            proyecto_nombre: projMap.get(e.proyecto_id) ?? "Proyecto desconocido",
+            fecha: e.fecha,
+            titulo: e.titulo,
+            descripcion: e.descripcion,
+            video_url: e.video_url,
+            fotos: [...(e.bitacora_fotos ?? [])].sort((a: Foto, b: Foto) => a.orden - b.orden),
+          })
+        )
       );
     }
-    if (tareasRes.data) setTareas(tareasRes.data as Tarea[]);
-    setLoadingDatos(false);
+    setLoading(false);
   }
+
+  async function cargarTareas(proyectoId: string) {
+    setLoadingTareas(true);
+    const { data } = await supabase
+      .from("bitacora_tareas")
+      .select("*")
+      .eq("proyecto_id", proyectoId)
+      .order("orden", { ascending: true });
+    if (data) setTareas(data as Tarea[]);
+    setLoadingTareas(false);
+  }
+
+  const entradasFiltradas =
+    filtroProyecto === "TODOS" ? entradas : entradas.filter((e) => e.proyecto_id === filtroProyecto);
 
   // ── Compartir ─────────────────────────────────────────────────────────
 
   async function compartirObra() {
-    if (!proyectoId) return;
+    if (filtroProyecto === "TODOS") return;
     setCompartiendo(true);
     try {
       let token: string;
       const { data: existente } = await supabase
         .from("bitacora_compartidos")
         .select("token")
-        .eq("proyecto_id", proyectoId)
+        .eq("proyecto_id", filtroProyecto)
         .maybeSingle();
 
       if (existente) {
@@ -142,7 +151,7 @@ export default function BitacoraPage() {
       } else {
         const { data: creado, error } = await supabase
           .from("bitacora_compartidos")
-          .insert({ proyecto_id: proyectoId })
+          .insert({ proyecto_id: filtroProyecto })
           .select("token")
           .single();
         if (error || !creado) throw error ?? new Error("No se pudo crear el link");
@@ -154,7 +163,7 @@ export default function BitacoraPage() {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
 
-      const proyecto = proyectos.find((p) => p.id === proyectoId);
+      const proyecto = proyectos.find((p) => p.id === filtroProyecto);
       const msg = encodeURIComponent(
         `Hola${proyecto?.cliente_nombre ? " " + proyecto.cliente_nombre : ""}, te comparto los avances de tu obra: ${url}`
       );
@@ -207,12 +216,12 @@ export default function BitacoraPage() {
   const [textoEdicion, setTextoEdicion] = useState("");
 
   async function agregarTarea() {
-    if (!nuevaTarea.trim() || !proyectoId) return;
+    if (!nuevaTarea.trim() || filtroProyecto === "TODOS") return;
     setGuardandoTarea(true);
     const orden = tareas.length > 0 ? Math.max(...tareas.map((t) => t.orden)) + 1 : 0;
     const { data, error } = await supabase
       .from("bitacora_tareas")
-      .insert({ proyecto_id: proyectoId, descripcion: nuevaTarea.trim(), orden })
+      .insert({ proyecto_id: filtroProyecto, descripcion: nuevaTarea.trim(), orden })
       .select()
       .single();
     setGuardandoTarea(false);
@@ -279,6 +288,7 @@ export default function BitacoraPage() {
   }
 
   const pendientes = tareas.filter((t) => !t.hecha).length;
+  const proyectoSeleccionado = filtroProyecto !== "TODOS";
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -290,86 +300,69 @@ export default function BitacoraPage() {
             Bitácora
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Registro de avances y pendientes por proyecto
+            Avances de obra · todos los proyectos
           </p>
         </div>
+        <Button onClick={abrirNuevoAvance} className="h-11 sm:h-9">
+          <Plus className="size-4 mr-1" />
+          Nuevo avance
+        </Button>
       </div>
 
-      {/* Selector de proyecto */}
-      <div className="mb-5">
+      {/* Filtro por proyecto + compartir */}
+      <div className="flex gap-3 mb-4 flex-wrap items-center">
         <ProyectoCombobox
-          value={proyectoId}
-          onChange={setProyectoId}
+          value={filtroProyecto}
+          onChange={setFiltroProyecto}
           proyectos={proyectos}
-          placeholder={loadingProyectos ? "Cargando proyectos..." : "Selecciona un proyecto"}
-          className="w-full sm:max-w-sm"
+          incluirTodos
+          placeholder="Todos los proyectos"
+          className="w-full sm:w-auto sm:min-w-[220px]"
         />
+
+        {proyectoSeleccionado && (
+          <Button
+            variant="outline"
+            onClick={() => void compartirObra()}
+            disabled={compartiendo}
+            className="h-9"
+          >
+            {compartiendo ? (
+              <Loader2 className="size-4 mr-1 animate-spin" />
+            ) : copiado ? (
+              <Check className="size-4 mr-1 text-green-600" />
+            ) : (
+              <Share2 className="size-4 mr-1" />
+            )}
+            {copiado ? "Link copiado" : "Compartir al cliente"}
+          </Button>
+        )}
       </div>
 
-      {!proyectoId ? (
-        <div className="text-center py-20 text-gray-400 text-sm">
-          Selecciona un proyecto para ver su bitácora.
-        </div>
-      ) : (
-        <Tabs defaultValue="avances">
-          <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-            <TabsList>
-              <TabsTrigger value="avances">Avances</TabsTrigger>
-              <TabsTrigger value="tareas">
-                Por Hacer{pendientes > 0 ? ` (${pendientes})` : ""}
-              </TabsTrigger>
-            </TabsList>
+      {proyectoSeleccionado ? (
+        // ── Proyecto filtrado: habilita "Por Hacer" además de Avances ──
+        <Tabs defaultValue="avances" key={filtroProyecto}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="avances">Avances</TabsTrigger>
+            <TabsTrigger value="tareas">
+              Por Hacer{pendientes > 0 ? ` (${pendientes})` : ""}
+            </TabsTrigger>
+          </TabsList>
 
-            <Button
-              variant="outline"
-              onClick={() => void compartirObra()}
-              disabled={compartiendo}
-              className="h-9"
-            >
-              {compartiendo ? (
-                <Loader2 className="size-4 mr-1 animate-spin" />
-              ) : copiado ? (
-                <Check className="size-4 mr-1 text-green-600" />
-              ) : (
-                <Share2 className="size-4 mr-1" />
-              )}
-              {copiado ? "Link copiado" : "Compartir al cliente"}
-            </Button>
-          </div>
-
-          {/* ── AVANCES ── */}
           <TabsContent value="avances">
-            <div className="flex justify-end mb-3">
-              <Button onClick={abrirNuevoAvance} className="h-11 sm:h-9">
-                <Plus className="size-4 mr-1" />
-                Nuevo avance
-              </Button>
-            </div>
-
-            {loadingDatos ? (
-              <div className="flex justify-center py-16 text-gray-400 text-sm">Cargando...</div>
-            ) : entradas.length === 0 ? (
-              <div className="text-center py-16 text-gray-400 text-sm">
-                Sin avances registrados. Agrega el primero con el botón de arriba.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {entradas.map((entrada) => (
-                  <EntradaCard
-                    key={entrada.id}
-                    entrada={entrada}
-                    onEditar={() => abrirEditarAvance(entrada)}
-                    onEliminar={() => void eliminarAvance(entrada)}
-                  />
-                ))}
-              </div>
-            )}
+            <ListaAvances
+              entradas={entradasFiltradas}
+              loading={loading}
+              onEditar={abrirEditarAvance}
+              onEliminar={(e) => void eliminarAvance(e)}
+            />
           </TabsContent>
 
-          {/* ── POR HACER ── */}
           <TabsContent value="tareas">
             <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-              {tareas.length === 0 ? (
+              {loadingTareas ? (
+                <div className="text-center py-16 text-gray-400 text-sm">Cargando...</div>
+              ) : tareas.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 text-sm">
                   Sin tareas registradas.
                 </div>
@@ -474,16 +467,25 @@ export default function BitacoraPage() {
             </div>
           </TabsContent>
         </Tabs>
+      ) : (
+        // ── Sin filtro: lista global de avances de todos los proyectos ──
+        <ListaAvances
+          entradas={entradasFiltradas}
+          loading={loading}
+          onEditar={abrirEditarAvance}
+          onEliminar={(e) => void eliminarAvance(e)}
+        />
       )}
 
       {mostrarForm && (
         <AvanceModal
-          proyectoId={proyectoId}
+          proyectos={proyectos}
+          proyectoIdInicial={proyectoSeleccionado ? filtroProyecto : ""}
           entrada={editando}
           onClose={() => setMostrarForm(false)}
           onSaved={async () => {
             setMostrarForm(false);
-            await cargarDatosProyecto(proyectoId);
+            await cargar();
           }}
         />
       )}
@@ -491,78 +493,94 @@ export default function BitacoraPage() {
   );
 }
 
-// ─── Card de entrada del feed ───────────────────────────────────────────────
+// ─── Lista de avances (global o filtrada) — mismo patrón visual que /compras ──
 
-function EntradaCard({
-  entrada,
+function ListaAvances({
+  entradas,
+  loading,
   onEditar,
   onEliminar,
 }: {
-  entrada: Entrada;
-  onEditar: () => void;
-  onEliminar: () => void;
+  entradas: Entrada[];
+  loading: boolean;
+  onEditar: (entrada: Entrada) => void;
+  onEliminar: (entrada: Entrada) => void;
 }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
-          <Calendar className="size-3.5" />
-          {new Date(entrada.fecha).toLocaleDateString("es-CO", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
-        </div>
-        <div className="flex shrink-0 items-center">
-          <button
-            onClick={onEditar}
-            title="Editar"
-            className="flex size-8 items-center justify-center rounded-lg text-gray-300 hover:bg-blue-50 hover:text-blue-600"
-          >
-            <Pencil className="size-3.5" />
-          </button>
-          <button
-            onClick={onEliminar}
-            title="Eliminar"
-            className="flex size-8 items-center justify-center rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-600"
-          >
-            <Trash2 className="size-3.5" />
-          </button>
-        </div>
+  if (loading) {
+    return <div className="flex justify-center py-16 text-gray-400 text-sm">Cargando...</div>;
+  }
+
+  if (entradas.length === 0) {
+    return (
+      <div className="text-center py-16 text-gray-400 text-sm">
+        Sin avances registrados. Agrega el primero con el botón de arriba.
       </div>
+    );
+  }
 
-      <h3 className="text-base font-semibold text-gray-900 mb-1.5">{entrada.titulo}</h3>
-
-      {entrada.descripcion && (
-        <p className="text-sm text-gray-600 whitespace-pre-wrap mb-3">{entrada.descripcion}</p>
-      )}
-
-      {entrada.fotos.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 mb-3">
-          {entrada.fotos.map((foto) => (
-            <a key={foto.id} href={foto.foto_url} target="_blank" rel="noopener noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={foto.foto_url}
-                alt={entrada.titulo}
-                className="aspect-square w-full rounded-lg object-cover"
-              />
-            </a>
-          ))}
-        </div>
-      )}
-
-      {entrada.video_url && (
-        <a
-          href={entrada.video_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
+  return (
+    <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+      {entradas.map((entrada) => (
+        <div
+          key={entrada.id}
+          className="flex items-center gap-2 border-b border-gray-100 px-2 py-2 last:border-b-0 hover:bg-gray-50/60 sm:gap-3 sm:px-3"
         >
-          <PlayCircle className="size-4" />
-          Ver video
-        </a>
-      )}
+          {/* Miniatura */}
+          <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+            {entrada.fotos[0] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={entrada.fotos[0].foto_url} alt="" className="size-full object-cover" />
+            ) : (
+              <BookOpen className="size-4 text-gray-300" />
+            )}
+          </div>
+
+          {/* Título + descripción */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="truncate text-sm font-medium text-gray-900">{entrada.titulo}</span>
+              {entrada.video_url && <PlayCircle className="size-3.5 shrink-0 text-blue-500" />}
+            </div>
+            {entrada.descripcion && (
+              <p className="truncate text-xs text-gray-500">{entrada.descripcion}</p>
+            )}
+          </div>
+
+          {/* Fecha + proyecto */}
+          <div className="hidden shrink-0 flex-col items-end text-right sm:flex">
+            <span className="text-xs text-gray-400">
+              {new Date(entrada.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}
+            </span>
+            <span className="max-w-[140px] truncate text-xs text-gray-400" title={entrada.proyecto_nombre}>
+              {entrada.proyecto_nombre}
+            </span>
+          </div>
+          <span
+            className="max-w-[72px] shrink-0 truncate text-right text-xs text-gray-400 sm:hidden"
+            title={entrada.proyecto_nombre}
+          >
+            {entrada.proyecto_nombre}
+          </span>
+
+          {/* Editar/eliminar */}
+          <div className="flex shrink-0 items-center">
+            <button
+              onClick={() => onEditar(entrada)}
+              title="Editar"
+              className="flex size-8 items-center justify-center rounded-lg text-gray-300 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+            <button
+              onClick={() => onEliminar(entrada)}
+              title="Eliminar"
+              className="flex size-8 items-center justify-center rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-600"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -570,17 +588,20 @@ function EntradaCard({
 // ─── Modal: nuevo / editar avance ───────────────────────────────────────────
 
 function AvanceModal({
-  proyectoId,
+  proyectos,
+  proyectoIdInicial,
   entrada,
   onClose,
   onSaved,
 }: {
-  proyectoId: string;
+  proyectos: Proyecto[];
+  proyectoIdInicial: string;
   entrada: Entrada | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const supabase = getSupabaseClient();
+  const [proyectoId, setProyectoId] = useState(entrada?.proyecto_id ?? proyectoIdInicial);
   const [titulo, setTitulo] = useState(entrada?.titulo ?? "");
   const [descripcion, setDescripcion] = useState(entrada?.descripcion ?? "");
   const [videoUrl, setVideoUrl] = useState(entrada?.video_url ?? "");
@@ -641,7 +662,10 @@ function AvanceModal({
       };
 
       if (entrada) {
-        const { error } = await supabase.from("bitacora_entradas").update(payload).eq("id", entrada.id);
+        const { error } = await supabase
+          .from("bitacora_entradas")
+          .update({ ...payload, proyecto_id: proyectoId })
+          .eq("id", entrada.id);
         if (error) throw error;
         await subirFotos(entrada.id, fotosExistentes.length);
       } else {
@@ -684,6 +708,19 @@ function AvanceModal({
         </div>
 
         <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Proyecto <span className="text-red-500">*</span>
+            </label>
+            <ProyectoCombobox
+              value={proyectoId}
+              onChange={setProyectoId}
+              proyectos={proyectos}
+              placeholder="Selecciona un proyecto"
+              className="w-full"
+            />
+          </div>
+
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Título <span className="text-red-500">*</span>
@@ -773,7 +810,7 @@ function AvanceModal({
           </Button>
           <Button
             onClick={() => void guardar()}
-            disabled={saving || !titulo.trim()}
+            disabled={saving || !titulo.trim() || !proyectoId}
             className="h-12 w-full sm:h-9 sm:w-auto"
           >
             {saving ? "Guardando..." : entrada ? "Guardar cambios" : "Publicar avance"}
