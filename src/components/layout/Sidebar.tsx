@@ -12,6 +12,7 @@ import {
   PlusCircle,
   ShoppingCart,
   Calendar,
+  BookOpen,
   LogOut,
 } from "lucide-react";
 
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/adicionales", icon: PlusCircle, label: "Adicionales" },
   { href: "/compras", icon: ShoppingCart, label: "Compras" },
   { href: "/calendario", icon: Calendar, label: "Calendario" },
+  { href: "/bitacora", icon: BookOpen, label: "Bitácora" },
 ];
 
 export function Sidebar() {

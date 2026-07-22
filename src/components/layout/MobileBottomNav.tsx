@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ClipboardList, PlusCircle, ShoppingCart, Calendar } from "lucide-react";
+import { ClipboardList, PlusCircle, ShoppingCart, Calendar, BookOpen } from "lucide-react";
 
 const navItems = [
   { href: "/proyectos", icon: ClipboardList, label: "Proyectos" },
   { href: "/adicionales", icon: PlusCircle, label: "Adicionales" },
   { href: "/compras", icon: ShoppingCart, label: "Compras" },
   { href: "/calendario", icon: Calendar, label: "Calendario" },
+  { href: "/bitacora", icon: BookOpen, label: "Bitácora" },
 ];
 
 export function MobileBottomNav() {
