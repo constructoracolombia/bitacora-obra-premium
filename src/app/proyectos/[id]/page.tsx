@@ -30,8 +30,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ActividadCard, type Actividad } from "./components/ActividadCard";
-import { ActividadModal } from "./components/ActividadModal";
+import type { Actividad } from "./components/ActividadCard";
 import { ProgramacionProyecto } from "@/components/ProgramacionProyecto";
 import { AvancesFeed } from "@/components/AvancesFeed";
 
@@ -60,48 +59,6 @@ interface AdicionalRow {
   estado: string;
   solicitado_por: string | null;
   created_at: string;
-}
-
-// ── CPM helpers ──
-
-function sumarDias(fecha: string, dias: number): string {
-  const d = new Date(fecha + "T12:00:00");
-  d.setDate(d.getDate() + dias);
-  return d.toISOString().split("T")[0];
-}
-
-function diffDias(a: string, b: string): number {
-  return Math.floor(
-    (new Date(a + "T12:00:00").getTime() - new Date(b + "T12:00:00").getTime()) / 86400000
-  );
-}
-
-function calcularRutaCritica(acts: Actividad[]): Actividad[] {
-  if (acts.length === 0) return acts;
-
-  // Forward pass
-  const withDates = acts.map((act) => {
-    let inicio = act.fecha_inicio_estimada;
-    if (act.predecesoras?.length > 0) {
-      const fines = act.predecesoras
-        .map((pid) => acts.find((a) => a.id === pid)?.fecha_fin_estimada)
-        .filter(Boolean) as string[];
-      if (fines.length > 0) inicio = fines.sort().reverse()[0];
-    }
-    if (!inicio) inicio = new Date().toISOString().split("T")[0];
-    const fin = sumarDias(inicio, act.duracion_dias || 1);
-    return { ...act, fecha_inicio_estimada: inicio, fecha_fin_estimada: fin };
-  });
-
-  // Project end = latest fin
-  const fines = withDates.map((a) => a.fecha_fin_estimada).filter(Boolean) as string[];
-  const proyectoFin = fines.sort().reverse()[0] || new Date().toISOString().split("T")[0];
-
-  // Backward pass: holgura = project end - task end
-  return withDates.map((act) => {
-    const holgura = act.fecha_fin_estimada ? diffDias(proyectoFin, act.fecha_fin_estimada) : 0;
-    return { ...act, holgura_dias: Math.max(holgura, 0), es_critica: holgura === 0 };
-  });
 }
 
 // ── Constants ──
@@ -135,12 +92,6 @@ const ADICIONAL_STYLES: Record<string, { bg: string; text: string; label: string
   FINALIZADO: { bg: "bg-[#34C759]/10", text: "text-[#34C759]", label: "Finalizado" },
   SALDO_PENDIENTE: { bg: "bg-[#FF3B30]/10", text: "text-[#FF3B30]", label: "Saldo pendiente" },
 };
-
-const KANBAN_COLUMNS = [
-  { key: "PENDIENTE", label: "Pendiente", color: "border-[#86868B]/30", headerBg: "bg-[#86868B]/10", headerText: "text-[#86868B]" },
-  { key: "EN_PROCESO", label: "En Proceso", color: "border-[#007AFF]/30", headerBg: "bg-[#007AFF]/10", headerText: "text-[#007AFF]" },
-  { key: "TERMINADO", label: "Terminado", color: "border-[#34C759]/30", headerBg: "bg-[#34C759]/10", headerText: "text-[#34C759]" },
-];
 
 // ── Component ──
 
@@ -184,10 +135,6 @@ export default function ProyectoDetailPage() {
   const [editando, setEditando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-
-  // Modal state
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [actividadEditando, setActividadEditando] = useState<Actividad | null>(null);
 
   // ── Data loading ──
 
@@ -257,7 +204,7 @@ export default function ProyectoDetailPage() {
           holgura_dias: Number(r.holgura_dias) || 0,
           predecesoras: r.predecesoras ?? [],
         }));
-        setActividades(calcularRutaCritica(raw));
+        setActividades(raw);
       }
     } catch (err) {
       console.error("Error fetching project:", err);
@@ -429,81 +376,6 @@ export default function ProyectoDetailPage() {
     }
   }
 
-  // ── Kanban / CPM handlers ──
-
-  async function handleMoveTask(taskId: string, newEstado: string) {
-    try {
-      await supabase.from("actividades_proyecto").update({ estado: newEstado }).eq("id", taskId);
-      const updated = calcularRutaCritica(
-        actividades.map((a) => (a.id === taskId ? { ...a, estado: newEstado } : a))
-      );
-      setActividades(updated);
-
-      const total = updated.length;
-      const done = updated.filter((a) => a.estado === "TERMINADO").length;
-      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-      await supabase.from("proyectos_maestro").update({ porcentaje_avance: pct }).eq("id", project?.id);
-    } catch (err) {
-      console.error("Error moving task:", err);
-    }
-  }
-
-  async function handleDeleteTask(taskId: string) {
-    try {
-      await supabase.from("actividades_proyecto").delete().eq("id", taskId);
-      const remaining = actividades.filter((a) => a.id !== taskId);
-      const updated = calcularRutaCritica(remaining);
-      setActividades(updated);
-
-      const total = updated.length;
-      const done = updated.filter((a) => a.estado === "TERMINADO").length;
-      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-      await supabase.from("proyectos_maestro").update({ porcentaje_avance: pct }).eq("id", project?.id);
-    } catch (err) {
-      console.error("Error deleting task:", err);
-    }
-  }
-
-  async function handleGuardarActividad(data: any) {
-    if (!project) return;
-    try {
-      const fechaFin = data.fecha_fin_estimada || (data.fecha_inicio_estimada
-        ? sumarDias(data.fecha_inicio_estimada, data.duracion_dias || 1)
-        : null);
-
-      if (actividadEditando) {
-        await supabase.from("actividades_proyecto").update({
-          titulo: data.titulo,
-          descripcion: data.descripcion || null,
-          porcentaje: data.porcentaje,
-          duracion_dias: data.duracion_dias,
-          fecha_inicio_estimada: data.fecha_inicio_estimada || null,
-          fecha_fin_estimada: fechaFin,
-          predecesoras: data.predecesoras,
-        }).eq("id", actividadEditando.id);
-      } else {
-        await supabase.from("actividades_proyecto").insert({
-          proyecto_id: project.id,
-          titulo: data.titulo,
-          descripcion: data.descripcion || null,
-          porcentaje: data.porcentaje,
-          duracion_dias: data.duracion_dias,
-          fecha_inicio_estimada: data.fecha_inicio_estimada || null,
-          fecha_fin_estimada: fechaFin,
-          predecesoras: data.predecesoras,
-          estado: "PENDIENTE",
-          orden: actividades.length,
-        });
-      }
-
-      await fetchData();
-      setMostrarModal(false);
-      setActividadEditando(null);
-    } catch (err) {
-      console.error("Error saving activity:", err);
-    }
-  }
-
   // ── Helpers ──
 
   function formatDate(date: string | null): string {
@@ -595,10 +467,46 @@ export default function ProyectoDetailPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
-        {/* ─── SECCIÓN: Información ─── */}
-        {activeTab === "detalle" && (
+        {/* ─── SECCIÓN: Información (fechas contractuales + progreso) ─── */}
+        {activeTab === "detalle" && projectId && (
           <div className="space-y-6">
-            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Información</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[20px] font-bold text-[#1D1D1F]">Información</h2>
+              {project.link_contrato && (
+                <a
+                  href={project.link_contrato}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex shrink-0 items-center gap-1 rounded-full bg-[#007AFF]/8 px-3 py-1 text-[12px] font-semibold text-[#007AFF] transition-colors hover:bg-[#007AFF]/15"
+                >
+                  <FileText className="size-3.5" />
+                  Ver contrato
+                </a>
+              )}
+            </div>
+
+            <ProgramacionProyecto proyectoId={projectId} />
+
+            {/* Progreso del proyecto (actividades_proyecto) */}
+            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-5">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[13px] font-medium text-[#86868B]">Progreso del proyecto</span>
+                <span className="text-lg font-semibold text-[#1D1D1F]">{kanbanProgress}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
+                <div className="h-full rounded-full bg-[#34C759] transition-all duration-500" style={{ width: `${kanbanProgress}%` }} />
+              </div>
+              <p className="mt-2 text-[12px] text-[#86868B]">
+                {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ─── SECCIÓN: Finanzas ─── */}
+        {activeTab === "detalle" && (
+          <div className="mt-10 space-y-6">
+            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Finanzas</h2>
 
             {/* Información del proyecto */}
             <div className="rounded-lg border bg-white p-6">
@@ -608,17 +516,6 @@ export default function ProyectoDetailPage() {
                     ? "Proyecto gestionado desde Finanzas"
                     : "Información del Proyecto"}
                 </h3>
-                {project.link_contrato && (
-                  <a
-                    href={project.link_contrato}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex shrink-0 items-center gap-1 rounded-full bg-[#007AFF]/8 px-3 py-1 text-[12px] font-semibold text-[#007AFF] transition-colors hover:bg-[#007AFF]/15"
-                  >
-                    <FileText className="size-3.5" />
-                    Ver contrato
-                  </a>
-                )}
                 {!isFromFinanzas && (
                   <Button
                     onClick={() => setEditando(!editando)}
@@ -977,14 +874,6 @@ export default function ProyectoDetailPage() {
           </div>
         )}
 
-        {/* ─── SECCIÓN: Cronograma ─── */}
-        {activeTab === "detalle" && projectId && (
-          <div className="mt-10 space-y-6">
-            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Cronograma</h2>
-            <ProgramacionProyecto proyectoId={projectId} />
-          </div>
-        )}
-
         {/* ─── TAB: Adicionales ─── */}
         {activeTab === "adicionales" && (
           <div className="space-y-4">
@@ -1026,81 +915,7 @@ export default function ProyectoDetailPage() {
           </div>
         )}
 
-        {/* ─── SECCIÓN: Programación (Kanban + CPM) ─── */}
-        {activeTab === "detalle" && (
-          <div className="mt-10 space-y-6">
-            <h2 className="text-[20px] font-bold text-[#1D1D1F]">Programación</h2>
-
-            {/* Progress bar */}
-            <div className="rounded-2xl border border-[#D2D2D7]/60 bg-white p-5">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[13px] font-medium text-[#86868B]">Progreso del proyecto</span>
-                <span className="text-lg font-semibold text-[#1D1D1F]">{kanbanProgress}%</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-[#F5F5F7]">
-                <div className="h-full rounded-full bg-[#34C759] transition-all duration-500" style={{ width: `${kanbanProgress}%` }} />
-              </div>
-              <p className="mt-2 text-[12px] text-[#86868B]">
-                {actividades.filter((a) => a.estado === "TERMINADO").length} de {actividades.length} actividades
-              </p>
-            </div>
-
-            {/* Add new task button */}
-            <div className="flex justify-end">
-              <Button
-                onClick={() => { setActividadEditando(null); setMostrarModal(true); }}
-                className="rounded-xl bg-[#007AFF] text-white shadow-sm hover:bg-[#0051D5]"
-              >
-                <Plus className="size-4" />
-                Nueva Actividad
-              </Button>
-            </div>
-
-            {/* Kanban columns */}
-            <div className="grid gap-4 md:grid-cols-3">
-              {KANBAN_COLUMNS.map((col) => {
-                const tasks = actividades.filter((a) => a.estado === col.key);
-                return (
-                  <div key={col.key} className={cn("rounded-2xl border-2 bg-white", col.color)}>
-                    <div className={cn("rounded-t-xl px-4 py-3", col.headerBg)}>
-                      <div className="flex items-center justify-between">
-                        <h4 className={cn("text-[13px] font-semibold", col.headerText)}>{col.label}</h4>
-                        <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", col.headerBg, col.headerText)}>
-                          {tasks.length}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="min-h-[120px] space-y-3 p-3">
-                      {tasks.map((task) => (
-                        <ActividadCard
-                          key={task.id}
-                          actividad={task}
-                          onMoverEstado={handleMoveTask}
-                          onEditar={(act) => { setActividadEditando(act); setMostrarModal(true); }}
-                          onEliminar={handleDeleteTask}
-                        />
-                      ))}
-                      {tasks.length === 0 && (
-                        <p className="py-6 text-center text-[12px] text-[#C7C7CC]">Sin actividades</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </main>
-
-      {/* Modal */}
-      {mostrarModal && (
-        <ActividadModal
-          actividad={actividadEditando}
-          actividadesDisponibles={actividades.filter((a) => a.id !== actividadEditando?.id)}
-          onGuardar={handleGuardarActividad}
-          onCerrar={() => { setMostrarModal(false); setActividadEditando(null); }}
-        />
-      )}
     </div>
   );
 }
