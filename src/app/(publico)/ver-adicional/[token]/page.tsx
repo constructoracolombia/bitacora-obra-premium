@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import {
   Building2,
   DollarSign,
@@ -11,10 +11,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const supabase = createClient(
-  "https://ngawmyhrfgdckjyynhbr.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nYXdteWhyZmdkY2tqeXluaGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY5NzI3MDUsImV4cCI6MjA1MjU0ODcwNX0.u3od7AuLHKMBnXWKNMOC_B_lLSJk5sh0-0wLSWbPCaw",
-);
+const supabase = getSupabaseClient();
 
 const STEPS = [
   {
