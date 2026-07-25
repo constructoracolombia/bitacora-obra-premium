@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
-import { ShoppingCart, Plus, X, Search, CheckCircle2, Circle, Pencil, Trash2, AlertTriangle, PackageCheck } from "lucide-react";
+import { ShoppingCart, Plus, X, Search, CheckCircle2, Circle, Pencil, Trash2, AlertTriangle, PackageCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ProyectoCombobox, type Proyecto } from "@/components/proyecto-combobox";
@@ -23,6 +23,39 @@ interface Compra {
 }
 
 const UNIDADES_COMUNES = ["und", "m²", "ml", "kg", "lt", "gl", "bolsa", "rollo", "caja"];
+
+const DIAS_DEMORA_AVISO = 7;
+
+// Tiempo relativo desde created_at — "Hoy", "Ayer", "Hace N días/semanas/meses/años".
+function tiempoTranscurrido(fechaISO: string): { label: string; dias: number } {
+  const dias = Math.floor((Date.now() - new Date(fechaISO).getTime()) / 86_400_000);
+
+  let label: string;
+  if (dias <= 0) label = "Hoy";
+  else if (dias === 1) label = "Ayer";
+  else if (dias < 7) label = `Hace ${dias} días`;
+  else if (dias < 30) {
+    const semanas = Math.floor(dias / 7);
+    label = `Hace ${semanas} semana${semanas > 1 ? "s" : ""}`;
+  } else if (dias < 365) {
+    const meses = Math.floor(dias / 30);
+    label = `Hace ${meses} mes${meses > 1 ? "es" : ""}`;
+  } else {
+    const anios = Math.floor(dias / 365);
+    label = `Hace ${anios} año${anios > 1 ? "s" : ""}`;
+  }
+
+  return { label, dias };
+}
+
+// Urgentes primero (orden de siempre, sin tocar). Dentro de "no urgentes",
+// las más antiguas primero — para que las requisiciones estancadas salten a
+// la vista sin tener que ordenar manualmente.
+function compararCompras(a: Compra, b: Compra): number {
+  if (a.urgente !== b.urgente) return a.urgente ? -1 : 1;
+  const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  return a.urgente ? -diff : diff;
+}
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
@@ -50,7 +83,9 @@ export default function ComprasPage() {
   async function cargar() {
     setLoading(true);
     const [comprasRes, proyRes] = await Promise.all([
-      supabase.from("compras").select("*").order("urgente", { ascending: false }).order("created_at", { ascending: false }),
+      // Orden final (urgentes primero, no-urgentes de más antigua a más
+      // reciente) se aplica client-side en compararCompras — ver abajo.
+      supabase.from("compras").select("*"),
       supabase.from("proyectos_maestro").select("id, cliente_nombre").order("cliente_nombre"),
     ]);
 
@@ -63,22 +98,22 @@ export default function ComprasPage() {
     }
 
     if (comprasRes.data) {
-      setCompras(
-        (comprasRes.data as Record<string, unknown>[]).map((r) => ({
-          id: r.id as string,
-          item: r.item as string,
-          cantidad: r.cantidad as number,
-          unidad: r.unidad as string,
-          proyecto_id: r.proyecto_id as string,
-          urgente: r.urgente as boolean,
-          proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "Proyecto desconocido",
-          comprado: r.comprado as boolean,
-          comprado_at: r.comprado_at as string | null,
-          recibido: r.recibido as boolean,
-          recibido_at: r.recibido_at as string | null,
-          created_at: r.created_at as string,
-        }))
-      );
+      const construidas = (comprasRes.data as Record<string, unknown>[]).map((r) => ({
+        id: r.id as string,
+        item: r.item as string,
+        cantidad: r.cantidad as number,
+        unidad: r.unidad as string,
+        proyecto_id: r.proyecto_id as string,
+        urgente: r.urgente as boolean,
+        proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "Proyecto desconocido",
+        comprado: r.comprado as boolean,
+        comprado_at: r.comprado_at as string | null,
+        recibido: r.recibido as boolean,
+        recibido_at: r.recibido_at as string | null,
+        created_at: r.created_at as string,
+      }));
+      construidas.sort(compararCompras);
+      setCompras(construidas);
     }
     setLoading(false);
   }
@@ -375,7 +410,7 @@ export default function ComprasPage() {
                 >
                   {compra.item}
                 </span>
-                {compra.comprado && (
+                {compra.comprado ? (
                   <button
                     onClick={() => void toggleRecibido(compra)}
                     disabled={toggling === compra.id}
@@ -390,6 +425,25 @@ export default function ComprasPage() {
                     <PackageCheck className="size-2.5" />
                     {compra.recibido ? "Recibido" : "Recibir"}
                   </button>
+                ) : (
+                  (() => {
+                    const tiempo = tiempoTranscurrido(compra.created_at);
+                    const demorada = tiempo.dias > DIAS_DEMORA_AVISO;
+                    return (
+                      <span
+                        title={`Registrada: ${tiempo.label}`}
+                        className={cn(
+                          "inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[9px] sm:text-[10px]",
+                          demorada
+                            ? "rounded-full bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-700"
+                            : "text-gray-400"
+                        )}
+                      >
+                        {demorada && <Clock className="size-2.5" />}
+                        {tiempo.label}
+                      </span>
+                    );
+                  })()
                 )}
               </div>
 
