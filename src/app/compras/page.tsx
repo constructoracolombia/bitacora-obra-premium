@@ -403,7 +403,7 @@ export default function ComprasPage() {
             <div
               key={compra.id}
               className={cn(
-                "flex items-center gap-1.5 border-b border-l-[3px] border-gray-100 pl-[5px] pr-1.5 transition-colors last:border-b-0 sm:gap-2 sm:pr-3",
+                "flex flex-col gap-1 border-b border-l-[3px] border-gray-100 pl-[5px] pr-1.5 py-1.5 transition-colors last:border-b-0 sm:flex-row sm:items-center sm:gap-2 sm:py-0 sm:pr-3",
                 compra.recibido
                   ? "border-l-blue-300 bg-blue-50/30"
                   : compra.comprado
@@ -413,6 +413,10 @@ export default function ComprasPage() {
                   : "border-l-transparent hover:bg-gray-50/60"
               )}
             >
+              {/* Línea 1 en móvil: checkbox + nombre completo (ancho total, sin
+                  truncar). En desktop, misma fila que el resto — sm:flex-1
+                  empuja cantidad/proyecto/acciones al lado derecho como antes. */}
+              <div className="flex min-w-0 items-center gap-1.5 sm:flex-1">
               {/* Checkbox — 44×44 */}
               <button
                 onClick={() => void toggleComprado(compra)}
@@ -440,7 +444,7 @@ export default function ComprasPage() {
                 )}
                 <span
                   className={cn(
-                    "truncate text-sm font-medium",
+                    "text-sm font-medium sm:truncate",
                     compra.comprado ? "text-gray-400 line-through" : "text-gray-900"
                   )}
                 >
@@ -482,7 +486,12 @@ export default function ComprasPage() {
                   })()
                 )}
               </div>
+              </div>
 
+              {/* Línea 2 en móvil: cantidad + proyecto + acciones, compacta e
+                  indentada bajo el nombre. En desktop, sigue en la misma fila
+                  (sm:pl-0 quita el indent). */}
+              <div className="flex shrink-0 items-center gap-2 pl-[50px] sm:pl-0">
               {/* Cantidad + unidad */}
               <span className="shrink-0 whitespace-nowrap text-xs text-gray-500 tabular-nums">
                 {Number(compra.cantidad) % 1 === 0
@@ -516,6 +525,7 @@ export default function ComprasPage() {
                 >
                   <Trash2 className="size-3" />
                 </button>
+              </div>
               </div>
             </div>
               ))}
