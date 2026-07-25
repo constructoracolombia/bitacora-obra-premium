@@ -13,6 +13,7 @@ interface Compra {
   cantidad: number;
   unidad: string;
   urgente: boolean;
+  categoria: string;
   proyecto_id: string;
   proyecto_nombre: string;
   comprado: boolean;
@@ -23,6 +24,19 @@ interface Compra {
 }
 
 const UNIDADES_COMUNES = ["und", "m²", "ml", "kg", "lt", "gl", "bolsa", "rollo", "caja"];
+
+// Orden fijo — es el mismo orden en que se agrupa la lista, no alfabético.
+const CATEGORIAS = [
+  "Ferretería",
+  "Enchapes",
+  "Pinturas",
+  "Eléctrico",
+  "Baños",
+  "Cocina y zona húmeda",
+  "Piedras y granitos",
+  "Divisiones de vidrio y espejos",
+  "Otros",
+] as const;
 
 const DIAS_DEMORA_AVISO = 7;
 
@@ -74,7 +88,7 @@ export default function ComprasPage() {
 
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState<Compra | null>(null);
-  const [form, setForm] = useState({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false });
+  const [form, setForm] = useState({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false, categoria: "Otros" as string });
 
   useEffect(() => {
     void cargar();
@@ -105,6 +119,7 @@ export default function ComprasPage() {
         unidad: r.unidad as string,
         proyecto_id: r.proyecto_id as string,
         urgente: r.urgente as boolean,
+        categoria: (r.categoria as string) ?? "Otros",
         proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "Proyecto desconocido",
         comprado: r.comprado as boolean,
         comprado_at: r.comprado_at as string | null,
@@ -178,7 +193,7 @@ export default function ComprasPage() {
 
   function abrirAgregar() {
     setEditando(null);
-    setForm({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false });
+    setForm({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false, categoria: "Otros" });
     setMostrarForm(true);
   }
 
@@ -190,6 +205,7 @@ export default function ComprasPage() {
       unidad: compra.unidad,
       proyecto_id: compra.proyecto_id,
       urgente: compra.urgente,
+      categoria: compra.categoria,
     });
     setMostrarForm(true);
   }
@@ -209,6 +225,7 @@ export default function ComprasPage() {
       unidad: form.unidad.trim() || "und",
       proyecto_id: form.proyecto_id,
       urgente: form.urgente,
+      categoria: form.categoria,
     };
 
     const { error } = editando
@@ -244,6 +261,15 @@ export default function ComprasPage() {
     if (busqueda.trim() && !c.item.toLowerCase().includes(busqueda.trim().toLowerCase())) return false;
     return true;
   });
+
+  // Agrupa la lista ya filtrada por categoría, en el orden fijo de CATEGORIAS
+  // (no alfabético). El conteo del encabezado refleja lo que hay bajo el
+  // filtro activo — con "Pendientes" (default) es literalmente el conteo de
+  // pendientes; en otras pestañas cuenta lo que esa pestaña muestra.
+  const gruposFiltrados = CATEGORIAS.map((categoria) => ({
+    categoria,
+    items: comprasFiltradas.filter((c) => c.categoria === categoria),
+  })).filter((g) => g.items.length > 0);
 
   const pendientes = compras.filter((c) => !c.comprado).length;
   const comprados = compras.filter((c) => c.comprado && !c.recibido).length;
@@ -362,8 +388,18 @@ export default function ComprasPage() {
             : "Sin resultados para los filtros seleccionados."}
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-          {comprasFiltradas.map((compra) => (
+        <div className="space-y-4">
+          {gruposFiltrados.map((grupo) => (
+            <div key={grupo.categoria} className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+              <div className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-4 py-2">
+                <span className="text-xs font-bold uppercase tracking-wide text-gray-600">
+                  {grupo.categoria}
+                </span>
+                <span className="ml-1.5 text-xs font-medium text-gray-400">
+                  ({grupo.items.length})
+                </span>
+              </div>
+              {grupo.items.map((compra) => (
             <div
               key={compra.id}
               className={cn(
@@ -482,6 +518,8 @@ export default function ComprasPage() {
                 </button>
               </div>
             </div>
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -560,6 +598,21 @@ export default function ComprasPage() {
                   placeholder="Selecciona un proyecto"
                   className="w-full"
                 />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Categoría
+                </label>
+                <select
+                  value={form.categoria}
+                  onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
+                  className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {CATEGORIAS.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
 
               <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 has-[:checked]:border-red-200 has-[:checked]:bg-red-50">
