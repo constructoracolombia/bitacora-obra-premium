@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
-import { ShoppingCart, Plus, X, Search, CheckCircle2, Circle, Pencil, Trash2, AlertTriangle, Clock } from "lucide-react";
+import { ShoppingCart, Plus, X, Search, Pencil, Trash2, AlertTriangle, Clock, Archive, ArchiveRestore } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ProyectoCombobox, type Proyecto } from "@/components/proyecto-combobox";
@@ -22,6 +22,7 @@ interface Compra {
   observaciones: string | null;
   comprado: boolean;
   comprado_at: string | null;
+  archivado: boolean;
   created_at: string;
 }
 
@@ -69,19 +70,26 @@ function formatFecha(fechaISO: string | null): string {
   return format(new Date(fechaISO), "dd/MM/yyyy", { locale: es });
 }
 
-// Pendientes: urgentes primero, luego las más antiguas primero (para que las
-// requisiciones estancadas salten a la vista sin ordenar manualmente).
+// Pendientes de comprar: urgentes primero, luego las más antiguas primero.
 function compararPendientes(a: Compra, b: Compra): number {
   if (a.urgente !== b.urgente) return a.urgente ? -1 : 1;
   const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   return a.urgente ? -diff : diff;
 }
 
-// Comprados: historial, lo más reciente primero.
+// Comprados: lo más reciente primero.
 function compararComprados(a: Compra, b: Compra): number {
   const fa = a.comprado_at ? new Date(a.comprado_at).getTime() : 0;
   const fb = b.comprado_at ? new Date(b.comprado_at).getTime() : 0;
   return fb - fa;
+}
+
+// Sección "Pendientes por comprar": lo que aún no se compró va primero (con
+// su orden de siempre); lo ya comprado pero sin archivar queda al final,
+// visible pero fuera del camino, esperando a que alguien lo archive.
+function compararSeccionPendientes(a: Compra, b: Compra): number {
+  if (a.comprado !== b.comprado) return a.comprado ? 1 : -1;
+  return a.comprado ? compararComprados(a, b) : compararPendientes(a, b);
 }
 
 type Grupo = { categoria: string; items: Compra[] };
@@ -153,6 +161,7 @@ export default function ComprasPage() {
         observaciones: (r.observaciones as string) ?? null,
         comprado: r.comprado as boolean,
         comprado_at: r.comprado_at as string | null,
+        archivado: r.archivado as boolean,
         created_at: r.created_at as string,
       }));
       setCompras(construidas);
@@ -160,24 +169,46 @@ export default function ComprasPage() {
     setLoading(false);
   }
 
-  // Único paso de estado: Pendiente ↔ Comprado.
-  async function toggleComprado(compra: Compra) {
-    const nuevoValor = !compra.comprado;
-    const nuevoAt = nuevoValor ? new Date().toISOString() : null;
+  // Pendiente ↔ Comprado, vía la lista desplegable de la fila. Volver a
+  // "Pendiente" también desarchiva — no tendría sentido dejarlo en el
+  // historial de Comprados si ya no está comprado.
+  async function cambiarEstado(compra: Compra, nuevoComprado: boolean) {
+    const nuevoAt = nuevoComprado ? new Date().toISOString() : null;
+    const nuevoArchivado = nuevoComprado ? compra.archivado : false;
 
     setToggling(compra.id);
     setCompras((prev) =>
-      prev.map((c) => (c.id === compra.id ? { ...c, comprado: nuevoValor, comprado_at: nuevoAt } : c))
+      prev.map((c) => (c.id === compra.id ? { ...c, comprado: nuevoComprado, comprado_at: nuevoAt, archivado: nuevoArchivado } : c))
     );
 
     const { error } = await supabase
       .from("compras")
-      .update({ comprado: nuevoValor, comprado_at: nuevoAt })
+      .update({ comprado: nuevoComprado, comprado_at: nuevoAt, archivado: nuevoArchivado })
       .eq("id", compra.id);
 
     if (error) {
       setCompras((prev) =>
-        prev.map((c) => (c.id === compra.id ? { ...c, comprado: compra.comprado, comprado_at: compra.comprado_at } : c))
+        prev.map((c) => (c.id === compra.id ? { ...c, comprado: compra.comprado, comprado_at: compra.comprado_at, archivado: compra.archivado } : c))
+      );
+      alert("Error: " + error.message);
+    }
+    setToggling(null);
+  }
+
+  async function cambiarArchivado(compra: Compra, nuevoArchivado: boolean) {
+    setToggling(compra.id);
+    setCompras((prev) =>
+      prev.map((c) => (c.id === compra.id ? { ...c, archivado: nuevoArchivado } : c))
+    );
+
+    const { error } = await supabase
+      .from("compras")
+      .update({ archivado: nuevoArchivado })
+      .eq("id", compra.id);
+
+    if (error) {
+      setCompras((prev) =>
+        prev.map((c) => (c.id === compra.id ? { ...c, archivado: compra.archivado } : c))
       );
       alert("Error: " + error.message);
     }
@@ -253,11 +284,13 @@ export default function ComprasPage() {
     return true;
   });
 
-  const pendientes = comprasFiltradas.filter((c) => !c.comprado).sort(compararPendientes);
-  const compradosLista = comprasFiltradas.filter((c) => c.comprado).sort(compararComprados);
+  // "Pendientes por comprar" = todo lo que no se ha archivado todavía (mezcla
+  // lo realmente pendiente con lo ya comprado esperando el botón Archivar).
+  const pendientesSeccion = comprasFiltradas.filter((c) => !c.archivado).sort(compararSeccionPendientes);
+  const historialSeccion = comprasFiltradas.filter((c) => c.archivado).sort(compararComprados);
 
-  const gruposPendientes = agruparPorCategoria(pendientes);
-  const gruposComprados = agruparPorCategoria(compradosLista);
+  const gruposPendientes = agruparPorCategoria(pendientesSeccion);
+  const gruposHistorial = agruparPorCategoria(historialSeccion);
 
   const totalPendientes = compras.filter((c) => !c.comprado).length;
   const totalComprados = compras.filter((c) => c.comprado).length;
@@ -346,7 +379,7 @@ export default function ComprasPage() {
         </div>
       ) : (
         <div className="space-y-10">
-          {/* ── Pendientes — lo accionable ────────────────────────────── */}
+          {/* ── Pendientes por comprar ─────────────────────────────────── */}
           <div>
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-orange-700">
               Pendientes por comprar
@@ -355,7 +388,7 @@ export default function ComprasPage() {
               <div className="rounded-xl border border-dashed border-gray-200 py-10 text-center text-sm text-gray-400">
                 {comprasFiltradas.length === 0 && (busqueda || filtroProyecto !== "TODOS")
                   ? "Sin resultados para los filtros seleccionados."
-                  : "No hay pendientes — todo comprado 🎉"}
+                  : "Nada pendiente por comprar o archivar 🎉"}
               </div>
             ) : (
               <div className="space-y-4">
@@ -363,12 +396,14 @@ export default function ComprasPage() {
                   <TablaGrupo
                     key={grupo.categoria}
                     grupo={grupo}
-                    onToggle={toggleComprado}
+                    seccion="pendientes"
+                    onCambiarEstado={cambiarEstado}
+                    onArchivar={(c) => void cambiarArchivado(c, true)}
+                    onDesarchivar={(c) => void cambiarArchivado(c, false)}
                     toggling={toggling}
                     onEditar={abrirEditar}
                     onEliminar={eliminarCompra}
                     eliminando={eliminando}
-                    modo="pendiente"
                   />
                 ))}
               </div>
@@ -380,22 +415,24 @@ export default function ComprasPage() {
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-green-700">
               Comprados
             </h2>
-            {gruposComprados.length === 0 ? (
+            {gruposHistorial.length === 0 ? (
               <div className="rounded-xl border border-dashed border-gray-200 py-10 text-center text-sm text-gray-400">
-                Todavía no hay compras registradas en el historial.
+                Todavía no hay nada archivado en el historial.
               </div>
             ) : (
               <div className="space-y-4">
-                {gruposComprados.map((grupo) => (
+                {gruposHistorial.map((grupo) => (
                   <TablaGrupo
                     key={grupo.categoria}
                     grupo={grupo}
-                    onToggle={toggleComprado}
+                    seccion="historial"
+                    onCambiarEstado={cambiarEstado}
+                    onArchivar={(c) => void cambiarArchivado(c, true)}
+                    onDesarchivar={(c) => void cambiarArchivado(c, false)}
                     toggling={toggling}
                     onEditar={abrirEditar}
                     onEliminar={eliminarCompra}
                     eliminando={eliminando}
-                    modo="comprado"
                   />
                 ))}
               </div>
@@ -553,20 +590,24 @@ export default function ComprasPage() {
 
 function TablaGrupo({
   grupo,
-  onToggle,
+  seccion,
+  onCambiarEstado,
+  onArchivar,
+  onDesarchivar,
   toggling,
   onEditar,
   onEliminar,
   eliminando,
-  modo,
 }: {
   grupo: Grupo;
-  onToggle: (c: Compra) => void;
+  seccion: "pendientes" | "historial";
+  onCambiarEstado: (c: Compra, nuevoComprado: boolean) => void;
+  onArchivar: (c: Compra) => void;
+  onDesarchivar: (c: Compra) => void;
   toggling: string | null;
   onEditar: (c: Compra) => void;
   onEliminar: (c: Compra) => void;
   eliminando: string | null;
-  modo: "pendiente" | "comprado";
 }) {
   return (
     <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
@@ -580,7 +621,7 @@ function TablaGrupo({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
+        <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
               <th className="px-2 py-2 min-w-[200px]">Material</th>
@@ -588,44 +629,35 @@ function TablaGrupo({
               <th className="px-2 py-2">Unidad</th>
               <th className="px-2 py-2">Estado</th>
               <th className="px-2 py-2">Centro de Costos</th>
-              <th className="px-2 py-2 whitespace-nowrap">{modo === "pendiente" ? "Fecha Solicitud" : "Comprado el"}</th>
+              <th className="px-2 py-2 whitespace-nowrap">{seccion === "pendientes" ? "Fecha Solicitud" : "Comprado el"}</th>
               <th className="px-2 py-2 whitespace-nowrap">Fecha Requerida</th>
               <th className="px-2 py-2 min-w-[160px]">Observaciones</th>
-              <th className="w-16 px-2 py-2"></th>
+              <th className="w-24 px-2 py-2"></th>
             </tr>
           </thead>
           <tbody>
             {grupo.items.map((compra) => {
               const tiempo = tiempoTranscurrido(compra.created_at);
-              const demorada = modo === "pendiente" && tiempo.dias > DIAS_DEMORA_AVISO;
+              const demorada = !compra.comprado && tiempo.dias > DIAS_DEMORA_AVISO;
+              const puedeArchivar = seccion === "pendientes" && compra.comprado && !compra.archivado;
 
               return (
                 <tr
                   key={compra.id}
                   className={cn(
                     "border-b border-gray-100 last:border-b-0 align-top transition-colors",
-                    modo === "comprado"
+                    compra.comprado
                       ? "bg-green-50/30"
                       : compra.urgente
                       ? "bg-red-50/40"
                       : "hover:bg-gray-50/60"
                   )}
                 >
-                  {/* Material */}
+                  {/* Material — sin badge de urgente, solo el tinte rojo de la fila */}
                   <td className="px-2 py-2">
-                    <div className="flex items-center gap-1.5">
-                      {compra.urgente && (
-                        <span
-                          className="inline-flex shrink-0 items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white"
-                          title="Urgente"
-                        >
-                          Urgente
-                        </span>
-                      )}
-                      <span className={cn("font-medium", modo === "comprado" ? "text-gray-400 line-through" : "text-gray-900")}>
-                        {compra.item}
-                      </span>
-                    </div>
+                    <span className={cn("font-medium", compra.comprado ? "text-gray-400 line-through" : "text-gray-900")}>
+                      {compra.item}
+                    </span>
                   </td>
 
                   {/* Cantidad */}
@@ -638,26 +670,22 @@ function TablaGrupo({
                   {/* Unidad */}
                   <td className="px-2 py-2 text-gray-500">{compra.unidad}</td>
 
-                  {/* Estado — clic para cambiar directo, sin abrir el modal */}
+                  {/* Estado — lista desplegable, cambia sin abrir el modal */}
                   <td className="px-2 py-2">
-                    <button
-                      onClick={() => onToggle(compra)}
+                    <select
+                      value={compra.comprado ? "comprado" : "pendiente"}
+                      onChange={(e) => onCambiarEstado(compra, e.target.value === "comprado")}
                       disabled={toggling === compra.id}
-                      title={modo === "comprado" ? "Marcar como pendiente" : "Marcar como comprado"}
                       className={cn(
-                        "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors disabled:opacity-50",
-                        modo === "comprado"
-                          ? "bg-green-100 text-green-700 hover:bg-green-200"
-                          : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                        "rounded-full border-0 px-2 py-1 text-[10px] font-bold uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 cursor-pointer",
+                        compra.comprado
+                          ? "bg-green-100 text-green-700 focus:ring-green-400"
+                          : "bg-orange-100 text-orange-700 focus:ring-orange-400"
                       )}
                     >
-                      {modo === "comprado" ? (
-                        <CheckCircle2 className="size-3" />
-                      ) : (
-                        <Circle className="size-3" />
-                      )}
-                      {modo === "comprado" ? "Comprado" : "Pendiente"}
-                    </button>
+                      <option value="pendiente">Pendiente</option>
+                      <option value="comprado">Comprado</option>
+                    </select>
                   </td>
 
                   {/* Centro de Costos = la unidad puntual */}
@@ -667,7 +695,7 @@ function TablaGrupo({
 
                   {/* Fecha Solicitud (pendientes) / Comprado el (historial) */}
                   <td className="px-2 py-2 whitespace-nowrap text-gray-500">
-                    {modo === "pendiente" ? formatFecha(compra.created_at) : formatFecha(compra.comprado_at)}
+                    {seccion === "pendientes" ? formatFecha(compra.created_at) : formatFecha(compra.comprado_at)}
                     {demorada && (
                       <span
                         title={`Registrada: ${tiempo.label}`}
@@ -689,9 +717,30 @@ function TablaGrupo({
                     {compra.observaciones || "—"}
                   </td>
 
-                  {/* Editar/eliminar */}
+                  {/* Archivar/Desarchivar + editar/eliminar */}
                   <td className="px-2 py-2">
                     <div className="flex items-center justify-end gap-0.5">
+                      {puedeArchivar && (
+                        <button
+                          onClick={() => onArchivar(compra)}
+                          disabled={toggling === compra.id}
+                          title="Enviar al historial de Comprados"
+                          className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                        >
+                          <Archive className="size-3" />
+                          Archivar
+                        </button>
+                      )}
+                      {seccion === "historial" && (
+                        <button
+                          onClick={() => onDesarchivar(compra)}
+                          disabled={toggling === compra.id}
+                          title="Devolver a Pendientes"
+                          className="flex size-7 items-center justify-center rounded-lg text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-40"
+                        >
+                          <ArchiveRestore className="size-3.5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => onEditar(compra)}
                         title="Editar"
