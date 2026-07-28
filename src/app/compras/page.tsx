@@ -6,8 +6,8 @@ import { ShoppingCart, Plus, X, Search, Pencil, Trash2, AlertTriangle, Clock, Ar
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ProyectoCombobox, type Proyecto } from "@/components/proyecto-combobox";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+
+type ProyectoConEstado = Proyecto & { estado: string };
 
 interface Compra {
   id: string;
@@ -18,6 +18,7 @@ interface Compra {
   categoria: string;
   proyecto_id: string;
   proyecto_nombre: string;
+  fecha_solicitud: string;
   fecha_requerida: string | null;
   observaciones: string | null;
   comprado: boolean;
@@ -43,7 +44,7 @@ const CATEGORIAS = [
 
 const DIAS_DEMORA_AVISO = 7;
 
-// Tiempo relativo desde created_at — "Hoy", "Ayer", "Hace N días/semanas/meses/años".
+// Tiempo relativo desde fecha_solicitud — "Hoy", "Ayer", "Hace N días/semanas/meses/años".
 function tiempoTranscurrido(fechaISO: string): { label: string; dias: number } {
   const dias = Math.floor((Date.now() - new Date(fechaISO).getTime()) / 86_400_000);
 
@@ -65,15 +66,10 @@ function tiempoTranscurrido(fechaISO: string): { label: string; dias: number } {
   return { label, dias };
 }
 
-function formatFecha(fechaISO: string | null): string {
-  if (!fechaISO) return "—";
-  return format(new Date(fechaISO), "dd/MM/yyyy", { locale: es });
-}
-
 // Pendientes de comprar: urgentes primero, luego las más antiguas primero.
 function compararPendientes(a: Compra, b: Compra): number {
   if (a.urgente !== b.urgente) return a.urgente ? -1 : 1;
-  const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  const diff = new Date(a.fecha_solicitud).getTime() - new Date(b.fecha_solicitud).getTime();
   return a.urgente ? -diff : diff;
 }
 
@@ -106,7 +102,7 @@ function agruparPorCategoria(items: Compra[]): Grupo[] {
 export default function ComprasPage() {
   const supabase = getSupabaseClient();
   const [compras, setCompras] = useState<Compra[]>([]);
-  const [proyectos, setProyectos] = useState<Proyecto[]>([]);
+  const [proyectos, setProyectos] = useState<ProyectoConEstado[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -124,6 +120,7 @@ export default function ComprasPage() {
     proyecto_id: "",
     urgente: false,
     categoria: "Otros" as string,
+    fecha_solicitud: "",
     fecha_requerida: "",
     observaciones: "",
   });
@@ -136,13 +133,13 @@ export default function ComprasPage() {
     setLoading(true);
     const [comprasRes, proyRes] = await Promise.all([
       supabase.from("compras").select("*"),
-      supabase.from("proyectos_maestro").select("id, cliente_nombre").order("cliente_nombre"),
+      supabase.from("proyectos_maestro").select("id, cliente_nombre, estado").order("cliente_nombre"),
     ]);
 
     const projMap = new Map<string, string>();
     if (proyRes.data) {
-      setProyectos(proyRes.data as Proyecto[]);
-      (proyRes.data as Proyecto[]).forEach((p) =>
+      setProyectos(proyRes.data as ProyectoConEstado[]);
+      (proyRes.data as ProyectoConEstado[]).forEach((p) =>
         projMap.set(p.id, p.cliente_nombre ?? "Sin nombre")
       );
     }
@@ -157,6 +154,7 @@ export default function ComprasPage() {
         urgente: r.urgente as boolean,
         categoria: (r.categoria as string) ?? "Otros",
         proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "Proyecto desconocido",
+        fecha_solicitud: (r.fecha_solicitud as string) ?? (r.created_at as string)?.slice(0, 10),
         fecha_requerida: (r.fecha_requerida as string) ?? null,
         observaciones: (r.observaciones as string) ?? null,
         comprado: r.comprado as boolean,
@@ -215,9 +213,30 @@ export default function ComprasPage() {
     setToggling(null);
   }
 
+  // Edición directa en la fila (Material, Cantidad, Unidad, Observaciones,
+  // fechas, Centro de Costos) — sin abrir el modal. `campo` es cualquier
+  // columna editable de `compras`; el valor ya llega listo para guardar.
+  function actualizarCampoLocal(id: string, cambios: Partial<Compra>) {
+    setCompras((prev) => prev.map((c) => (c.id === id ? { ...c, ...cambios } : c)));
+  }
+
+  async function guardarCampo(id: string, columna: string, valor: unknown) {
+    const { error } = await supabase.from("compras").update({ [columna]: valor }).eq("id", id);
+    if (error) alert("Error: " + error.message);
+  }
+
+  function cambiarProyectoFila(compra: Compra, nuevoProyectoId: string) {
+    const nombre = proyectos.find((p) => p.id === nuevoProyectoId)?.cliente_nombre ?? "Proyecto desconocido";
+    actualizarCampoLocal(compra.id, { proyecto_id: nuevoProyectoId, proyecto_nombre: nombre });
+    void guardarCampo(compra.id, "proyecto_id", nuevoProyectoId);
+  }
+
   function abrirAgregar() {
     setEditando(null);
-    setForm({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false, categoria: "Otros", fecha_requerida: "", observaciones: "" });
+    setForm({
+      item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false, categoria: "Otros",
+      fecha_solicitud: new Date().toISOString().slice(0, 10), fecha_requerida: "", observaciones: "",
+    });
     setMostrarForm(true);
   }
 
@@ -230,6 +249,7 @@ export default function ComprasPage() {
       proyecto_id: compra.proyecto_id,
       urgente: compra.urgente,
       categoria: compra.categoria,
+      fecha_solicitud: compra.fecha_solicitud,
       fecha_requerida: compra.fecha_requerida ?? "",
       observaciones: compra.observaciones ?? "",
     });
@@ -252,6 +272,7 @@ export default function ComprasPage() {
       proyecto_id: form.proyecto_id,
       urgente: form.urgente,
       categoria: form.categoria,
+      fecha_solicitud: form.fecha_solicitud || new Date().toISOString().slice(0, 10),
       fecha_requerida: form.fecha_requerida || null,
       observaciones: form.observaciones.trim() || null,
     };
@@ -278,9 +299,15 @@ export default function ComprasPage() {
     setEliminando(null);
   }
 
+  const proyectosActivos = proyectos.filter((p) => p.estado === "ACTIVO");
+
   const comprasFiltradas = compras.filter((c) => {
     if (filtroProyecto !== "TODOS" && c.proyecto_id !== filtroProyecto) return false;
-    if (busqueda.trim() && !c.item.toLowerCase().includes(busqueda.trim().toLowerCase())) return false;
+    if (busqueda.trim()) {
+      const q = busqueda.trim().toLowerCase();
+      const coincide = c.item.toLowerCase().includes(q) || c.proyecto_nombre.toLowerCase().includes(q);
+      if (!coincide) return false;
+    }
     return true;
   });
 
@@ -330,14 +357,14 @@ export default function ComprasPage() {
         </div>
       </div>
 
-      {/* Buscador */}
+      {/* Buscador — por ítem o por proyecto/centro de costos */}
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar ítem..."
+          placeholder="Buscar por ítem o proyecto..."
           className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-9 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 sm:h-10"
         />
         {busqueda && (
@@ -397,9 +424,14 @@ export default function ComprasPage() {
                     key={grupo.categoria}
                     grupo={grupo}
                     seccion="pendientes"
+                    proyectos={proyectos}
+                    proyectosActivos={proyectosActivos}
                     onCambiarEstado={cambiarEstado}
                     onArchivar={(c) => void cambiarArchivado(c, true)}
                     onDesarchivar={(c) => void cambiarArchivado(c, false)}
+                    onCambiarProyecto={cambiarProyectoFila}
+                    onCambiarCampoLocal={actualizarCampoLocal}
+                    onGuardarCampo={guardarCampo}
                     toggling={toggling}
                     onEditar={abrirEditar}
                     onEliminar={eliminarCompra}
@@ -426,9 +458,14 @@ export default function ComprasPage() {
                     key={grupo.categoria}
                     grupo={grupo}
                     seccion="historial"
+                    proyectos={proyectos}
+                    proyectosActivos={proyectosActivos}
                     onCambiarEstado={cambiarEstado}
                     onArchivar={(c) => void cambiarArchivado(c, true)}
                     onDesarchivar={(c) => void cambiarArchivado(c, false)}
+                    onCambiarProyecto={cambiarProyectoFila}
+                    onCambiarCampoLocal={actualizarCampoLocal}
+                    onGuardarCampo={guardarCampo}
                     toggling={toggling}
                     onEditar={abrirEditar}
                     onEliminar={eliminarCompra}
@@ -532,14 +569,25 @@ export default function ComprasPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Fecha requerida</label>
-                <input
-                  type="date"
-                  value={form.fecha_requerida}
-                  onChange={(e) => setForm((f) => ({ ...f, fecha_requerida: e.target.value }))}
-                  className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Fecha solicitud</label>
+                  <input
+                    type="date"
+                    value={form.fecha_solicitud}
+                    onChange={(e) => setForm((f) => ({ ...f, fecha_solicitud: e.target.value }))}
+                    className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Fecha requerida</label>
+                  <input
+                    type="date"
+                    value={form.fecha_requerida}
+                    onChange={(e) => setForm((f) => ({ ...f, fecha_requerida: e.target.value }))}
+                    className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
 
               <div>
@@ -591,9 +639,14 @@ export default function ComprasPage() {
 function TablaGrupo({
   grupo,
   seccion,
+  proyectos,
+  proyectosActivos,
   onCambiarEstado,
   onArchivar,
   onDesarchivar,
+  onCambiarProyecto,
+  onCambiarCampoLocal,
+  onGuardarCampo,
   toggling,
   onEditar,
   onEliminar,
@@ -601,14 +654,21 @@ function TablaGrupo({
 }: {
   grupo: Grupo;
   seccion: "pendientes" | "historial";
+  proyectos: ProyectoConEstado[];
+  proyectosActivos: ProyectoConEstado[];
   onCambiarEstado: (c: Compra, nuevoComprado: boolean) => void;
   onArchivar: (c: Compra) => void;
   onDesarchivar: (c: Compra) => void;
+  onCambiarProyecto: (c: Compra, nuevoProyectoId: string) => void;
+  onCambiarCampoLocal: (id: string, cambios: Partial<Compra>) => void;
+  onGuardarCampo: (id: string, columna: string, valor: unknown) => void;
   toggling: string | null;
   onEditar: (c: Compra) => void;
   onEliminar: (c: Compra) => void;
   eliminando: string | null;
 }) {
+  const inputClase = "w-full min-w-0 rounded bg-transparent px-1 -mx-1 focus:outline-none focus:bg-gray-100 focus:ring-1 focus:ring-blue-300";
+
   return (
     <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
       <div className="border-b border-gray-200 bg-gray-100 px-4 py-2">
@@ -621,15 +681,15 @@ function TablaGrupo({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] text-sm">
+        <table className="w-full min-w-[960px] text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-              <th className="px-2 py-2 min-w-[200px]">Material</th>
-              <th className="px-2 py-2 text-right">Cant.</th>
-              <th className="px-2 py-2">Unidad</th>
+              <th className="px-2 py-2 min-w-[180px]">Material</th>
+              <th className="px-2 py-2 text-right w-16">Cant.</th>
+              <th className="px-2 py-2 w-20">Unidad</th>
               <th className="px-2 py-2">Estado</th>
-              <th className="px-2 py-2">Centro de Costos</th>
-              <th className="px-2 py-2 whitespace-nowrap">{seccion === "pendientes" ? "Fecha Solicitud" : "Comprado el"}</th>
+              <th className="px-2 py-2 min-w-[180px]">Centro de Costos</th>
+              <th className="px-2 py-2 whitespace-nowrap">Fecha Solicitud</th>
               <th className="px-2 py-2 whitespace-nowrap">Fecha Requerida</th>
               <th className="px-2 py-2 min-w-[160px]">Observaciones</th>
               <th className="w-24 px-2 py-2"></th>
@@ -637,9 +697,18 @@ function TablaGrupo({
           </thead>
           <tbody>
             {grupo.items.map((compra) => {
-              const tiempo = tiempoTranscurrido(compra.created_at);
+              const tiempo = tiempoTranscurrido(compra.fecha_solicitud);
               const demorada = !compra.comprado && tiempo.dias > DIAS_DEMORA_AVISO;
               const puedeArchivar = seccion === "pendientes" && compra.comprado && !compra.archivado;
+
+              // Si el proyecto actual ya no está activo (pausado/finalizado),
+              // se incluye igual en las opciones para que el selector no
+              // aparezca en blanco — pero el resto de opciones son solo activos.
+              const proyectoActual = proyectos.find((p) => p.id === compra.proyecto_id);
+              const opcionesProyecto =
+                proyectoActual && proyectoActual.estado !== "ACTIVO"
+                  ? [proyectoActual, ...proyectosActivos]
+                  : proyectosActivos;
 
               return (
                 <tr
@@ -653,22 +722,39 @@ function TablaGrupo({
                       : "hover:bg-gray-50/60"
                   )}
                 >
-                  {/* Material — sin badge de urgente, solo el tinte rojo de la fila */}
+                  {/* Material — editable en línea */}
                   <td className="px-2 py-2">
-                    <span className={cn("font-medium", compra.comprado ? "text-gray-400 line-through" : "text-gray-900")}>
-                      {compra.item}
-                    </span>
+                    <input
+                      value={compra.item}
+                      onChange={(e) => onCambiarCampoLocal(compra.id, { item: e.target.value })}
+                      onBlur={(e) => onGuardarCampo(compra.id, "item", e.target.value.trim())}
+                      className={cn(inputClase, "font-medium", compra.comprado ? "text-gray-400 line-through" : "text-gray-900")}
+                    />
                   </td>
 
-                  {/* Cantidad */}
+                  {/* Cantidad — editable en línea */}
                   <td className="px-2 py-2 text-right tabular-nums text-gray-700">
-                    {Number(compra.cantidad) % 1 === 0
-                      ? Number(compra.cantidad).toFixed(0)
-                      : Number(compra.cantidad).toString()}
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.01"
+                      value={compra.cantidad}
+                      onChange={(e) => onCambiarCampoLocal(compra.id, { cantidad: Number(e.target.value) })}
+                      onBlur={(e) => onGuardarCampo(compra.id, "cantidad", parseFloat(e.target.value) || 1)}
+                      className={cn(inputClase, "text-right")}
+                    />
                   </td>
 
-                  {/* Unidad */}
-                  <td className="px-2 py-2 text-gray-500">{compra.unidad}</td>
+                  {/* Unidad — editable en línea */}
+                  <td className="px-2 py-2 text-gray-500">
+                    <input
+                      list="unidades-list-tabla"
+                      value={compra.unidad}
+                      onChange={(e) => onCambiarCampoLocal(compra.id, { unidad: e.target.value })}
+                      onBlur={(e) => onGuardarCampo(compra.id, "unidad", e.target.value.trim() || "und")}
+                      className={inputClase}
+                    />
+                  </td>
 
                   {/* Estado — lista desplegable, cambia sin abrir el modal */}
                   <td className="px-2 py-2">
@@ -688,18 +774,32 @@ function TablaGrupo({
                     </select>
                   </td>
 
-                  {/* Centro de Costos = la unidad puntual */}
-                  <td className="px-2 py-2 whitespace-nowrap text-gray-700" title={compra.proyecto_nombre}>
-                    {compra.proyecto_nombre}
+                  {/* Centro de Costos — buscador entre proyectos activos */}
+                  <td className="px-2 py-2">
+                    <ProyectoCombobox
+                      value={compra.proyecto_id}
+                      onChange={(id) => onCambiarProyecto(compra, id)}
+                      proyectos={opcionesProyecto}
+                      placeholder="Selecciona..."
+                      className="min-w-[170px]"
+                    />
                   </td>
 
-                  {/* Fecha Solicitud (pendientes) / Comprado el (historial) */}
+                  {/* Fecha Solicitud — editable con selector de calendario */}
                   <td className="px-2 py-2 whitespace-nowrap text-gray-500">
-                    {seccion === "pendientes" ? formatFecha(compra.created_at) : formatFecha(compra.comprado_at)}
+                    <input
+                      type="date"
+                      value={compra.fecha_solicitud}
+                      onChange={(e) => {
+                        onCambiarCampoLocal(compra.id, { fecha_solicitud: e.target.value });
+                        onGuardarCampo(compra.id, "fecha_solicitud", e.target.value);
+                      }}
+                      className={cn(inputClase, "w-[125px]")}
+                    />
                     {demorada && (
                       <span
                         title={`Registrada: ${tiempo.label}`}
-                        className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700"
+                        className="mt-1 flex w-fit items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700"
                       >
                         <Clock className="size-2.5" />
                         {tiempo.label}
@@ -707,14 +807,29 @@ function TablaGrupo({
                     )}
                   </td>
 
-                  {/* Fecha Requerida */}
+                  {/* Fecha Requerida — editable con selector de calendario */}
                   <td className="px-2 py-2 whitespace-nowrap text-gray-500">
-                    {formatFecha(compra.fecha_requerida)}
+                    <input
+                      type="date"
+                      value={compra.fecha_requerida ?? ""}
+                      onChange={(e) => {
+                        const valor = e.target.value || null;
+                        onCambiarCampoLocal(compra.id, { fecha_requerida: valor });
+                        onGuardarCampo(compra.id, "fecha_requerida", valor);
+                      }}
+                      className={cn(inputClase, "w-[125px]")}
+                    />
                   </td>
 
-                  {/* Observaciones */}
-                  <td className="px-2 py-2 max-w-[220px] truncate text-gray-500" title={compra.observaciones || ""}>
-                    {compra.observaciones || "—"}
+                  {/* Observaciones — editable en línea */}
+                  <td className="px-2 py-2 text-gray-500">
+                    <input
+                      value={compra.observaciones ?? ""}
+                      onChange={(e) => onCambiarCampoLocal(compra.id, { observaciones: e.target.value })}
+                      onBlur={(e) => onGuardarCampo(compra.id, "observaciones", e.target.value.trim() || null)}
+                      placeholder="—"
+                      className={cn(inputClase, "min-w-[150px]")}
+                    />
                   </td>
 
                   {/* Archivar/Desarchivar + editar/eliminar */}
@@ -763,6 +878,9 @@ function TablaGrupo({
             })}
           </tbody>
         </table>
+        <datalist id="unidades-list-tabla">
+          {UNIDADES_COMUNES.map((u) => <option key={u} value={u} />)}
+        </datalist>
       </div>
     </div>
   );
