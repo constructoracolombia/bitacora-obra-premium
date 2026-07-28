@@ -6,6 +6,8 @@ import { ShoppingCart, Plus, X, Search, CheckCircle2, Circle, Pencil, Trash2, Al
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ProyectoCombobox, type Proyecto } from "@/components/proyecto-combobox";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface Compra {
   id: string;
@@ -16,6 +18,9 @@ interface Compra {
   categoria: string;
   proyecto_id: string;
   proyecto_nombre: string;
+  fecha_requerida: string | null;
+  solicitado_por: string | null;
+  observaciones: string | null;
   comprado: boolean;
   comprado_at: string | null;
   recibido: boolean;
@@ -40,6 +45,24 @@ const CATEGORIAS = [
 
 const DIAS_DEMORA_AVISO = 7;
 
+// Deriva el "conjunto" (Ciudadela Verde, Fiore, etc.) a partir del nombre de
+// la unidad — mismo criterio que usa Finance para agrupar sus proyectos, así
+// las dos apps hablan del mismo lenguaje de conjuntos.
+function detectarConjunto(nombre: string): string {
+  const n = (nombre || "").toUpperCase();
+  if (n.startsWith("CV")) return "Ciudadela Verde";
+  if (n.startsWith("AURORA")) return "Aurora";
+  if (n.startsWith("BELTRAMONTO")) return "Beltramonto";
+  if (n.startsWith("MORADA")) return "Morada del Viento";
+  if (n.startsWith("FIORE")) return "Fiore";
+  if (n.startsWith("SOLEI")) return "Solei";
+  if (n.startsWith("EDIFICIO")) return "Edificios";
+  if (n.startsWith("PASEO")) return "Paseo Bulevar";
+  if (n.startsWith("P. AURORA") || n.startsWith("P.AURORA")) return "P. Aurora";
+  if (n.startsWith("AZAFRAN") || n.startsWith("AZAFRÁN")) return "Azafrán";
+  return "Otros";
+}
+
 // Tiempo relativo desde created_at — "Hoy", "Ayer", "Hace N días/semanas/meses/años".
 function tiempoTranscurrido(fechaISO: string): { label: string; dias: number } {
   const dias = Math.floor((Date.now() - new Date(fechaISO).getTime()) / 86_400_000);
@@ -60,6 +83,11 @@ function tiempoTranscurrido(fechaISO: string): { label: string; dias: number } {
   }
 
   return { label, dias };
+}
+
+function formatFecha(fechaISO: string | null): string {
+  if (!fechaISO) return "—";
+  return format(new Date(fechaISO), "dd/MM/yyyy", { locale: es });
 }
 
 // Urgentes primero (orden de siempre, sin tocar). Dentro de "no urgentes",
@@ -88,7 +116,17 @@ export default function ComprasPage() {
 
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState<Compra | null>(null);
-  const [form, setForm] = useState({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false, categoria: "Otros" as string });
+  const [form, setForm] = useState({
+    item: "",
+    cantidad: "1",
+    unidad: "und",
+    proyecto_id: "",
+    urgente: false,
+    categoria: "Otros" as string,
+    fecha_requerida: "",
+    solicitado_por: "",
+    observaciones: "",
+  });
 
   useEffect(() => {
     void cargar();
@@ -121,6 +159,9 @@ export default function ComprasPage() {
         urgente: r.urgente as boolean,
         categoria: (r.categoria as string) ?? "Otros",
         proyecto_nombre: projMap.get(r.proyecto_id as string) ?? "Proyecto desconocido",
+        fecha_requerida: (r.fecha_requerida as string) ?? null,
+        solicitado_por: (r.solicitado_por as string) ?? null,
+        observaciones: (r.observaciones as string) ?? null,
         comprado: r.comprado as boolean,
         comprado_at: r.comprado_at as string | null,
         recibido: r.recibido as boolean,
@@ -193,7 +234,17 @@ export default function ComprasPage() {
 
   function abrirAgregar() {
     setEditando(null);
-    setForm({ item: "", cantidad: "1", unidad: "und", proyecto_id: "", urgente: false, categoria: "Otros" });
+    setForm({
+      item: "",
+      cantidad: "1",
+      unidad: "und",
+      proyecto_id: "",
+      urgente: false,
+      categoria: "Otros",
+      fecha_requerida: "",
+      solicitado_por: "",
+      observaciones: "",
+    });
     setMostrarForm(true);
   }
 
@@ -206,6 +257,9 @@ export default function ComprasPage() {
       proyecto_id: compra.proyecto_id,
       urgente: compra.urgente,
       categoria: compra.categoria,
+      fecha_requerida: compra.fecha_requerida ?? "",
+      solicitado_por: compra.solicitado_por ?? "",
+      observaciones: compra.observaciones ?? "",
     });
     setMostrarForm(true);
   }
@@ -226,6 +280,9 @@ export default function ComprasPage() {
       proyecto_id: form.proyecto_id,
       urgente: form.urgente,
       categoria: form.categoria,
+      fecha_requerida: form.fecha_requerida || null,
+      solicitado_por: form.solicitado_por.trim() || null,
+      observaciones: form.observaciones.trim() || null,
     };
 
     const { error } = editando
@@ -275,8 +332,12 @@ export default function ComprasPage() {
   const comprados = compras.filter((c) => c.comprado && !c.recibido).length;
   const recibidos = compras.filter((c) => c.recibido).length;
 
+  const solicitantesConocidos = Array.from(
+    new Set(compras.map((c) => c.solicitado_por).filter((s): s is string => !!s))
+  ).sort();
+
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-[1400px] mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -378,7 +439,10 @@ export default function ComprasPage() {
         )}
       </div>
 
-      {/* Lista compacta — mismo layout en móvil y desktop */}
+      {/* Tabla — formato hoja de cálculo, columnas equivalentes al Excel de
+          control de compras que usaba el residente (Centro de Costos,
+          Proyecto, Fecha Solicitud, Material, Cantidad, Unidad, Estado,
+          Fecha Requerida, Solicitado por, Observaciones). */}
       {loading ? (
         <div className="flex justify-center py-16 text-gray-400 text-sm">Cargando...</div>
       ) : comprasFiltradas.length === 0 ? (
@@ -391,7 +455,7 @@ export default function ComprasPage() {
         <div className="space-y-4">
           {gruposFiltrados.map((grupo) => (
             <div key={grupo.categoria} className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-              <div className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-4 py-2">
+              <div className="border-b border-gray-200 bg-gray-100 px-4 py-2">
                 <span className="text-xs font-bold uppercase tracking-wide text-gray-600">
                   {grupo.categoria}
                 </span>
@@ -399,136 +463,176 @@ export default function ComprasPage() {
                   ({grupo.items.length})
                 </span>
               </div>
-              {grupo.items.map((compra) => (
-            <div
-              key={compra.id}
-              className={cn(
-                "flex flex-col gap-1 border-b border-l-[3px] border-gray-100 pl-[5px] pr-1.5 py-1.5 transition-colors last:border-b-0 sm:flex-row sm:items-center sm:gap-2 sm:py-0 sm:pr-3",
-                compra.recibido
-                  ? "border-l-blue-300 bg-blue-50/30"
-                  : compra.comprado
-                  ? "border-l-green-300 bg-green-50/30"
-                  : compra.urgente
-                  ? "border-l-red-400 bg-red-50/40"
-                  : "border-l-transparent hover:bg-gray-50/60"
-              )}
-            >
-              {/* Línea 1 en móvil: checkbox + nombre completo (ancho total, sin
-                  truncar). En desktop, misma fila que el resto — sm:flex-1
-                  empuja cantidad/proyecto/acciones al lado derecho como antes. */}
-              <div className="flex min-w-0 items-center gap-1.5 sm:flex-1">
-              {/* Checkbox — 44×44 */}
-              <button
-                onClick={() => void toggleComprado(compra)}
-                disabled={toggling === compra.id}
-                title={compra.comprado ? "Marcar como pendiente" : "Marcar como comprado"}
-                className="flex size-11 shrink-0 items-center justify-center rounded-lg active:bg-gray-100 disabled:opacity-50"
-              >
-                {compra.comprado ? (
-                  <CheckCircle2 className="size-5 text-green-500" />
-                ) : (
-                  <Circle className="size-5 text-gray-300" />
-                )}
-              </button>
 
-              {/* Nombre + urgente inline */}
-              <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-1.5">
-                {compra.urgente && !compra.comprado && (
-                  <span
-                    className="inline-flex shrink-0 items-center rounded-full bg-red-500 px-1 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white sm:px-1.5 sm:text-[9px]"
-                    title="Urgente"
-                  >
-                    <span className="sm:hidden">URG</span>
-                    <span className="hidden sm:inline">Urgente</span>
-                  </span>
-                )}
-                <span
-                  className={cn(
-                    "text-sm font-medium sm:truncate",
-                    compra.comprado ? "text-gray-400 line-through" : "text-gray-900"
-                  )}
-                >
-                  {compra.item}
-                </span>
-                {compra.comprado ? (
-                  <button
-                    onClick={() => void toggleRecibido(compra)}
-                    disabled={toggling === compra.id}
-                    title={compra.recibido ? "Marcar como no recibido" : "Marcar como recibido"}
-                    className={cn(
-                      "inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide transition-colors disabled:opacity-50 sm:px-2 sm:text-[9px]",
-                      compra.recibido
-                        ? "bg-blue-500 text-white"
-                        : "border border-blue-300 text-blue-500 hover:bg-blue-50"
-                    )}
-                  >
-                    <PackageCheck className="size-2.5" />
-                    {compra.recibido ? "Recibido" : "Recibir"}
-                  </button>
-                ) : (
-                  (() => {
-                    const tiempo = tiempoTranscurrido(compra.created_at);
-                    const demorada = tiempo.dias > DIAS_DEMORA_AVISO;
-                    return (
-                      <span
-                        title={`Registrada: ${tiempo.label}`}
-                        className={cn(
-                          "inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[9px] sm:text-[10px]",
-                          demorada
-                            ? "rounded-full bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-700"
-                            : "text-gray-400"
-                        )}
-                      >
-                        {demorada && <Clock className="size-2.5" />}
-                        {tiempo.label}
-                      </span>
-                    );
-                  })()
-                )}
-              </div>
-              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1100px] text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      <th className="w-10 px-2 py-2"></th>
+                      <th className="px-2 py-2">Centro de Costos</th>
+                      <th className="px-2 py-2">Proyecto</th>
+                      <th className="px-2 py-2 whitespace-nowrap">Fecha Solicitud</th>
+                      <th className="px-2 py-2 min-w-[200px]">Material</th>
+                      <th className="px-2 py-2 text-right">Cant.</th>
+                      <th className="px-2 py-2">Unidad</th>
+                      <th className="px-2 py-2">Estado</th>
+                      <th className="px-2 py-2 whitespace-nowrap">Fecha Requerida</th>
+                      <th className="px-2 py-2">Solicitado por</th>
+                      <th className="px-2 py-2 min-w-[160px]">Observaciones</th>
+                      <th className="w-16 px-2 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {grupo.items.map((compra) => {
+                      const tiempo = tiempoTranscurrido(compra.created_at);
+                      const demorada = !compra.comprado && tiempo.dias > DIAS_DEMORA_AVISO;
 
-              {/* Línea 2 en móvil: cantidad + proyecto + acciones, compacta e
-                  indentada bajo el nombre. En desktop, sigue en la misma fila
-                  (sm:pl-0 quita el indent). */}
-              <div className="flex shrink-0 items-center gap-2 pl-[50px] sm:pl-0">
-              {/* Cantidad + unidad */}
-              <span className="shrink-0 whitespace-nowrap text-xs text-gray-500 tabular-nums">
-                {Number(compra.cantidad) % 1 === 0
-                  ? Number(compra.cantidad).toFixed(0)
-                  : Number(compra.cantidad).toString()}{" "}
-                {compra.unidad}
-              </span>
+                      return (
+                        <tr
+                          key={compra.id}
+                          className={cn(
+                            "border-b border-gray-100 last:border-b-0 align-top transition-colors",
+                            compra.recibido
+                              ? "bg-blue-50/30"
+                              : compra.comprado
+                              ? "bg-green-50/30"
+                              : compra.urgente
+                              ? "bg-red-50/40"
+                              : "hover:bg-gray-50/60"
+                          )}
+                        >
+                          {/* Checkbox comprado */}
+                          <td className="px-2 py-2">
+                            <button
+                              onClick={() => void toggleComprado(compra)}
+                              disabled={toggling === compra.id}
+                              title={compra.comprado ? "Marcar como pendiente" : "Marcar como comprado"}
+                              className="flex size-8 items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                            >
+                              {compra.comprado ? (
+                                <CheckCircle2 className="size-4 text-green-500" />
+                              ) : (
+                                <Circle className="size-4 text-gray-300" />
+                              )}
+                            </button>
+                          </td>
 
-              {/* Proyecto */}
-              <span
-                className="shrink-0 max-w-[56px] truncate text-xs text-gray-400 sm:max-w-[140px]"
-                title={compra.proyecto_nombre}
-              >
-                {compra.proyecto_nombre}
-              </span>
+                          {/* Centro de Costos = la unidad puntual (ya la trackeamos como "proyecto") */}
+                          <td className="px-2 py-2 whitespace-nowrap text-gray-700" title={compra.proyecto_nombre}>
+                            {compra.proyecto_nombre}
+                          </td>
 
-              {/* Editar/eliminar — discretos, al final del renglón */}
-              <div className="flex shrink-0 items-center">
-                <button
-                  onClick={() => abrirEditar(compra)}
-                  title="Editar"
-                  className="flex size-7 items-center justify-center rounded-lg text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                >
-                  <Pencil className="size-3" />
-                </button>
-                <button
-                  onClick={() => void eliminarCompra(compra)}
-                  disabled={eliminando === compra.id}
-                  title="Eliminar"
-                  className="flex size-7 items-center justify-center rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
-                >
-                  <Trash2 className="size-3" />
-                </button>
+                          {/* Proyecto = conjunto, derivado del nombre de la unidad */}
+                          <td className="px-2 py-2 whitespace-nowrap text-gray-500">
+                            {detectarConjunto(compra.proyecto_nombre)}
+                          </td>
+
+                          {/* Fecha Solicitud */}
+                          <td className="px-2 py-2 whitespace-nowrap text-gray-500">
+                            {formatFecha(compra.created_at)}
+                            {demorada && (
+                              <span
+                                title={`Registrada: ${tiempo.label}`}
+                                className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700"
+                              >
+                                <Clock className="size-2.5" />
+                                {tiempo.label}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Material */}
+                          <td className="px-2 py-2">
+                            <div className="flex items-center gap-1.5">
+                              {compra.urgente && (
+                                <span
+                                  className="inline-flex shrink-0 items-center rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white"
+                                  title="Urgente"
+                                >
+                                  Urgente
+                                </span>
+                              )}
+                              <span className={cn("font-medium", compra.comprado ? "text-gray-400 line-through" : "text-gray-900")}>
+                                {compra.item}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Cantidad */}
+                          <td className="px-2 py-2 text-right tabular-nums text-gray-700">
+                            {Number(compra.cantidad) % 1 === 0
+                              ? Number(compra.cantidad).toFixed(0)
+                              : Number(compra.cantidad).toString()}
+                          </td>
+
+                          {/* Unidad */}
+                          <td className="px-2 py-2 text-gray-500">{compra.unidad}</td>
+
+                          {/* Estado */}
+                          <td className="px-2 py-2">
+                            {compra.comprado ? (
+                              <button
+                                onClick={() => void toggleRecibido(compra)}
+                                disabled={toggling === compra.id}
+                                title={compra.recibido ? "Marcar como no recibido" : "Marcar como recibido"}
+                                className={cn(
+                                  "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors disabled:opacity-50",
+                                  compra.recibido
+                                    ? "bg-blue-500 text-white"
+                                    : "border border-blue-300 text-blue-600 hover:bg-blue-50"
+                                )}
+                              >
+                                <PackageCheck className="size-3" />
+                                {compra.recibido ? "Recibido" : "Comprado"}
+                              </button>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-700">
+                                Pendiente
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Fecha Requerida */}
+                          <td className="px-2 py-2 whitespace-nowrap text-gray-500">
+                            {formatFecha(compra.fecha_requerida)}
+                          </td>
+
+                          {/* Solicitado por */}
+                          <td className="px-2 py-2 whitespace-nowrap text-gray-500">
+                            {compra.solicitado_por || "—"}
+                          </td>
+
+                          {/* Observaciones */}
+                          <td className="px-2 py-2 max-w-[220px] truncate text-gray-500" title={compra.observaciones || ""}>
+                            {compra.observaciones || "—"}
+                          </td>
+
+                          {/* Editar/eliminar */}
+                          <td className="px-2 py-2">
+                            <div className="flex items-center justify-end gap-0.5">
+                              <button
+                                onClick={() => abrirEditar(compra)}
+                                title="Editar"
+                                className="flex size-7 items-center justify-center rounded-lg text-gray-300 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                              >
+                                <Pencil className="size-3" />
+                              </button>
+                              <button
+                                onClick={() => void eliminarCompra(compra)}
+                                disabled={eliminando === compra.id}
+                                title="Eliminar"
+                                className="flex size-7 items-center justify-center rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              </div>
-            </div>
-              ))}
             </div>
           ))}
         </div>
@@ -623,6 +727,42 @@ export default function ComprasPage() {
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Fecha requerida</label>
+                  <input
+                    type="date"
+                    value={form.fecha_requerida}
+                    onChange={(e) => setForm((f) => ({ ...f, fecha_requerida: e.target.value }))}
+                    className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Solicitado por</label>
+                  <input
+                    list="solicitantes-list"
+                    value={form.solicitado_por}
+                    onChange={(e) => setForm((f) => ({ ...f, solicitado_por: e.target.value }))}
+                    placeholder="Nombre"
+                    className="h-11 w-full rounded-lg border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <datalist id="solicitantes-list">
+                    {solicitantesConocidos.map((s) => <option key={s} value={s} />)}
+                  </datalist>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Observaciones</label>
+                <textarea
+                  value={form.observaciones}
+                  onChange={(e) => setForm((f) => ({ ...f, observaciones: e.target.value }))}
+                  placeholder="ej. Entregar antes de 12 PM"
+                  rows={2}
+                  className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
 
               <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 has-[:checked]:border-red-200 has-[:checked]:bg-red-50">
