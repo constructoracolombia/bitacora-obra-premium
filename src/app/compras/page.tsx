@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ProyectoCombobox, type Proyecto } from "@/components/proyecto-combobox";
 
-type ProyectoConEstado = Proyecto & { estado: string };
-
 interface Compra {
   id: string;
   item: string;
@@ -102,7 +100,7 @@ function agruparPorCategoria(items: Compra[]): Grupo[] {
 export default function ComprasPage() {
   const supabase = getSupabaseClient();
   const [compras, setCompras] = useState<Compra[]>([]);
-  const [proyectos, setProyectos] = useState<ProyectoConEstado[]>([]);
+  const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -133,13 +131,13 @@ export default function ComprasPage() {
     setLoading(true);
     const [comprasRes, proyRes] = await Promise.all([
       supabase.from("compras").select("*"),
-      supabase.from("proyectos_maestro").select("id, cliente_nombre, estado").order("cliente_nombre"),
+      supabase.from("proyectos_maestro").select("id, cliente_nombre").order("cliente_nombre"),
     ]);
 
     const projMap = new Map<string, string>();
     if (proyRes.data) {
-      setProyectos(proyRes.data as ProyectoConEstado[]);
-      (proyRes.data as ProyectoConEstado[]).forEach((p) =>
+      setProyectos(proyRes.data as Proyecto[]);
+      (proyRes.data as Proyecto[]).forEach((p) =>
         projMap.set(p.id, p.cliente_nombre ?? "Sin nombre")
       );
     }
@@ -225,12 +223,6 @@ export default function ComprasPage() {
     if (error) alert("Error: " + error.message);
   }
 
-  function cambiarProyectoFila(compra: Compra, nuevoProyectoId: string) {
-    const nombre = proyectos.find((p) => p.id === nuevoProyectoId)?.cliente_nombre ?? "Proyecto desconocido";
-    actualizarCampoLocal(compra.id, { proyecto_id: nuevoProyectoId, proyecto_nombre: nombre });
-    void guardarCampo(compra.id, "proyecto_id", nuevoProyectoId);
-  }
-
   function abrirAgregar() {
     setEditando(null);
     setForm({
@@ -298,8 +290,6 @@ export default function ComprasPage() {
     }
     setEliminando(null);
   }
-
-  const proyectosActivos = proyectos.filter((p) => p.estado === "ACTIVO");
 
   const comprasFiltradas = compras.filter((c) => {
     if (filtroProyecto !== "TODOS" && c.proyecto_id !== filtroProyecto) return false;
@@ -424,12 +414,9 @@ export default function ComprasPage() {
                     key={grupo.categoria}
                     grupo={grupo}
                     seccion="pendientes"
-                    proyectos={proyectos}
-                    proyectosActivos={proyectosActivos}
                     onCambiarEstado={cambiarEstado}
                     onArchivar={(c) => void cambiarArchivado(c, true)}
                     onDesarchivar={(c) => void cambiarArchivado(c, false)}
-                    onCambiarProyecto={cambiarProyectoFila}
                     onCambiarCampoLocal={actualizarCampoLocal}
                     onGuardarCampo={guardarCampo}
                     toggling={toggling}
@@ -458,12 +445,9 @@ export default function ComprasPage() {
                     key={grupo.categoria}
                     grupo={grupo}
                     seccion="historial"
-                    proyectos={proyectos}
-                    proyectosActivos={proyectosActivos}
                     onCambiarEstado={cambiarEstado}
                     onArchivar={(c) => void cambiarArchivado(c, true)}
                     onDesarchivar={(c) => void cambiarArchivado(c, false)}
-                    onCambiarProyecto={cambiarProyectoFila}
                     onCambiarCampoLocal={actualizarCampoLocal}
                     onGuardarCampo={guardarCampo}
                     toggling={toggling}
@@ -639,12 +623,9 @@ export default function ComprasPage() {
 function TablaGrupo({
   grupo,
   seccion,
-  proyectos,
-  proyectosActivos,
   onCambiarEstado,
   onArchivar,
   onDesarchivar,
-  onCambiarProyecto,
   onCambiarCampoLocal,
   onGuardarCampo,
   toggling,
@@ -654,12 +635,9 @@ function TablaGrupo({
 }: {
   grupo: Grupo;
   seccion: "pendientes" | "historial";
-  proyectos: ProyectoConEstado[];
-  proyectosActivos: ProyectoConEstado[];
   onCambiarEstado: (c: Compra, nuevoComprado: boolean) => void;
   onArchivar: (c: Compra) => void;
   onDesarchivar: (c: Compra) => void;
-  onCambiarProyecto: (c: Compra, nuevoProyectoId: string) => void;
   onCambiarCampoLocal: (id: string, cambios: Partial<Compra>) => void;
   onGuardarCampo: (id: string, columna: string, valor: unknown) => void;
   toggling: string | null;
@@ -667,7 +645,7 @@ function TablaGrupo({
   onEliminar: (c: Compra) => void;
   eliminando: string | null;
 }) {
-  const inputClase = "w-full min-w-0 rounded bg-transparent px-1 -mx-1 focus:outline-none focus:bg-gray-100 focus:ring-1 focus:ring-blue-300";
+  const inputClase = "w-full min-w-0 rounded bg-transparent px-1 focus:outline-none focus:bg-gray-100 focus:ring-1 focus:ring-blue-300";
 
   return (
     <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
@@ -685,10 +663,10 @@ function TablaGrupo({
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
               <th className="px-2 py-2 min-w-[180px]">Material</th>
-              <th className="px-2 py-2 text-right w-16">Cant.</th>
-              <th className="px-2 py-2 w-20">Unidad</th>
+              <th className="px-2 py-2 text-right min-w-[70px]">Cant.</th>
+              <th className="px-2 py-2 min-w-[70px]">Unidad</th>
               <th className="px-2 py-2">Estado</th>
-              <th className="px-2 py-2 min-w-[180px]">Centro de Costos</th>
+              <th className="px-2 py-2 min-w-[160px] whitespace-nowrap">Centro de Costos</th>
               <th className="px-2 py-2 whitespace-nowrap">Fecha Solicitud</th>
               <th className="px-2 py-2 whitespace-nowrap">Fecha Requerida</th>
               <th className="px-2 py-2 min-w-[160px]">Observaciones</th>
@@ -700,15 +678,6 @@ function TablaGrupo({
               const tiempo = tiempoTranscurrido(compra.fecha_solicitud);
               const demorada = !compra.comprado && tiempo.dias > DIAS_DEMORA_AVISO;
               const puedeArchivar = seccion === "pendientes" && compra.comprado && !compra.archivado;
-
-              // Si el proyecto actual ya no está activo (pausado/finalizado),
-              // se incluye igual en las opciones para que el selector no
-              // aparezca en blanco — pero el resto de opciones son solo activos.
-              const proyectoActual = proyectos.find((p) => p.id === compra.proyecto_id);
-              const opcionesProyecto =
-                proyectoActual && proyectoActual.estado !== "ACTIVO"
-                  ? [proyectoActual, ...proyectosActivos]
-                  : proyectosActivos;
 
               return (
                 <tr
@@ -732,15 +701,21 @@ function TablaGrupo({
                     />
                   </td>
 
-                  {/* Cantidad — editable en línea */}
+                  {/* Cantidad — editable en línea (texto, no number: sin flechas de spinner que le quitan espacio al dígito) */}
                   <td className="px-2 py-2 text-right tabular-nums text-gray-700">
                     <input
-                      type="number"
-                      step="any"
-                      min="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={compra.cantidad}
-                      onChange={(e) => onCambiarCampoLocal(compra.id, { cantidad: Number(e.target.value) })}
-                      onBlur={(e) => onGuardarCampo(compra.id, "cantidad", parseFloat(e.target.value) || 1)}
+                      onChange={(e) => {
+                        const limpio = e.target.value.replace(",", ".");
+                        if (/^\d*\.?\d*$/.test(limpio)) onCambiarCampoLocal(compra.id, { cantidad: (limpio as unknown) as number });
+                      }}
+                      onBlur={(e) => {
+                        const valor = parseFloat(e.target.value.replace(",", ".")) || 1;
+                        onCambiarCampoLocal(compra.id, { cantidad: valor });
+                        onGuardarCampo(compra.id, "cantidad", valor);
+                      }}
                       className={cn(inputClase, "text-right")}
                     />
                   </td>
@@ -752,7 +727,7 @@ function TablaGrupo({
                       value={compra.unidad}
                       onChange={(e) => onCambiarCampoLocal(compra.id, { unidad: e.target.value })}
                       onBlur={(e) => onGuardarCampo(compra.id, "unidad", e.target.value.trim() || "und")}
-                      className={inputClase}
+                      className={cn(inputClase, "min-w-[56px]")}
                     />
                   </td>
 
@@ -774,15 +749,9 @@ function TablaGrupo({
                     </select>
                   </td>
 
-                  {/* Centro de Costos — buscador entre proyectos activos */}
-                  <td className="px-2 py-2">
-                    <ProyectoCombobox
-                      value={compra.proyecto_id}
-                      onChange={(id) => onCambiarProyecto(compra, id)}
-                      proyectos={opcionesProyecto}
-                      placeholder="Selecciona..."
-                      className="min-w-[170px]"
-                    />
+                  {/* Centro de Costos — solo lectura; se cambia desde Editar */}
+                  <td className="px-2 py-2 whitespace-nowrap text-gray-700" title={compra.proyecto_nombre}>
+                    {compra.proyecto_nombre}
                   </td>
 
                   {/* Fecha Solicitud — editable con selector de calendario */}
