@@ -583,12 +583,12 @@ function TablaGrupo({
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-              <th className="px-2 py-2">Centro de Costos</th>
-              <th className="px-2 py-2 whitespace-nowrap">{modo === "pendiente" ? "Fecha Solicitud" : "Comprado el"}</th>
               <th className="px-2 py-2 min-w-[200px]">Material</th>
               <th className="px-2 py-2 text-right">Cant.</th>
               <th className="px-2 py-2">Unidad</th>
               <th className="px-2 py-2">Estado</th>
+              <th className="px-2 py-2">Centro de Costos</th>
+              <th className="px-2 py-2 whitespace-nowrap">{modo === "pendiente" ? "Fecha Solicitud" : "Comprado el"}</th>
               <th className="px-2 py-2 whitespace-nowrap">Fecha Requerida</th>
               <th className="px-2 py-2 min-w-[160px]">Observaciones</th>
               <th className="w-16 px-2 py-2"></th>
@@ -611,25 +611,6 @@ function TablaGrupo({
                       : "hover:bg-gray-50/60"
                   )}
                 >
-                  {/* Centro de Costos = la unidad puntual */}
-                  <td className="px-2 py-2 whitespace-nowrap text-gray-700" title={compra.proyecto_nombre}>
-                    {compra.proyecto_nombre}
-                  </td>
-
-                  {/* Fecha Solicitud (pendientes) / Comprado el (historial) */}
-                  <td className="px-2 py-2 whitespace-nowrap text-gray-500">
-                    {modo === "pendiente" ? formatFecha(compra.created_at) : formatFecha(compra.comprado_at)}
-                    {demorada && (
-                      <span
-                        title={`Registrada: ${tiempo.label}`}
-                        className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700"
-                      >
-                        <Clock className="size-2.5" />
-                        {tiempo.label}
-                      </span>
-                    )}
-                  </td>
-
                   {/* Material */}
                   <td className="px-2 py-2">
                     <div className="flex items-center gap-1.5">
@@ -677,6 +658,25 @@ function TablaGrupo({
                       )}
                       {modo === "comprado" ? "Comprado" : "Pendiente"}
                     </button>
+                  </td>
+
+                  {/* Centro de Costos = la unidad puntual */}
+                  <td className="px-2 py-2 whitespace-nowrap text-gray-700" title={compra.proyecto_nombre}>
+                    {compra.proyecto_nombre}
+                  </td>
+
+                  {/* Fecha Solicitud (pendientes) / Comprado el (historial) */}
+                  <td className="px-2 py-2 whitespace-nowrap text-gray-500">
+                    {modo === "pendiente" ? formatFecha(compra.created_at) : formatFecha(compra.comprado_at)}
+                    {demorada && (
+                      <span
+                        title={`Registrada: ${tiempo.label}`}
+                        className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700"
+                      >
+                        <Clock className="size-2.5" />
+                        {tiempo.label}
+                      </span>
+                    )}
                   </td>
 
                   {/* Fecha Requerida */}
