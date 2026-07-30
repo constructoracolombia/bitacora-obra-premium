@@ -19,6 +19,7 @@ import {
   Save,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
+import { sincronizarCobroAdicional } from "@/lib/adicionales-cobro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -365,73 +366,6 @@ export default function AdicionalDetailPage() {
     }
   }
 
-  // Cuando un adicional queda APROBADO (transición a "pendiente_pago_50" —
-  // gerencia ya dio el visto bueno, ahora falta que el cliente pague), su
-  // valor se suma automáticamente a cuentas_por_cobrar.monto_adicionales
-  // del proyecto (ese campo ya está incluido en el cálculo del saldo
-  // pendiente que usa Finanzas al registrar un cobro — RegistrarCobroModal
-  // hace monto_total + monto_adicionales - monto_cobrado — así que no
-  // queda un saldo sin asignar). Se deja una nota sutil identificando el
-  // adicional, con una marca [adicional:<id>] que sirve para no duplicar
-  // la suma si se repite el paso, y para poder revertirla limpiamente si
-  // el paso se retrocede (se "desaprueba").
-  async function sincronizarCobroAdicional(ad: Adicional, accion: "sumar" | "restar") {
-    try {
-      const { data: cuenta, error: errCuenta } = await supabase
-        .from("cuentas_por_cobrar")
-        .select("id, monto_adicionales, notas")
-        .eq("proyecto_id", ad.proyecto_id)
-        .maybeSingle();
-
-      if (errCuenta) throw errCuenta;
-      if (!cuenta) {
-        if (accion === "sumar") {
-          alert(
-            "Este adicional quedó aprobado, pero no encontré una cuenta por cobrar para su proyecto en Finanzas — súmalo manualmente."
-          );
-        }
-        return;
-      }
-
-      const c = cuenta as { id: string; monto_adicionales: number | null; notas: string | null };
-      const marca = `[adicional:${ad.id}]`;
-      const yaAplicado = (c.notas || "").includes(marca);
-
-      if (accion === "sumar") {
-        if (yaAplicado) return;
-        const montoFmt = new Intl.NumberFormat("es-CO", {
-          style: "currency",
-          currency: "COP",
-          minimumFractionDigits: 0,
-        }).format(ad.monto);
-        const fechaFmt = format(new Date(), "d MMM yyyy", { locale: es });
-        const notaLinea = `\n+ Adicional aprobado: "${ad.descripcion}" — ${montoFmt} (${fechaFmt}) ${marca}`;
-        await supabase
-          .from("cuentas_por_cobrar")
-          .update({
-            monto_adicionales: (Number(c.monto_adicionales) || 0) + ad.monto,
-            notas: (c.notas || "") + notaLinea,
-          } as any)
-          .eq("id", c.id);
-      } else {
-        if (!yaAplicado) return;
-        const notasSinLinea = (c.notas || "")
-          .split("\n")
-          .filter((l) => !l.includes(marca))
-          .join("\n");
-        await supabase
-          .from("cuentas_por_cobrar")
-          .update({
-            monto_adicionales: Math.max(0, (Number(c.monto_adicionales) || 0) - ad.monto),
-            notas: notasSinLinea,
-          } as any)
-          .eq("id", c.id);
-      }
-    } catch (err) {
-      console.error("Error sincronizando cobro del adicional:", err);
-    }
-  }
-
   async function avanzarPaso() {
     if (!adicional) return;
 
@@ -464,7 +398,7 @@ export default function AdicionalDetailPage() {
       }
 
       if (nextStep.key === "pendiente_pago_50") {
-        await sincronizarCobroAdicional(adicional, "sumar");
+        await sincronizarCobroAdicional(supabase, adicional, "sumar");
       }
 
       await fetchData();
@@ -504,7 +438,7 @@ export default function AdicionalDetailPage() {
       }
 
       if (STEPS[targetIdx].key === "pendiente_pago_50") {
-        await sincronizarCobroAdicional(adicional, "restar");
+        await sincronizarCobroAdicional(supabase, adicional, "restar");
       }
 
       await fetchData();

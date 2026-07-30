@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, Plus, X, Archive, ArchiveRestore } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase-client";
+import {
+  sincronizarCobroAdicional,
+  bucketDeEstado,
+  ordenBucket,
+  BUCKET_A_ESTADO,
+  type BucketAdicional,
+} from "@/lib/adicionales-cobro";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -26,21 +33,45 @@ interface Adicional {
 // `estado` sin migrar la tabla — cada uno cae en el bucket de 3 pasos
 // que le corresponde, así los adicionales viejos (iniciar_trabajos,
 // revision_final, etc.) se siguen viendo bien agrupados.
-const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  solicitado: { bg: "bg-gray-100", text: "text-gray-700", label: "Creado" },
-  pendiente_aprobacion: { bg: "bg-gray-100", text: "text-gray-700", label: "Creado" },
-  pendiente_pago_50: { bg: "bg-orange-100", text: "text-orange-700", label: "Aprobado" },
-  iniciar_trabajos: { bg: "bg-orange-100", text: "text-orange-700", label: "Aprobado" },
-  revision_final: { bg: "bg-orange-100", text: "text-orange-700", label: "Aprobado" },
-  entregado: { bg: "bg-green-100", text: "text-green-700", label: "Pagado 100%" },
-};
-
 const FILTROS_ESTADO: { key: string; label: string; estados: string[] | null }[] = [
   { key: "TODOS", label: "Todos", estados: null },
   { key: "creado", label: "Creados", estados: ["solicitado", "pendiente_aprobacion"] },
   { key: "aprobado", label: "Aprobados", estados: ["pendiente_pago_50", "iniciar_trabajos", "revision_final"] },
   { key: "pagado", label: "Pagados", estados: ["entregado"] },
 ];
+
+const BUCKET_STYLES: Record<BucketAdicional, string> = {
+  creado: "bg-gray-100 text-gray-700",
+  aprobado: "bg-orange-100 text-orange-700",
+  pagado: "bg-green-100 text-green-700",
+};
+
+// Cambiar el paso directamente desde la lista, sin entrar al detalle —
+// pedido explícito: "creado / aprobado / pagado 100%" en un desplegable.
+function SelectorEstadoAdicional({
+  ad,
+  onChange,
+}: {
+  ad: Adicional;
+  onChange: (bucket: BucketAdicional) => void;
+}) {
+  const bucket = bucketDeEstado(ad.estado);
+  return (
+    <select
+      value={bucket}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(e.target.value as BucketAdicional)}
+      className={cn(
+        "rounded-full border-0 px-2.5 py-1 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400",
+        BUCKET_STYLES[bucket]
+      )}
+    >
+      <option value="creado">Creado</option>
+      <option value="aprobado">Aprobado</option>
+      <option value="pagado">Pagado 100%</option>
+    </select>
+  );
+}
 
 const formatoCOP = (valor: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -114,6 +145,36 @@ export default function AdicionalesPage() {
       alert("Error: " + error.message);
     }
     setArchivando(null);
+  }
+
+  // Cambiar el paso directamente desde la lista, sin entrar al detalle —
+  // misma lógica y sincronización con cuentas_por_cobrar que el timeline
+  // de adicionales/[id]/page.tsx (ver lib/adicionales-cobro.ts).
+  async function cambiarEstado(ad: Adicional, nuevoBucket: BucketAdicional) {
+    const bucketActual = bucketDeEstado(ad.estado);
+    if (bucketActual === nuevoBucket) return;
+
+    const destino = BUCKET_A_ESTADO[nuevoBucket];
+    setAdicionales((prev) => prev.map((a) => (a.id === ad.id ? { ...a, estado: destino.estado } : a)));
+
+    const { error } = await supabase
+      .from("adicionales")
+      .update({ estado: destino.estado, [destino.dateField]: new Date().toISOString() })
+      .eq("id", ad.id);
+
+    if (error) {
+      setAdicionales((prev) => prev.map((a) => (a.id === ad.id ? { ...a, estado: ad.estado } : a)));
+      alert("Error al cambiar estado: " + error.message);
+      return;
+    }
+
+    const estabaAprobado = ordenBucket(bucketActual) >= 1;
+    const quedaAprobado = ordenBucket(nuevoBucket) >= 1;
+    if (!estabaAprobado && quedaAprobado) {
+      await sincronizarCobroAdicional(supabase, ad, "sumar");
+    } else if (estabaAprobado && !quedaAprobado) {
+      await sincronizarCobroAdicional(supabase, ad, "restar");
+    }
   }
 
   const filtrados = adicionales.filter((a) => {
@@ -236,7 +297,6 @@ export default function AdicionalesPage() {
               </thead>
               <tbody>
                 {filtrados.map((ad) => {
-                  const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.solicitado;
                   return (
                     <tr
                       key={ad.id}
@@ -258,9 +318,7 @@ export default function AdicionalesPage() {
                         {ad.created_at ? format(new Date(ad.created_at), "d MMM yyyy", { locale: es }) : "—"}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", st.bg, st.text)}>
-                          {st.label}
-                        </span>
+                        <SelectorEstadoAdicional ad={ad} onChange={(b) => void cambiarEstado(ad, b)} />
                       </td>
                       <td className="px-4 py-3">
                         <button
@@ -289,7 +347,6 @@ export default function AdicionalesPage() {
           {/* Tarjetas — móvil */}
           <div className="space-y-3 md:hidden">
             {filtrados.map((ad) => {
-              const st = ESTADO_STYLES[ad.estado] ?? ESTADO_STYLES.solicitado;
               return (
                 <div
                   key={ad.id}
@@ -321,9 +378,7 @@ export default function AdicionalesPage() {
                   </div>
 
                   <div className="mt-2 flex items-center justify-between">
-                    <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", st.bg, st.text)}>
-                      {st.label}
-                    </span>
+                    <SelectorEstadoAdicional ad={ad} onChange={(b) => void cambiarEstado(ad, b)} />
                     <span className="font-medium text-gray-900 tabular-nums">{formatoCOP(ad.monto)}</span>
                   </div>
 
