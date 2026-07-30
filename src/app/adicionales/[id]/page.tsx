@@ -43,50 +43,52 @@ interface Adicional {
   created_at: string;
 }
 
+// Flujo simplificado a 3 pasos (pedido explícito): Creación → Aprobación
+// → Pago 100%. Se reutilizan las mismas claves de `estado` que ya existen
+// en la tabla (no se migran los registros históricos) — el paso 2 sigue
+// siendo literalmente "pendiente_pago_50" porque ahí es donde ya está
+// enganchada la sincronización automática con cuentas_por_cobrar
+// (sincronizarCobroAdicional). El paso 3 ("Pago 100%") es 100% manual:
+// se marca a mano cuando ya se subió la transacción del pago en
+// Finanzas — no dispara ninguna automatización.
 const STEPS = [
   {
     key: "solicitado",
-    label: "Solicitud del cliente",
-    description: "El cliente solicita el adicional",
+    label: "Creación de adicional",
+    description: "El adicional fue creado y está pendiente de aprobación",
     dateField: "fecha_solicitud",
   },
   {
-    key: "pendiente_aprobacion",
-    label: "Pendiente aprobación",
-    description: "En espera de aprobación",
-    dateField: "fecha_pendiente_aprobacion",
-  },
-  {
     key: "pendiente_pago_50",
-    label: "Pendiente pago 50%",
-    description: "En espera del primer pago",
+    label: "Aprobación de adicional",
+    description: "Adicional aprobado — su valor se suma a la cuenta por cobrar del proyecto",
     dateField: "fecha_pendiente_pago_50",
   },
   {
-    key: "iniciar_trabajos",
-    label: "Iniciar trabajos adicional",
-    description: "Trabajos iniciados",
-    dateField: "fecha_iniciar_trabajos",
-  },
-  {
-    key: "revision_final",
-    label: "Revisión final adicional",
-    description: "Revisión de trabajos",
-    dateField: "fecha_revision_final",
-  },
-  {
     key: "entregado",
-    label: "Entregado",
-    description: "Adicional completado y entregado",
+    label: "Pago 100% de adicional",
+    description: "Márcalo cuando ya subiste la transacción del pago completo en Finanzas",
     dateField: "fecha_entregado",
   },
 ];
 
-const STEP_KEYS = STEPS.map((s) => s.key);
+// Mapa de TODOS los valores históricos de `estado` (incluye los 3 pasos
+// intermedios que ya no se usan para adicionales nuevos:
+// pendiente_aprobacion, iniciar_trabajos, revision_final) al índice del
+// paso simplificado que le corresponde — así un adicional viejo que
+// quedó, por ejemplo, en "iniciar_trabajos" se sigue viendo
+// correctamente como "ya aprobado" (paso 2), no se resetea a "Creación".
+const ESTADO_A_INDICE: Record<string, number> = {
+  solicitado: 0,
+  pendiente_aprobacion: 0,
+  pendiente_pago_50: 1,
+  iniciar_trabajos: 1,
+  revision_final: 1,
+  entregado: 2,
+};
 
 function getStepIndex(estado: string): number {
-  const idx = STEP_KEYS.indexOf(estado);
-  return idx >= 0 ? idx : 0;
+  return ESTADO_A_INDICE[estado] ?? 0;
 }
 
 export default function AdicionalDetailPage() {
@@ -261,19 +263,18 @@ export default function AdicionalDetailPage() {
     );
     y += 32;
 
-    // Pago 50% si aplica
-    const estadoKeys = ["solicitado","pendiente_aprobacion","pendiente_pago_50","iniciar_trabajos","revision_final","entregado"];
-    const estadoIdx = estadoKeys.indexOf(adicional!.estado);
-    if (estadoIdx >= 2) {
+    // Pago 100% si ya está aprobado (paso 2 del flujo simplificado)
+    const estadoIdx = getStepIndex(adicional!.estado);
+    if (estadoIdx >= 1) {
       doc.setFillColor(255, 247, 237);
       doc.roundedRect(margin, y - 4, pageWidth - margin * 2, 24, 3, 3, "F");
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(180, 80, 0);
-      doc.text("⚠ Pago requerido (50%):", margin + 4, y + 5);
+      doc.text("⚠ Pago requerido (100%):", margin + 4, y + 5);
       doc.setFontSize(16);
       doc.text(
-        new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(adicional!.monto * 0.5),
+        new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(adicional!.monto),
         margin + 4, y + 15
       );
       y += 32;
@@ -287,14 +288,7 @@ export default function AdicionalDetailPage() {
     doc.text("Proceso del adicional", margin, y);
     y += 10;
 
-    const steps = [
-      { key: "solicitado", label: "Solicitud del cliente", dateField: "fecha_solicitud" },
-      { key: "pendiente_aprobacion", label: "Pendiente aprobación", dateField: "fecha_pendiente_aprobacion" },
-      { key: "pendiente_pago_50", label: "Pendiente pago 50%", dateField: "fecha_pendiente_pago_50" },
-      { key: "iniciar_trabajos", label: "Iniciar trabajos adicional", dateField: "fecha_iniciar_trabajos" },
-      { key: "revision_final", label: "Revisión final adicional", dateField: "fecha_revision_final" },
-      { key: "entregado", label: "Entregado", dateField: "fecha_entregado" },
-    ];
+    const steps = STEPS;
 
     steps.forEach((step, idx) => {
       const isCompleted = estadoIdx > idx;
@@ -371,6 +365,73 @@ export default function AdicionalDetailPage() {
     }
   }
 
+  // Cuando un adicional queda APROBADO (transición a "pendiente_pago_50" —
+  // gerencia ya dio el visto bueno, ahora falta que el cliente pague), su
+  // valor se suma automáticamente a cuentas_por_cobrar.monto_adicionales
+  // del proyecto (ese campo ya está incluido en el cálculo del saldo
+  // pendiente que usa Finanzas al registrar un cobro — RegistrarCobroModal
+  // hace monto_total + monto_adicionales - monto_cobrado — así que no
+  // queda un saldo sin asignar). Se deja una nota sutil identificando el
+  // adicional, con una marca [adicional:<id>] que sirve para no duplicar
+  // la suma si se repite el paso, y para poder revertirla limpiamente si
+  // el paso se retrocede (se "desaprueba").
+  async function sincronizarCobroAdicional(ad: Adicional, accion: "sumar" | "restar") {
+    try {
+      const { data: cuenta, error: errCuenta } = await supabase
+        .from("cuentas_por_cobrar")
+        .select("id, monto_adicionales, notas")
+        .eq("proyecto_id", ad.proyecto_id)
+        .maybeSingle();
+
+      if (errCuenta) throw errCuenta;
+      if (!cuenta) {
+        if (accion === "sumar") {
+          alert(
+            "Este adicional quedó aprobado, pero no encontré una cuenta por cobrar para su proyecto en Finanzas — súmalo manualmente."
+          );
+        }
+        return;
+      }
+
+      const c = cuenta as { id: string; monto_adicionales: number | null; notas: string | null };
+      const marca = `[adicional:${ad.id}]`;
+      const yaAplicado = (c.notas || "").includes(marca);
+
+      if (accion === "sumar") {
+        if (yaAplicado) return;
+        const montoFmt = new Intl.NumberFormat("es-CO", {
+          style: "currency",
+          currency: "COP",
+          minimumFractionDigits: 0,
+        }).format(ad.monto);
+        const fechaFmt = format(new Date(), "d MMM yyyy", { locale: es });
+        const notaLinea = `\n+ Adicional aprobado: "${ad.descripcion}" — ${montoFmt} (${fechaFmt}) ${marca}`;
+        await supabase
+          .from("cuentas_por_cobrar")
+          .update({
+            monto_adicionales: (Number(c.monto_adicionales) || 0) + ad.monto,
+            notas: (c.notas || "") + notaLinea,
+          } as any)
+          .eq("id", c.id);
+      } else {
+        if (!yaAplicado) return;
+        const notasSinLinea = (c.notas || "")
+          .split("\n")
+          .filter((l) => !l.includes(marca))
+          .join("\n");
+        await supabase
+          .from("cuentas_por_cobrar")
+          .update({
+            monto_adicionales: Math.max(0, (Number(c.monto_adicionales) || 0) - ad.monto),
+            notas: notasSinLinea,
+          } as any)
+          .eq("id", c.id);
+      }
+    } catch (err) {
+      console.error("Error sincronizando cobro del adicional:", err);
+    }
+  }
+
   async function avanzarPaso() {
     if (!adicional) return;
 
@@ -400,6 +461,10 @@ export default function AdicionalDetailPage() {
       if (error) {
         console.error("Error:", error);
         throw error;
+      }
+
+      if (nextStep.key === "pendiente_pago_50") {
+        await sincronizarCobroAdicional(adicional, "sumar");
       }
 
       await fetchData();
@@ -436,6 +501,10 @@ export default function AdicionalDetailPage() {
       if (error) {
         console.error("Error:", error);
         throw error;
+      }
+
+      if (STEPS[targetIdx].key === "pendiente_pago_50") {
+        await sincronizarCobroAdicional(adicional, "restar");
       }
 
       await fetchData();
@@ -804,7 +873,7 @@ export default function AdicionalDetailPage() {
             <svg className="mx-auto h-12 w-12 text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="font-semibold text-green-700">Adicional entregado</p>
+            <p className="font-semibold text-green-700">Adicional pagado en su totalidad</p>
           </div>
         )}
       </main>

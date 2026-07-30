@@ -21,23 +21,25 @@ interface Adicional {
   proyecto_nombre: string;
 }
 
+// Flujo simplificado a 3 pasos (Creación → Aprobación → Pago 100%, ver
+// adicionales/[id]/page.tsx). Se mantienen los 6 valores históricos de
+// `estado` sin migrar la tabla — cada uno cae en el bucket de 3 pasos
+// que le corresponde, así los adicionales viejos (iniciar_trabajos,
+// revision_final, etc.) se siguen viendo bien agrupados.
 const ESTADO_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  solicitado: { bg: "bg-gray-100", text: "text-gray-700", label: "Solicitud del cliente" },
-  pendiente_aprobacion: { bg: "bg-yellow-100", text: "text-yellow-700", label: "Pendiente aprobación" },
-  pendiente_pago_50: { bg: "bg-orange-100", text: "text-orange-700", label: "Pendiente pago 50%" },
-  iniciar_trabajos: { bg: "bg-blue-100", text: "text-blue-700", label: "Iniciar trabajos" },
-  revision_final: { bg: "bg-purple-100", text: "text-purple-700", label: "Revisión final" },
-  entregado: { bg: "bg-green-100", text: "text-green-700", label: "Entregado" },
+  solicitado: { bg: "bg-gray-100", text: "text-gray-700", label: "Creado" },
+  pendiente_aprobacion: { bg: "bg-gray-100", text: "text-gray-700", label: "Creado" },
+  pendiente_pago_50: { bg: "bg-orange-100", text: "text-orange-700", label: "Aprobado" },
+  iniciar_trabajos: { bg: "bg-orange-100", text: "text-orange-700", label: "Aprobado" },
+  revision_final: { bg: "bg-orange-100", text: "text-orange-700", label: "Aprobado" },
+  entregado: { bg: "bg-green-100", text: "text-green-700", label: "Pagado 100%" },
 };
 
-const FILTROS_ESTADO = [
-  { key: "TODOS", label: "Todos" },
-  { key: "solicitado", label: "Solicitudes" },
-  { key: "pendiente_aprobacion", label: "Por aprobar" },
-  { key: "pendiente_pago_50", label: "Por pagar" },
-  { key: "iniciar_trabajos", label: "En trabajo" },
-  { key: "revision_final", label: "En revisión" },
-  { key: "entregado", label: "Entregados" },
+const FILTROS_ESTADO: { key: string; label: string; estados: string[] | null }[] = [
+  { key: "TODOS", label: "Todos", estados: null },
+  { key: "creado", label: "Creados", estados: ["solicitado", "pendiente_aprobacion"] },
+  { key: "aprobado", label: "Aprobados", estados: ["pendiente_pago_50", "iniciar_trabajos", "revision_final"] },
+  { key: "pagado", label: "Pagados", estados: ["entregado"] },
 ];
 
 const formatoCOP = (valor: number) =>
@@ -118,7 +120,10 @@ export default function AdicionalesPage() {
     if (vista === "activos" && a.archivado) return false;
     if (vista === "archivados" && !a.archivado) return false;
     if (filtroProyecto !== "TODOS" && a.proyecto_id !== filtroProyecto) return false;
-    if (filtroEstado !== "TODOS" && a.estado !== filtroEstado) return false;
+    if (filtroEstado !== "TODOS") {
+      const grupo = FILTROS_ESTADO.find((f) => f.key === filtroEstado);
+      if (grupo?.estados && !grupo.estados.includes(a.estado)) return false;
+    }
     return true;
   });
 
